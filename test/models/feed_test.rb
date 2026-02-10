@@ -235,4 +235,22 @@ class FeedTest < ActiveSupport::TestCase
     assert_equal "abc123", headers["If-None-Match"]
     assert_equal "Mon, 01 Jan 2024 00:00:00 GMT", headers["If-Modified-Since"]
   end
+
+  test "mark_all_entries_as_read! marks all unread entries as read" do
+    feed = feeds(:ruby_blog)
+    # ruby_article_two は未読（read_at: nil）
+    assert feed.entries.unread.exists?
+
+    count = feed.mark_all_entries_as_read!
+    assert count > 0
+    assert_not feed.entries.reload.unread.exists?
+  end
+
+  test "mark_all_entries_as_read! is idempotent" do
+    feed = feeds(:ruby_blog)
+    feed.mark_all_entries_as_read!
+
+    count = feed.mark_all_entries_as_read!
+    assert_equal 0, count
+  end
 end

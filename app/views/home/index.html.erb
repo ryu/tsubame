@@ -3,13 +3,16 @@
   <aside class="feed-list-pane">
     <div class="pane-header">
       <h1>Tsubame</h1>
-      <%= link_to "フィード管理", feeds_path, class: "feed-manage-link" %>
+      <div class="pane-header-links">
+        <%= link_to "📌 ピン一覧", pinned_entries_path, data: { turbo_frame: "entry_list" }, class: "pin-list-link" %>
+        <%= link_to "フィード管理", feeds_path, class: "feed-manage-link" %>
+      </div>
     </div>
 
     <div class="feed-list" data-keyboard-target="feedList">
       <% if @feeds.any? %>
         <% @feeds.each do |feed| %>
-          <%= link_to feed_entries_path(feed), data: { turbo_frame: "entry_list" }, class: "feed-item", tabindex: "-1" do %>
+          <%= link_to feed_entries_path(feed), data: { turbo_frame: "entry_list", feed_id: feed.id }, class: "feed-item", tabindex: "-1" do %>
             <span class="feed-title"><%= feed.title || feed.url %></span>
             <% if feed.unread_count.to_i > 0 %>
               <span class="unread-badge"><%= feed.unread_count %></span>

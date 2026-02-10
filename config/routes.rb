@@ -6,10 +6,16 @@ Rails.application.routes.draw do
       get :import
       post :import, action: :create_import
     end
+    member do
+      post :mark_all_as_read
+    end
     resources :entries, only: [ :index ]
   end
 
   resources :entries, only: [ :show ] do
+    collection do
+      get :pinned
+    end
     member do
       patch :mark_as_read
       patch :toggle_pin

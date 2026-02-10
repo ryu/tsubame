@@ -20,4 +20,8 @@ class EntriesController < ApplicationController
     @entry.toggle_pin!
     render json: { success: true, pinned: @entry.pinned }
   end
+
+  def pinned
+    @entries = Entry.pinned.includes(:feed).recent
+  end
 end

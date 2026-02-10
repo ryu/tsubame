@@ -44,6 +44,10 @@ class Feed < ApplicationRecord
     headers
   end
 
+  def mark_all_entries_as_read!
+    entries.unread.update_all(read_at: Time.current)
+  end
+
   # Import feeds from OPML XML content
   # Returns { added: N, skipped: N }
   def self.import_from_opml(xml_content)

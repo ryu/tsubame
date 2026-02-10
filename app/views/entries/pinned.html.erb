@@ -1,0 +1,28 @@
+<%= turbo_frame_tag "entry_list" do %>
+  <div class="pane-header">
+    <h2>ピン一覧</h2>
+  </div>
+
+  <div class="entry-list">
+    <% if @entries.any? %>
+      <% @entries.each do |entry| %>
+        <%= link_to entry_path(entry), data: { turbo_frame: "entry_detail" }, class: "entry-item", id: "entry_#{entry.id}", tabindex: "-1" do %>
+          <div class="entry-title-row">
+            <span class="pin-icon">📌</span>
+            <span class="entry-title"><%= entry.title || "（タイトルなし）" %></span>
+          </div>
+          <div class="entry-meta">
+            <span class="entry-feed-name"><%= entry.feed.title %></span>
+            <% if entry.published_at %>
+              <time datetime="<%= entry.published_at.iso8601 %>">
+                <%= entry.published_at.strftime("%Y-%m-%d %H:%M") %>
+              </time>
+            <% end %>
+          </div>
+        <% end %>
+      <% end %>
+    <% else %>
+      <p class="empty-message">ピン留めされたエントリはありません</p>
+    <% end %>
+  </div>
+<% end %>

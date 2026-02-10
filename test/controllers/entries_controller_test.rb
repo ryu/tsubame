@@ -106,4 +106,29 @@ class EntriesControllerTest < ActionDispatch::IntegrationTest
     assert json["success"]
     assert_not_nil json["pinned"]
   end
+
+  test "pinned requires authentication" do
+    get pinned_entries_path
+    assert_redirected_to new_session_path
+  end
+
+  test "pinned shows pinned entries" do
+    sign_in_as(@user)
+    # まずエントリをピン留め
+    entry = entries(:ruby_article_one)
+    entry.update!(pinned: true)
+
+    get pinned_entries_path
+    assert_response :success
+    assert_select ".entry-item", minimum: 1
+  end
+
+  test "pinned shows empty message when no pinned entries" do
+    sign_in_as(@user)
+    Entry.update_all(pinned: false)
+
+    get pinned_entries_path
+    assert_response :success
+    assert_select ".empty-message"
+  end
 end

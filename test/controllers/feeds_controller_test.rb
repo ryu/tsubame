@@ -81,4 +81,23 @@ class FeedsControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to import_feeds_path
     assert_match(/インポートに失敗しました/, flash[:alert])
   end
+
+  test "mark_all_as_read requires authentication" do
+    post mark_all_as_read_feed_path(feeds(:ruby_blog))
+    assert_redirected_to new_session_path
+  end
+
+  test "mark_all_as_read marks all entries as read" do
+    sign_in_as(@user)
+    feed = feeds(:ruby_blog)
+    assert feed.entries.unread.exists?
+
+    post mark_all_as_read_feed_path(feed)
+    assert_response :success
+
+    json = JSON.parse(response.body)
+    assert json["success"]
+    assert json["marked_count"] > 0
+    assert_not feed.entries.reload.unread.exists?
+  end
 end

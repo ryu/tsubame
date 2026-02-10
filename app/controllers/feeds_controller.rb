@@ -25,4 +25,10 @@ class FeedsController < ApplicationController
     Rails.logger.error("OPML import failed: #{e.class} - #{e.message}")
     redirect_to import_feeds_path, alert: "インポートに失敗しました。ファイル形式を確認してください。"
   end
+
+  def mark_all_as_read
+    @feed = Feed.find(params[:id])
+    count = @feed.mark_all_entries_as_read!
+    render json: { success: true, marked_count: count }
+  end
 end

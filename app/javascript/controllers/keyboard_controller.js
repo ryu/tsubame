@@ -58,6 +58,13 @@ export default class extends Controller {
         event.preventDefault()
         this._nextFeed()
         break
+      case "A":
+        // Shift+A: Mark all entries in current feed as read
+        if (shiftKey) {
+          event.preventDefault()
+          this._markAllAsRead()
+        }
+        break
       case "a":
         event.preventDefault()
         this._previousFeed()
@@ -77,6 +84,14 @@ export default class extends Controller {
       case "p":
         event.preventDefault()
         this._toggleCurrentEntryPin()
+        break
+      case "o":
+        event.preventDefault()
+        this._showPinList()
+        break
+      case "r":
+        event.preventDefault()
+        this._reloadPage()
         break
     }
   }
@@ -331,6 +346,60 @@ export default class extends Controller {
     if (!pinButton) return
 
     pinButton.textContent = pinned ? "📌 ピン解除" : "📌 ピン留め"
+  }
+
+  _markAllAsRead() {
+    const feedItems = this._getFeedItems()
+    if (this.activeFeedIndexValue < 0 || this.activeFeedIndexValue >= feedItems.length) {
+      console.warn("No active feed selected")
+      return
+    }
+
+    const activeFeed = feedItems[this.activeFeedIndexValue]
+    const feedId = activeFeed.dataset.feedId
+    if (!feedId || !this.csrfToken) {
+      console.warn("Feed ID or CSRF token not found")
+      return
+    }
+
+    fetch(`/feeds/${feedId}/mark_all_as_read`, {
+      method: "POST",
+      headers: {
+        "X-CSRF-Token": this.csrfToken,
+        "Accept": "application/json",
+        "Content-Type": "application/json"
+      },
+      signal: this.abortController.signal
+    })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          // Reload page to update unread badges in left pane
+          window.Turbo.visit(window.location.href, { action: "replace" })
+        }
+      })
+      .catch(error => {
+        if (error.name !== "AbortError") {
+          console.warn("Failed to mark all as read:", error)
+        }
+      })
+  }
+
+  _showPinList() {
+    const pinListLink = document.querySelector("a.pin-list-link")
+    if (!pinListLink) {
+      console.warn("Pin list link not found")
+      return
+    }
+
+    this.activeFeedIndexValue = -1
+    this._updateFeedActiveState()
+
+    pinListLink.click()
+  }
+
+  _reloadPage() {
+    window.Turbo.visit(window.location.href, { action: "replace" })
   }
 
   // Utilities
