@@ -157,6 +157,41 @@ class FeedTest < ActiveSupport::TestCase
     assert_not_includes Feed.due_for_fetch, feed
   end
 
+  test "mark_as_fetched! uses custom fetch_interval_minutes for next_fetch_at" do
+    feed = feeds(:ruby_blog)
+    feed.update!(fetch_interval_minutes: 180)
+
+    travel_to Time.zone.parse("2025-02-10 10:00:00") do
+      feed.mark_as_fetched!
+      assert_equal Time.zone.parse("2025-02-10 13:00:00"), feed.next_fetch_at
+    end
+  end
+
+  test "mark_as_error! uses ERROR_BACKOFF_MINUTES regardless of fetch_interval_minutes" do
+    feed = feeds(:ruby_blog)
+    feed.update!(fetch_interval_minutes: 1440)
+
+    travel_to Time.zone.parse("2025-02-10 10:00:00") do
+      feed.mark_as_error!("Test error")
+      assert_equal Time.zone.parse("2025-02-10 10:30:00"), feed.next_fetch_at
+      assert_equal "error", feed.status
+    end
+  end
+
+  test "validates fetch_interval_minutes is in FETCH_INTERVAL_OPTIONS keys" do
+    feed = Feed.new(url: "https://example.com/feed", fetch_interval_minutes: 999)
+    assert_not feed.valid?
+    assert_includes feed.errors[:fetch_interval_minutes], "is not included in the list"
+  end
+
+  test "accepts all FETCH_INTERVAL_OPTIONS preset values" do
+    Feed::FETCH_INTERVAL_OPTIONS.keys.each do |interval|
+      feed = Feed.new(url: "https://example.com/feed#{interval}", fetch_interval_minutes: interval)
+      feed.next_fetch_at = Time.current
+      assert feed.valid?, "Expected #{interval} to be valid but got errors: #{feed.errors.full_messages}"
+    end
+  end
+
   test "mark_as_fetched! should update feed with success status" do
     feed = feeds(:error_feed)
     feed.update!(
