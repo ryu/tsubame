@@ -213,6 +213,10 @@ body:has(.three-pane-layout) {
   font-weight: 600;
 }
 
+.entry-read {
+  opacity: 0.5;
+}
+
 .entry-title-row {
   display: flex;
   align-items: center;

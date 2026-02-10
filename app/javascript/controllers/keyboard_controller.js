@@ -203,6 +203,7 @@ export default class extends Controller {
     // (EntriesController#show handles server-side mark_as_read)
     if (entryItem.classList.contains("entry-unread")) {
       entryItem.classList.remove("entry-unread")
+      entryItem.classList.add("entry-read")
       this._decrementUnreadBadge()
     }
 
