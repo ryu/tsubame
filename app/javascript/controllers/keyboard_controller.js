@@ -196,12 +196,16 @@ export default class extends Controller {
     const entryItem = entryItems[index]
     this._updateEntryActiveState()
 
+    // Optimistically mark as read in UI
+    // (EntriesController#show handles server-side mark_as_read)
+    if (entryItem.classList.contains("entry-unread")) {
+      entryItem.classList.remove("entry-unread")
+      this._decrementUnreadBadge()
+    }
+
     // Click the entry link to load detail via Turbo Frame
     entryItem.click()
     this._scrollIntoViewIfNeeded(entryItem, this.entryListTarget)
-
-    // Mark as read
-    this._markEntryAsRead(entryItem)
   }
 
   _updateEntryActiveState() {
@@ -220,36 +224,6 @@ export default class extends Controller {
   _getEntryItems() {
     if (!this.hasEntryListTarget) return []
     return Array.from(this.entryListTarget.querySelectorAll(".entry-item"))
-  }
-
-  _markEntryAsRead(entryItem) {
-    // Only mark as read if currently unread
-    if (!entryItem.classList.contains("entry-unread")) return
-
-    const entryId = this._extractEntryId(entryItem)
-    if (!entryId || !this.csrfToken) return
-
-    fetch(`/entries/${entryId}/mark_as_read`, {
-      method: "PATCH",
-      headers: {
-        "X-CSRF-Token": this.csrfToken,
-        "Accept": "application/json",
-        "Content-Type": "application/json"
-      },
-      signal: this.abortController.signal
-    })
-      .then(response => response.json())
-      .then(data => {
-        if (data.success && data.was_unread) {
-          entryItem.classList.remove("entry-unread")
-          this._decrementUnreadBadge()
-        }
-      })
-      .catch(error => {
-        if (error.name !== "AbortError") {
-          console.warn("Failed to mark entry as read:", error)
-        }
-      })
   }
 
   _decrementUnreadBadge() {
