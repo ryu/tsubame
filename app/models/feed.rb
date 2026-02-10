@@ -1,4 +1,6 @@
 require "rexml/document"
+require "resolv"
+require "ipaddr"
 
 class Feed < ApplicationRecord
   has_many :entries, dependent: :destroy
@@ -6,8 +8,41 @@ class Feed < ApplicationRecord
   enum :status, { ok: 0, error: 1 }, default: :ok
 
   validates :url, presence: true, uniqueness: true
+  validate :url_must_be_http, if: -> { url.present? }
 
   normalizes :url, with: ->(url) { url.strip }
+
+  FETCH_INTERVAL = 10.minutes
+  ERROR_FETCH_INTERVAL = 30.minutes
+
+  scope :due_for_fetch, -> { where("next_fetch_at <= ?", Time.current).where.not(next_fetch_at: nil) }
+
+  def mark_as_fetched!(etag: nil, last_modified: nil)
+    update!(
+      status: :ok,
+      error_message: nil,
+      last_fetched_at: Time.current,
+      next_fetch_at: FETCH_INTERVAL.from_now,
+      etag: etag || self.etag,
+      last_modified: last_modified || self.last_modified
+    )
+  end
+
+  def mark_as_error!(message)
+    update!(
+      status: :error,
+      error_message: message,
+      last_fetched_at: Time.current,
+      next_fetch_at: ERROR_FETCH_INTERVAL.from_now
+    )
+  end
+
+  def conditional_get_headers
+    headers = {}
+    headers["If-None-Match"] = etag if etag.present?
+    headers["If-Modified-Since"] = last_modified if last_modified.present?
+    headers
+  end
 
   # Import feeds from OPML XML content
   # Returns { added: N, skipped: N }
@@ -49,5 +84,34 @@ class Feed < ApplicationRecord
     { added: added, skipped: skipped }
   rescue REXML::ParseException
     raise "OPMLファイルの形式が正しくありません。"
+  end
+
+  BLOCKED_IP_RANGES = [
+    IPAddr.new("127.0.0.0/8"),
+    IPAddr.new("10.0.0.0/8"),
+    IPAddr.new("172.16.0.0/12"),
+    IPAddr.new("192.168.0.0/16"),
+    IPAddr.new("169.254.0.0/16"),
+    IPAddr.new("::1/128"),
+    IPAddr.new("fc00::/7")
+  ].freeze
+
+  def self.private_ip?(host)
+    ip = Resolv.getaddress(host)
+    ip_addr = IPAddr.new(ip)
+    BLOCKED_IP_RANGES.any? { |range| range.include?(ip_addr) }
+  rescue Resolv::ResolvError, SocketError, IPAddr::InvalidAddressError
+    true
+  end
+
+  private
+
+  def url_must_be_http
+    uri = URI.parse(url)
+    unless uri.is_a?(URI::HTTP) || uri.is_a?(URI::HTTPS)
+      errors.add(:url, "must be an HTTP or HTTPS URL")
+    end
+  rescue URI::InvalidURIError
+    errors.add(:url, "is not a valid URL")
   end
 end
