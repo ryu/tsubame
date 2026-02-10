@@ -24,4 +24,11 @@ class EntriesController < ApplicationController
   def pinned
     @entries = Entry.pinned.includes(:feed).recent
   end
+
+  def open_pinned
+    entries = Entry.pinned.includes(:feed).recent.limit(5)
+    urls = entries.filter_map(&:safe_url)
+    entries.update_all(pinned: false)
+    render json: { urls: urls, pinned_count: Entry.pinned.count }
+  end
 end

@@ -16,6 +16,7 @@ Rails.application.routes.draw do
   resources :entries, only: [ :show ] do
     collection do
       get :pinned
+      post :open_pinned
     end
     member do
       patch :mark_as_read

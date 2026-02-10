@@ -87,7 +87,7 @@ export default class extends Controller {
         break
       case "o":
         event.preventDefault()
-        this._showPinList()
+        this._openPinnedEntries()
         break
       case "r":
         event.preventDefault()
@@ -377,17 +377,41 @@ export default class extends Controller {
       })
   }
 
-  _showPinList() {
-    const pinListLink = document.querySelector("a.pin-list-link")
-    if (!pinListLink) {
-      console.warn("Pin list link not found")
-      return
+  _openPinnedEntries() {
+    if (!this.csrfToken) return
+
+    fetch("/entries/open_pinned", {
+      method: "POST",
+      headers: {
+        "X-CSRF-Token": this.csrfToken,
+        "Accept": "application/json",
+        "Content-Type": "application/json"
+      },
+      signal: this.abortController.signal
+    })
+      .then(response => response.json())
+      .then(data => {
+        data.urls.forEach(url => window.open(url, "_blank"))
+        this._updatePinBadge(data.pinned_count)
+      })
+      .catch(error => {
+        if (error.name !== "AbortError") {
+          console.warn("Failed to open pinned entries:", error)
+        }
+      })
+  }
+
+  _updatePinBadge(count) {
+    const badge = document.getElementById("pin_badge")
+    if (!badge) return
+
+    badge.textContent = ""
+    if (count > 0) {
+      const span = document.createElement("span")
+      span.className = "pin-badge"
+      span.textContent = count
+      badge.appendChild(span)
     }
-
-    this.activeFeedIndexValue = -1
-    this._updateFeedActiveState()
-
-    pinListLink.click()
   }
 
   _reloadPage() {
