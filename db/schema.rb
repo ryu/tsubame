@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_02_10_005736) do
+ActiveRecord::Schema[8.1].define(version: 2026_02_10_131830) do
   create_table "entries", force: :cascade do |t|
     t.string "author"
     t.text "body"
@@ -35,6 +35,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_10_005736) do
     t.text "description"
     t.text "error_message"
     t.string "etag"
+    t.integer "fetch_interval_minutes", default: 10, null: false
     t.datetime "last_fetched_at"
     t.string "last_modified"
     t.datetime "next_fetch_at"
