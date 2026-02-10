@@ -10,7 +10,7 @@ class Feed < ApplicationRecord
   validates :url, presence: true, uniqueness: true
   validate :url_must_be_http, if: -> { url.present? }
 
-  normalizes :url, with: ->(url) { url.strip }
+  normalizes :url, with: ->(url) { url.strip.gsub(/&(amp;)+/, "&") }
 
   FETCH_INTERVAL = 10.minutes
   ERROR_FETCH_INTERVAL = 30.minutes

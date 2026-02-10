@@ -1,24 +1,52 @@
-# README
+# Tsubame
 
-This README would normally document whatever steps are necessary to get the
-application up and running.
+Fastladder 互換のパーソナルフィードリーダー。シングルユーザー向け。
 
-Things you may want to cover:
+## 技術スタック
 
-* Ruby version
+- Ruby 4.0 / Rails 8.1 / SQLite3
+- Hotwire (Turbo + Stimulus) + Vanilla CSS
+- Solid Queue (バックグラウンドジョブ)
+- Kamal 2 (デプロイ)
 
-* System dependencies
+## 主な機能
 
-* Configuration
+- OPML インポートによるフィード一括登録
+- 定期フィードクロール (Solid Queue)
+- 3 ペイン UI (フィード一覧 / エントリ一覧 / エントリ本文)
+- Fastladder 互換キーボードショートカット (j/k/s/a/v/p/o/r/Shift+A)
+- エントリの既読管理・ピン留め
 
-* Database creation
+## セットアップ
 
-* Database initialization
+```bash
+bin/setup
+bin/dev
+```
 
-* How to run the test suite
+初回起動後 http://localhost:3000 にアクセスし、`db/seeds.rb` に定義されたユーザーでログイン。
 
-* Services (job queues, cache servers, search engines, etc.)
+## 開発コマンド
 
-* Deployment instructions
+```bash
+bin/dev          # 開発サーバー起動
+bin/ci           # CI (rubocop, security audit, テスト)
+bin/rails test   # テストのみ
+bin/rubocop      # Lint のみ
+```
 
-* ...
+## デプロイ
+
+Kamal 2 でさくらの VPS にデプロイ。詳細は [docs/deployment.md](docs/deployment.md) を参照。
+
+```bash
+kamal deploy
+```
+
+## ドキュメント
+
+- [docs/architecture.md](docs/architecture.md) — アーキテクチャ概要
+- [docs/data_model.md](docs/data_model.md) — データモデル定義
+- [docs/keyboard_shortcuts.md](docs/keyboard_shortcuts.md) — キーボードショートカット一覧
+- [docs/feed_crawling.md](docs/feed_crawling.md) — フィードクロール設計
+- [docs/deployment.md](docs/deployment.md) — デプロイ手順

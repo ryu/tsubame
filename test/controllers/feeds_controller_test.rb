@@ -14,7 +14,7 @@ class FeedsControllerTest < ActionDispatch::IntegrationTest
     sign_in_as(@user)
     get feeds_path
     assert_response :success
-    assert_select "h1", "フィード一覧"
+    assert_select "h1", "フィード管理"
   end
 
   test "import requires authentication" do
