@@ -1,0 +1,29 @@
+<turbo-frame id="entry_detail">
+  <article class="entry-detail">
+    <header class="entry-header">
+      <h2><%= entry.title || "（タイトルなし）" %></h2>
+      <div class="entry-meta">
+        <% if entry.published_at %>
+          <time datetime="<%= entry.published_at.iso8601 %>">
+            <%= entry.published_at.strftime("%Y年%m月%d日 %H:%M") %>
+          </time>
+        <% end %>
+        <% if entry.author.present? %>
+          <span class="entry-author">by <%= entry.author %></span>
+        <% end %>
+      </div>
+      <div class="entry-actions">
+        <%= button_to toggle_pin_entry_path(entry), method: :patch, class: "pin-button" do %>
+          <%= entry.pinned ? "📌 ピン解除" : "📌 ピン留め" %>
+        <% end %>
+        <% if entry.safe_url.present? %>
+          <%= link_to "元記事を開く", entry.safe_url, target: "_blank", rel: "noopener noreferrer", class: "external-link" %>
+        <% end %>
+      </div>
+    </header>
+
+    <div class="entry-body">
+      <%= sanitize entry.body, tags: %w[p br div span strong em b i a ul ol li blockquote pre code h1 h2 h3 h4 h5 h6 img hr table thead tbody tr td th dl dt dd figure figcaption sup sub del ins small], attributes: %w[href src alt title width height colspan rowspan] %>
+    </div>
+  </article>
+</turbo-frame>

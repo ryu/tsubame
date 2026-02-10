@@ -92,19 +92,16 @@ class EntriesControllerTest < ActionDispatch::IntegrationTest
     sign_in_as(@user)
     original_pinned = @entry.pinned
 
-    patch toggle_pin_entry_path(@entry)
+    patch toggle_pin_entry_path(@entry), as: :turbo_stream
     assert_response :success
     assert_equal !original_pinned, @entry.reload.pinned
   end
 
-  test "toggle_pin returns json" do
+  test "toggle_pin returns turbo stream" do
     sign_in_as(@user)
-    patch toggle_pin_entry_path(@entry)
+    patch toggle_pin_entry_path(@entry), as: :turbo_stream
     assert_response :success
-
-    json = JSON.parse(response.body)
-    assert json["success"]
-    assert_not_nil json["pinned"]
+    assert_equal "text/vnd.turbo-stream.html", response.media_type
   end
 
   test "pinned requires authentication" do

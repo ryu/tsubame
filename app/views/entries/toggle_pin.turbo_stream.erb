@@ -1,0 +1,11 @@
+<%= turbo_stream.replace "entry_detail" do %>
+  <%= render partial: "entries/detail", locals: { entry: @entry } %>
+<% end %>
+
+<%= turbo_stream.replace "pin_badge" do %>
+  <span id="pin_badge">
+    <% if @pinned_count > 0 %>
+      <span class="pin-badge"><%= @pinned_count %></span>
+    <% end %>
+  </span>
+<% end %>

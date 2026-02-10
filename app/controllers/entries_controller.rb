@@ -18,7 +18,7 @@ class EntriesController < ApplicationController
   def toggle_pin
     @entry = Entry.find(params[:id])
     @entry.toggle_pin!
-    render json: { success: true, pinned: @entry.pinned }
+    @pinned_count = Entry.pinned.count
   end
 
   def pinned
