@@ -26,6 +26,13 @@ class FeedsController < ApplicationController
     redirect_to import_feeds_path, alert: "インポートに失敗しました。ファイル形式を確認してください。"
   end
 
+  def export
+    send_data Feed.to_opml,
+      filename: "subscriptions.opml",
+      type: "application/xml",
+      disposition: "attachment"
+  end
+
   def mark_all_as_read
     @feed = Feed.find(params[:id])
     count = @feed.mark_all_entries_as_read!

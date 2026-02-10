@@ -5,6 +5,7 @@ Rails.application.routes.draw do
     collection do
       get :import
       post :import, action: :create_import
+      get :export
     end
     member do
       post :mark_all_as_read

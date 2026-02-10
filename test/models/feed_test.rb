@@ -253,4 +253,102 @@ class FeedTest < ActiveSupport::TestCase
     count = feed.mark_all_entries_as_read!
     assert_equal 0, count
   end
+
+  test "to_opml generates valid OPML 1.0 XML" do
+    xml = Feed.to_opml
+    doc = REXML::Document.new(xml)
+
+    # Verify root element
+    assert_equal "opml", doc.root.name
+    assert_equal "1.0", doc.root.attributes["version"]
+
+    # Verify head and body elements exist
+    assert_not_nil REXML::XPath.first(doc, "//head")
+    assert_not_nil REXML::XPath.first(doc, "//body")
+    assert_not_nil REXML::XPath.first(doc, "//head/title")
+  end
+
+  test "to_opml includes feed attributes" do
+    Feed.destroy_all
+    feed = Feed.create!(
+      url: "https://example.com/feed.xml",
+      title: "Example Feed",
+      site_url: "https://example.com/"
+    )
+
+    xml = Feed.to_opml
+    doc = REXML::Document.new(xml)
+
+    outline = REXML::XPath.first(doc, "//outline")
+    assert_equal "rss", outline.attributes["type"]
+    assert_equal "Example Feed", outline.attributes["text"]
+    assert_equal "Example Feed", outline.attributes["title"]
+    assert_equal "https://example.com/feed.xml", outline.attributes["xmlUrl"]
+    assert_equal "https://example.com/", outline.attributes["htmlUrl"]
+  end
+
+  test "to_opml returns empty OPML when no feeds" do
+    Feed.destroy_all
+
+    xml = Feed.to_opml
+    doc = REXML::Document.new(xml)
+
+    outlines = REXML::XPath.match(doc, "//outline")
+    assert_equal 0, outlines.size
+  end
+
+  test "to_opml orders feeds by title" do
+    Feed.destroy_all
+    Feed.create!(url: "https://z.com/feed", title: "Z Feed")
+    Feed.create!(url: "https://a.com/feed", title: "A Feed")
+    Feed.create!(url: "https://m.com/feed", title: "M Feed")
+
+    xml = Feed.to_opml
+    doc = REXML::Document.new(xml)
+
+    titles = REXML::XPath.match(doc, "//outline").map { |o| o.attributes["title"] }
+    assert_equal [ "A Feed", "M Feed", "Z Feed" ], titles
+  end
+
+  test "to_opml omits htmlUrl when site_url is blank" do
+    Feed.destroy_all
+    feed = Feed.create!(
+      url: "https://example.com/feed.xml",
+      title: "Example Feed",
+      site_url: nil
+    )
+
+    xml = Feed.to_opml
+    doc = REXML::Document.new(xml)
+
+    outline = REXML::XPath.first(doc, "//outline")
+    assert_nil outline.attributes["htmlUrl"]
+    assert_equal "https://example.com/feed.xml", outline.attributes["xmlUrl"]
+  end
+
+  test "exported OPML can be re-imported" do
+    Feed.destroy_all
+    original_feeds = [
+      Feed.create!(url: "https://a.com/feed", title: "Feed A", site_url: "https://a.com/"),
+      Feed.create!(url: "https://b.com/feed", title: "Feed B", site_url: "https://b.com/"),
+      Feed.create!(url: "https://c.com/feed", title: "Feed C")
+    ]
+
+    # Export
+    xml = Feed.to_opml
+
+    # Clear and re-import
+    Feed.destroy_all
+    result = Feed.import_from_opml(xml)
+
+    assert_equal 3, result[:added]
+    assert_equal 0, result[:skipped]
+
+    # Verify feeds match
+    reimported = Feed.all.order(:url)
+    assert_equal 3, reimported.size
+    assert_equal "https://a.com/feed", reimported[0].url
+    assert_equal "Feed A", reimported[0].title
+    assert_equal "https://a.com/", reimported[0].site_url
+  end
 end

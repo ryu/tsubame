@@ -100,4 +100,20 @@ class FeedsControllerTest < ActionDispatch::IntegrationTest
     assert json["marked_count"] > 0
     assert_not feed.entries.reload.unread.exists?
   end
+
+  test "export requires authentication" do
+    get export_feeds_path
+    assert_redirected_to new_session_path
+  end
+
+  test "export returns OPML file" do
+    sign_in_as(@user)
+
+    get export_feeds_path
+    assert_response :success
+    assert_equal "application/xml", response.media_type
+    assert_match /attachment/, response.headers["Content-Disposition"]
+    assert_match /subscriptions\.opml/, response.headers["Content-Disposition"]
+    assert_match /<opml version=['"]1\.0['"]>/, response.body
+  end
 end

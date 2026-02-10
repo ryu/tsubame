@@ -90,6 +90,34 @@ class Feed < ApplicationRecord
     raise "OPMLファイルの形式が正しくありません。"
   end
 
+  # Export feeds to OPML 1.0 XML format
+  # Returns XML string
+  def self.to_opml
+    doc = REXML::Document.new
+    doc << REXML::XMLDecl.new("1.0", "UTF-8")
+
+    opml = doc.add_element("opml", { "version" => "1.0" })
+    head = opml.add_element("head")
+    head.add_element("title").add_text("Tsubame Subscriptions")
+
+    body = opml.add_element("body")
+
+    all.order(:title).each do |feed|
+      attrs = {
+        "type" => "rss",
+        "text" => feed.title || feed.url,
+        "title" => feed.title || feed.url,
+        "xmlUrl" => feed.url
+      }
+      attrs["htmlUrl"] = feed.site_url if feed.site_url.present?
+      body.add_element("outline", attrs)
+    end
+
+    output = ""
+    doc.write(output)
+    output
+  end
+
   BLOCKED_IP_RANGES = [
     IPAddr.new("127.0.0.0/8"),
     IPAddr.new("10.0.0.0/8"),
