@@ -204,6 +204,33 @@ class FeedsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "New Title", feed.reload.title
   end
 
+  test "update changes fetch_interval_minutes" do
+    sign_in_as(@user)
+    feed = feeds(:ruby_blog)
+    patch feed_path(feed), params: { feed: { fetch_interval_minutes: 360 } }
+    assert_redirected_to feeds_path
+    assert_equal 360, feed.reload.fetch_interval_minutes
+  end
+
+  test "update rejects invalid fetch_interval_minutes" do
+    sign_in_as(@user)
+    feed = feeds(:ruby_blog)
+    patch feed_path(feed), params: { feed: { fetch_interval_minutes: 999 } }
+    assert_response :unprocessable_entity
+    assert_not_equal 999, feed.reload.fetch_interval_minutes
+  end
+
+  test "edit shows fetch_interval_minutes select field" do
+    sign_in_as(@user)
+    feed = feeds(:ruby_blog)
+    get edit_feed_path(feed)
+    assert_response :success
+    assert_select "select[name='feed[fetch_interval_minutes]']"
+    Feed::FETCH_INTERVAL_OPTIONS.each do |minutes, label|
+      assert_select "option[value='#{minutes}']", text: label
+    end
+  end
+
   # --- destroy tests ---
 
   test "destroy requires authentication" do
