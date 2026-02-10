@@ -325,23 +325,18 @@ export default class extends Controller {
   }
 
   _updateEntryListPinIcon(entryItem) {
-    // Check the updated detail pane to determine pin state
-    const pinButton = this.hasEntryDetailTarget && this.entryDetailTarget.querySelector(".pin-button")
-    if (!pinButton) return
-
-    const pinned = pinButton.textContent.includes("ピン解除")
     const titleRow = entryItem.querySelector(".entry-title-row")
     if (!titleRow) return
 
-    let pinIcon = titleRow.querySelector(".pin-icon")
+    const pinIcon = titleRow.querySelector(".pin-icon")
 
-    if (pinned && !pinIcon) {
-      pinIcon = document.createElement("span")
-      pinIcon.className = "pin-icon"
-      pinIcon.textContent = "📌"
-      titleRow.insertBefore(pinIcon, titleRow.firstChild)
-    } else if (!pinned && pinIcon) {
+    if (pinIcon) {
       pinIcon.remove()
+    } else {
+      const icon = document.createElement("span")
+      icon.className = "pin-icon"
+      icon.textContent = "📌"
+      titleRow.insertBefore(icon, titleRow.firstChild)
     }
   }
 
