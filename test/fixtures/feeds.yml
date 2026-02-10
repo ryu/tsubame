@@ -1,0 +1,28 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+ruby_blog:
+  url: https://example.com/ruby/feed.xml
+  title: Ruby Blog
+  site_url: https://example.com/ruby
+  description: A blog about Ruby programming
+  status: ok
+  last_fetched_at: <%= 1.hour.ago %>
+  next_fetch_at: <%= 1.hour.from_now %>
+
+rails_news:
+  url: https://example.com/rails/feed.xml
+  title: Rails News
+  site_url: https://example.com/rails
+  description: Latest news about Ruby on Rails
+  status: ok
+  last_fetched_at: <%= 2.hours.ago %>
+  next_fetch_at: <%= 30.minutes.from_now %>
+
+error_feed:
+  url: https://example.com/error/feed.xml
+  title: Error Feed
+  site_url: https://example.com/error
+  status: error
+  error_message: Connection timeout
+  last_fetched_at: <%= 1.day.ago %>
+  next_fetch_at: <%= 1.hour.from_now %>

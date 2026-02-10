@@ -1,0 +1,34 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+ruby_article_one:
+  feed: ruby_blog
+  guid: https://example.com/ruby/1
+  title: Introduction to Ruby 4.0
+  url: https://example.com/ruby/1
+  author: Alice
+  body: <p>Ruby 4.0 introduces many new features...</p>
+  published_at: <%= 2.days.ago %>
+  read_at: <%= 1.day.ago %>
+  pinned: false
+
+ruby_article_two:
+  feed: ruby_blog
+  guid: https://example.com/ruby/2
+  title: Advanced Ruby Patterns
+  url: https://example.com/ruby/2
+  author: Bob
+  body: <p>This article explores advanced patterns...</p>
+  published_at: <%= 1.day.ago %>
+  read_at: nil
+  pinned: true
+
+rails_article_one:
+  feed: rails_news
+  guid: https://example.com/rails/1
+  title: Rails 8.1 Released
+  url: https://example.com/rails/1
+  author: Charlie
+  body: <p>Rails 8.1 is now available with...</p>
+  published_at: <%= 3.hours.ago %>
+  read_at: nil
+  pinned: false

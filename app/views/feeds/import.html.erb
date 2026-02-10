@@ -1,0 +1,16 @@
+<h1>OPMLインポート</h1>
+
+<%= form_with url: import_feeds_path, method: :post, multipart: true do |form| %>
+  <div>
+    <%= form.label :opml_file, "OPMLファイル" %>
+    <%= form.file_field :opml_file, accept: ".opml,.xml" %>
+  </div>
+
+  <div>
+    <%= form.submit "インポート" %>
+  </div>
+<% end %>
+
+<p>
+  <%= link_to "フィード一覧に戻る", feeds_path %>
+</p>

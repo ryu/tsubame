@@ -1,0 +1,28 @@
+<h1>フィード一覧</h1>
+
+<p>
+  <%= link_to "OPMLをインポート", import_feeds_path %>
+</p>
+
+<% if @feeds.any? %>
+  <table>
+    <thead>
+      <tr>
+        <th>タイトル</th>
+        <th>URL</th>
+        <th>ステータス</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @feeds.each do |feed| %>
+        <tr>
+          <td><%= feed.title %></td>
+          <td><%= feed.url %></td>
+          <td><%= feed.status %></td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+<% else %>
+  <p>フィードがありません。OPMLファイルをインポートしてください。</p>
+<% end %>
