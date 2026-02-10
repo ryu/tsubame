@@ -304,17 +304,18 @@ export default class extends Controller {
       method: "PATCH",
       headers: {
         "X-CSRF-Token": this.csrfToken,
-        "Accept": "application/json",
+        "Accept": "text/vnd.turbo-stream.html",
         "Content-Type": "application/json"
       },
       signal: this.abortController.signal
     })
-      .then(response => response.json())
-      .then(data => {
-        if (data.success) {
-          this._updatePinUI(entryItem, data.pinned)
-          this._updatePinButtonUI(data.pinned)
-        }
+      .then(response => {
+        if (!response.ok) throw new Error(`HTTP ${response.status}`)
+        return response.text()
+      })
+      .then(html => {
+        Turbo.renderStreamMessage(html)
+        this._updateEntryListPinIcon(entryItem)
       })
       .catch(error => {
         if (error.name !== "AbortError") {
@@ -323,7 +324,12 @@ export default class extends Controller {
       })
   }
 
-  _updatePinUI(entryItem, pinned) {
+  _updateEntryListPinIcon(entryItem) {
+    // Check the updated detail pane to determine pin state
+    const pinButton = this.hasEntryDetailTarget && this.entryDetailTarget.querySelector(".pin-button")
+    if (!pinButton) return
+
+    const pinned = pinButton.textContent.includes("ピン解除")
     const titleRow = entryItem.querySelector(".entry-title-row")
     if (!titleRow) return
 
@@ -337,15 +343,6 @@ export default class extends Controller {
     } else if (!pinned && pinIcon) {
       pinIcon.remove()
     }
-  }
-
-  _updatePinButtonUI(pinned) {
-    if (!this.hasEntryDetailTarget) return
-
-    const pinButton = this.entryDetailTarget.querySelector(".pin-button")
-    if (!pinButton) return
-
-    pinButton.textContent = pinned ? "📌 ピン解除" : "📌 ピン留め"
   }
 
   _markAllAsRead() {
