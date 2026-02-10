@@ -1,3 +1,4 @@
+require "cgi"
 require "rexml/document"
 require "resolv"
 require "ipaddr"
@@ -63,9 +64,10 @@ class Feed < ApplicationRecord
         if xml_url.present?
           normalized_url = xml_url.strip
           unless existing_urls.include?(normalized_url)
-            create!(
+            raw_title = outline.attributes["title"] || outline.attributes["text"]
+          create!(
               url: normalized_url,
-              title: outline.attributes["title"] || outline.attributes["text"],
+              title: raw_title ? CGI.unescapeHTML(raw_title) : nil,
               site_url: outline.attributes["htmlUrl"],
               status: :ok,
               next_fetch_at: Time.current

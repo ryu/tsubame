@@ -27,7 +27,7 @@ class FetchFeedJob < ApplicationJob
       return
     end
 
-    body = response.body.encode("UTF-8", invalid: :replace, undef: :replace, replace: "")
+    body = normalize_encoding(response)
 
     begin
       parsed = RSS::Parser.parse(body, false)
@@ -102,6 +102,8 @@ class FetchFeedJob < ApplicationJob
   end
 
   def import_entries(feed, parsed)
+    update_feed_title(feed, parsed)
+
     items = extract_items(parsed)
     items.each do |item|
       guid = extract_guid(item)
@@ -140,11 +142,12 @@ class FetchFeedJob < ApplicationJob
   end
 
   def extract_title(item)
-    if item.title.respond_to?(:content)
+    title = if item.title.respond_to?(:content)
       item.title.content
     else
       item.title.to_s
     end
+    strip_html(title)
   end
 
   def extract_url(item)
@@ -194,5 +197,37 @@ class FetchFeedJob < ApplicationJob
     end
   rescue StandardError
     nil
+  end
+
+  def normalize_encoding(response)
+    body = response.body
+    charset = response.type_params["charset"] rescue nil
+
+    if charset.present?
+      body.force_encoding(charset).encode("UTF-8", invalid: :replace, undef: :replace, replace: "")
+    elsif body.encoding == Encoding::ASCII_8BIT
+      utf8_body = body.dup.force_encoding("UTF-8")
+      utf8_body.valid_encoding? ? utf8_body : body.encode("UTF-8", invalid: :replace, undef: :replace, replace: "")
+    else
+      body.encode("UTF-8", invalid: :replace, undef: :replace, replace: "")
+    end
+  end
+
+  def update_feed_title(feed, parsed)
+    title = if parsed.respond_to?(:channel) && parsed.channel&.title
+      parsed.channel.title.to_s.presence
+    elsif parsed.respond_to?(:title) && parsed.title
+      t = parsed.title
+      (t.respond_to?(:content) ? t.content : t.to_s).presence
+    end
+    feed.update_column(:title, title) if title.present?
+  end
+
+  def strip_html(html)
+    return html unless html&.include?("<")
+    html.gsub(%r{</?(div|p|br|li|h[1-6]|tr|td|th|dt|dd|section|article)[^>]*>}i, " ")
+      .gsub(/<br\s*\/?>/, " ")
+      .gsub(/<[^>]+>/, "")
+      .squish
   end
 end

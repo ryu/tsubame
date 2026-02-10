@@ -23,7 +23,7 @@
     </header>
 
     <div class="entry-body">
-      <%= sanitize @entry.body, tags: %w[p br strong em a ul ol li blockquote pre code h1 h2 h3 h4 h5 h6 img], attributes: %w[href src alt title] %>
+      <%= sanitize @entry.body, tags: %w[p br div span strong em b i a ul ol li blockquote pre code h1 h2 h3 h4 h5 h6 img hr table thead tbody tr td th dl dt dd figure figcaption sup sub del ins small], attributes: %w[href src alt title width height colspan rowspan] %>
     </div>
   </article>
 <% end %>
