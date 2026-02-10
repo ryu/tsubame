@@ -4,7 +4,12 @@
     <div class="pane-header">
       <h1>Tsubame</h1>
       <div class="pane-header-links">
-        <%= link_to "📌 ピン一覧", pinned_entries_path, data: { turbo_frame: "entry_list" }, class: "pin-list-link" %>
+        <%= link_to pinned_entries_path, data: { turbo_frame: "entry_list" }, class: "pin-list-link" do %>
+          📌 ピン一覧
+          <% if @pinned_count > 0 %>
+            <span class="pin-badge"><%= @pinned_count %></span>
+          <% end %>
+        <% end %>
         <%= link_to "フィード管理", feeds_path, class: "feed-manage-link" %>
       </div>
     </div>

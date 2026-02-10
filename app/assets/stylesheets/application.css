@@ -75,6 +75,28 @@ body:has(.three-pane-layout) {
   margin-bottom: 8px;
 }
 
+.pin-list-link {
+  font-size: 12px;
+  color: #0066cc;
+  text-decoration: none;
+}
+
+.pin-list-link:hover {
+  text-decoration: underline;
+}
+
+.pin-badge {
+  display: inline-block;
+  background: #666;
+  color: #fff;
+  font-size: 10px;
+  font-weight: bold;
+  padding: 1px 5px;
+  border-radius: 10px;
+  min-width: 16px;
+  text-align: center;
+}
+
 .feed-manage-link {
   font-size: 12px;
   color: #0066cc;
