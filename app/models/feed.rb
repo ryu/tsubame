@@ -13,8 +13,21 @@ class Feed < ApplicationRecord
 
   normalizes :url, with: ->(url) { url.strip.gsub(/&(amp;)+/, "&") }
 
+  FETCH_INTERVAL_OPTIONS = {
+    10   => "10分",
+    30   => "30分",
+    60   => "1時間",
+    180  => "3時間",
+    360  => "6時間",
+    720  => "12時間",
+    1440 => "24時間"
+  }.freeze
+
+  ERROR_BACKOFF_MINUTES = 30
   FETCH_INTERVAL = 10.minutes
   ERROR_FETCH_INTERVAL = 30.minutes
+
+  validates :fetch_interval_minutes, inclusion: { in: FETCH_INTERVAL_OPTIONS.keys }
 
   scope :due_for_fetch, -> { where("next_fetch_at <= ?", Time.current).where.not(next_fetch_at: nil) }
 
