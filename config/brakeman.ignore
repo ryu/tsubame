@@ -1,0 +1,40 @@
+{
+  "ignored_warnings": [
+    {
+      "warning_type": "Cross-Site Scripting",
+      "warning_code": 4,
+      "fingerprint": "065a73c2b57c4784c2cf685e840091f5e6ec0cc0e8693cb96002cc27c98779d8",
+      "check_name": "LinkToHref",
+      "message": "Potentially unsafe model attribute in `link_to` href",
+      "file": "app/views/entries/show.html.erb",
+      "line": 20,
+      "link": "https://brakemanscanner.org/docs/warning_types/link_to_href",
+      "code": "link_to(\"\\u5143\\u8A18\\u4E8B\\u3092\\u958B\\u304F\", Entry.find(params[:id]).safe_url, :target => \"_blank\", :rel => \"noopener noreferrer\", :class => \"external-link\")",
+      "render_path": [
+        {
+          "type": "controller",
+          "class": "EntriesController",
+          "method": "show",
+          "line": 10,
+          "file": "app/controllers/entries_controller.rb",
+          "rendered": {
+            "name": "entries/show",
+            "file": "app/views/entries/show.html.erb"
+          }
+        }
+      ],
+      "location": {
+        "type": "template",
+        "template": "entries/show"
+      },
+      "user_input": "Entry.find(params[:id]).safe_url",
+      "confidence": "Weak",
+      "cwe_id": [
+        79
+      ],
+      "note": "Entry#safe_url validates and sanitizes URLs to ensure they are HTTP/HTTPS only"
+    }
+  ],
+  "updated": "2026-02-10 11:02:00 +0900",
+  "brakeman_version": "8.0.2"
+}

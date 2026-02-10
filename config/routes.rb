@@ -6,6 +6,14 @@ Rails.application.routes.draw do
       get :import
       post :import, action: :create_import
     end
+    resources :entries, only: [ :index ]
+  end
+
+  resources :entries, only: [ :show ] do
+    member do
+      patch :mark_as_read
+      patch :toggle_pin
+    end
   end
 
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html

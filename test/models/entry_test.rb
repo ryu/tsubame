@@ -71,4 +71,57 @@ class EntryTest < ActiveSupport::TestCase
     entry = entries(:ruby_article_one)
     assert_equal feeds(:ruby_blog), entry.feed
   end
+
+  test "mark_as_read! should mark entry as read" do
+    entry = entries(:ruby_article_two)
+    assert_nil entry.read_at
+
+    result = entry.mark_as_read!
+    assert_equal true, result
+    assert_not_nil entry.reload.read_at
+  end
+
+  test "mark_as_read! should be idempotent" do
+    entry = entries(:ruby_article_one)
+    assert_not_nil entry.read_at
+    original_read_at = entry.read_at
+
+    result = entry.mark_as_read!
+    assert_equal false, result
+    assert_equal original_read_at, entry.reload.read_at
+  end
+
+  test "toggle_pin! should toggle pinned status" do
+    entry = entries(:ruby_article_one)
+    assert_equal false, entry.pinned
+
+    entry.toggle_pin!
+    assert_equal true, entry.reload.pinned
+
+    entry.toggle_pin!
+    assert_equal false, entry.reload.pinned
+  end
+
+  test "safe_url returns url for valid http url" do
+    entry = entries(:ruby_article_one)
+    assert_equal entry.url, entry.safe_url
+  end
+
+  test "safe_url returns nil for invalid url" do
+    entry = Entry.new(
+      feed: feeds(:ruby_blog),
+      guid: "test",
+      url: "javascript:alert('xss')"
+    )
+    assert_nil entry.safe_url
+  end
+
+  test "safe_url returns nil for blank url" do
+    entry = Entry.new(
+      feed: feeds(:ruby_blog),
+      guid: "test",
+      url: nil
+    )
+    assert_nil entry.safe_url
+  end
 end

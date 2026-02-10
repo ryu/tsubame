@@ -1,0 +1,32 @@
+<%= turbo_frame_tag "entry_list" do %>
+  <div class="pane-header">
+    <h2><%= @feed.title || @feed.url %></h2>
+  </div>
+
+  <div class="entry-list">
+    <% if @entries.any? %>
+      <% @entries.each do |entry| %>
+        <%= link_to entry_path(entry), data: { turbo_frame: "entry_detail" }, class: "entry-item #{'entry-unread' if entry.read_at.nil?}", id: "entry_#{entry.id}", tabindex: "-1" do %>
+          <div class="entry-title-row">
+            <% if entry.pinned %>
+              <span class="pin-icon">📌</span>
+            <% end %>
+            <span class="entry-title"><%= entry.title || "（タイトルなし）" %></span>
+          </div>
+          <div class="entry-meta">
+            <% if entry.published_at %>
+              <time datetime="<%= entry.published_at.iso8601 %>">
+                <%= entry.published_at.strftime("%Y-%m-%d %H:%M") %>
+              </time>
+            <% end %>
+            <% if entry.author.present? %>
+              <span class="entry-author"><%= entry.author %></span>
+            <% end %>
+          </div>
+        <% end %>
+      <% end %>
+    <% else %>
+      <p class="empty-message">エントリがありません</p>
+    <% end %>
+  </div>
+<% end %>
