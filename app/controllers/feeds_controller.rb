@@ -23,7 +23,7 @@ class FeedsController < ApplicationController
 
   def update
     @feed = Feed.find(params[:id])
-    if @feed.update(params.require(:feed).permit(:title))
+    if @feed.update(params.require(:feed).permit(:title, :fetch_interval_minutes))
       redirect_to feeds_path, notice: "フィードを更新しました。"
     else
       render :edit, status: :unprocessable_entity
