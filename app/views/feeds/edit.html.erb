@@ -26,6 +26,13 @@
       <%= form.text_field :title, class: "manage-input", autofocus: true %>
     </div>
 
+    <div class="manage-form-field">
+      <%= form.label :fetch_interval_minutes, "巡回間隔" %>
+      <%= form.select :fetch_interval_minutes,
+          Feed::FETCH_INTERVAL_OPTIONS.map { |k, v| [v, k] },
+          {}, class: "manage-select" %>
+    </div>
+
     <div>
       <%= form.submit "保存", class: "manage-submit" %>
     </div>
