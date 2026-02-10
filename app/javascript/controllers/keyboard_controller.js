@@ -392,6 +392,7 @@ export default class extends Controller {
       .then(response => response.json())
       .then(data => {
         data.urls.forEach(url => window.open(url, "_blank"))
+        data.entry_ids.forEach(id => this._removePinIcon(id))
         this._updatePinBadge(data.pinned_count)
       })
       .catch(error => {
@@ -399,6 +400,14 @@ export default class extends Controller {
           console.warn("Failed to open pinned entries:", error)
         }
       })
+  }
+
+  _removePinIcon(entryId) {
+    const entryItem = document.getElementById(`entry_${entryId}`)
+    if (!entryItem) return
+
+    const pinIcon = entryItem.querySelector(".pin-icon")
+    if (pinIcon) pinIcon.remove()
   }
 
   _updatePinBadge(count) {
