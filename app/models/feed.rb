@@ -24,8 +24,6 @@ class Feed < ApplicationRecord
   }.freeze
 
   ERROR_BACKOFF_MINUTES = 30
-  FETCH_INTERVAL = 10.minutes
-  ERROR_FETCH_INTERVAL = 30.minutes
 
   validates :fetch_interval_minutes, inclusion: { in: FETCH_INTERVAL_OPTIONS.keys }
 
@@ -36,7 +34,7 @@ class Feed < ApplicationRecord
       status: :ok,
       error_message: nil,
       last_fetched_at: Time.current,
-      next_fetch_at: FETCH_INTERVAL.from_now,
+      next_fetch_at: fetch_interval_minutes.minutes.from_now,
       etag: etag || self.etag,
       last_modified: last_modified || self.last_modified
     )
@@ -47,7 +45,7 @@ class Feed < ApplicationRecord
       status: :error,
       error_message: message,
       last_fetched_at: Time.current,
-      next_fetch_at: ERROR_FETCH_INTERVAL.from_now
+      next_fetch_at: ERROR_BACKOFF_MINUTES.minutes.from_now
     )
   end
 
