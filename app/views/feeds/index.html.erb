@@ -6,6 +6,8 @@
   <h1>フィード管理</h1>
 
   <p>
+    <%= link_to "フィードを追加", new_feed_path, class: "manage-action-link" %>
+    |
     <%= link_to "OPMLをインポート", import_feeds_path, class: "manage-action-link" %>
     |
     <%= link_to "OPMLをエクスポート", export_feeds_path, class: "manage-action-link" %>
@@ -15,22 +17,49 @@
     <table class="manage-table">
       <thead>
         <tr>
+          <th>ステータス</th>
           <th>タイトル</th>
           <th>URL</th>
-          <th>ステータス</th>
+          <th>最終フェッチ</th>
+          <th>操作</th>
         </tr>
       </thead>
       <tbody>
         <% @feeds.each do |feed| %>
           <tr>
-            <td><%= feed.title || "（未取得）" %></td>
+            <td>
+              <% if feed.ok? %>
+                <span class="status-ok" title="正常">●</span>
+              <% else %>
+                <span class="status-error" title="エラー">●</span>
+              <% end %>
+            </td>
+            <td>
+              <%= feed.title || "（未取得）" %>
+              <% if feed.error? && feed.error_message.present? %>
+                <div class="feed-error-message"><%= feed.error_message %></div>
+              <% end %>
+            </td>
             <td class="manage-table-url"><%= feed.url %></td>
-            <td><%= feed.status %></td>
+            <td>
+              <% if feed.last_fetched_at %>
+                <%= time_ago_in_words(feed.last_fetched_at) %>前
+              <% else %>
+                —
+              <% end %>
+            </td>
+            <td>
+              <div class="manage-actions">
+                <%= link_to "編集", edit_feed_path(feed), class: "manage-btn-small" %>
+                <%= button_to "↻", fetch_now_feed_path(feed), method: :post, class: "manage-btn-small", title: "フェッチ" %>
+                <%= link_to "削除", feed_path(feed), data: { turbo_method: :delete, turbo_confirm: "「#{feed.title || feed.url}」を削除しますか？" }, class: "manage-btn-small manage-btn-danger" %>
+              </div>
+            </td>
           </tr>
         <% end %>
       </tbody>
     </table>
   <% else %>
-    <p class="empty-message">フィードがありません。OPMLファイルをインポートしてください。</p>
+    <p class="empty-message">フィードがありません。<%= link_to "フィードを追加", new_feed_path %>するか、OPMLファイルをインポートしてください。</p>
   <% end %>
 </div>

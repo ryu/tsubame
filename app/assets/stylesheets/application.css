@@ -447,6 +447,25 @@ body:has(.three-pane-layout) {
   background: #0052a3;
 }
 
+/* Feed status badges */
+.status-ok { color: #2e7d32; }
+.status-error { color: #c62828; }
+.feed-error-message { font-size: 12px; color: #c62828; margin-top: 2px; }
+
+/* Management actions & buttons */
+.manage-actions { display: flex; gap: 8px; align-items: center; }
+.manage-btn-small { padding: 4px 10px; font-size: 13px; border: 1px solid #ddd; border-radius: 4px; background: #fff; color: #333; text-decoration: none; cursor: pointer; }
+.manage-btn-small:hover { background: #f0f0f0; }
+.manage-btn-danger { color: #c62828; border-color: #f8bbd0; }
+.manage-btn-danger:hover { background: #fce4ec; }
+
+/* Management form inputs */
+.manage-input { width: 100%; padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; }
+
+/* Form error messages */
+.form-errors { background: #fce4ec; color: #c62828; padding: 12px 16px; border-radius: 4px; margin-bottom: 16px; }
+.form-errors ul { margin-left: 16px; }
+
 /* Mobile back button (hidden on desktop) */
 .mobile-back-button {
   display: none;

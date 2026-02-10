@@ -1,7 +1,7 @@
 Rails.application.routes.draw do
   resource :session
 
-  resources :feeds, only: [ :index ] do
+  resources :feeds, only: [ :index, :new, :create, :edit, :update, :destroy ] do
     collection do
       get :import
       post :import, action: :create_import
@@ -9,6 +9,7 @@ Rails.application.routes.draw do
     end
     member do
       post :mark_all_as_read
+      post :fetch_now
     end
     resources :entries, only: [ :index ]
   end

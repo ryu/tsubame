@@ -1,0 +1,33 @@
+<div class="manage-page">
+  <nav class="manage-nav">
+    <%= link_to "← フィード管理", feeds_path %>
+  </nav>
+
+  <h1>フィードを編集</h1>
+
+  <% if @feed.errors.any? %>
+    <div class="form-errors">
+      <ul>
+        <% @feed.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <%= form_with model: @feed, class: "manage-form" do |form| %>
+    <div class="manage-form-field">
+      <label>フィードURL</label>
+      <p class="manage-table-url"><%= @feed.url %></p>
+    </div>
+
+    <div class="manage-form-field">
+      <%= form.label :title, "タイトル" %>
+      <%= form.text_field :title, class: "manage-input", autofocus: true %>
+    </div>
+
+    <div>
+      <%= form.submit "保存", class: "manage-submit" %>
+    </div>
+  <% end %>
+</div>
