@@ -30,6 +30,9 @@ export default class extends Controller {
   // Private methods
 
   _handleKeydown(event) {
+    // Skip keyboard shortcuts on mobile
+    if (window.matchMedia("(max-width: 767px)").matches) return
+
     // Skip if IME is composing
     if (event.isComposing || event.keyCode === 229) return
 
