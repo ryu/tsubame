@@ -1,4 +1,5 @@
 require "test_helper"
+require "rss"
 
 class EntryTest < ActiveSupport::TestCase
   test "should be valid with required attributes" do
@@ -123,5 +124,143 @@ class EntryTest < ActiveSupport::TestCase
       url: nil
     )
     assert_nil entry.safe_url
+  end
+
+  # -- attributes_from_rss_item tests --
+
+  test "attributes_from_rss_item extracts RSS 2.0 item" do
+    parsed = RSS::Parser.parse(<<~RSS, false)
+      <?xml version="1.0"?>
+      <rss version="2.0">
+        <channel>
+          <title>Test</title>
+          <item>
+            <guid>https://example.com/1</guid>
+            <title>Title One</title>
+            <link>https://example.com/1</link>
+            <description>Body text</description>
+            <pubDate>Mon, 01 Jan 2024 12:00:00 GMT</pubDate>
+          </item>
+        </channel>
+      </rss>
+    RSS
+
+    attrs = Entry.attributes_from_rss_item(parsed.items.first)
+    assert_equal "https://example.com/1", attrs[:guid]
+    assert_equal "Title One", attrs[:title]
+    assert_equal "https://example.com/1", attrs[:url]
+    assert_equal "Body text", attrs[:body]
+    assert_not_nil attrs[:published_at]
+  end
+
+  test "attributes_from_rss_item extracts Atom entry" do
+    parsed = RSS::Parser.parse(<<~ATOM, false)
+      <?xml version="1.0"?>
+      <feed xmlns="http://www.w3.org/2005/Atom">
+        <title>Test</title>
+        <entry>
+          <id>urn:atom:1</id>
+          <title>Atom Title</title>
+          <link href="https://example.com/atom1"/>
+          <summary>Summary text</summary>
+          <author><name>Alice</name></author>
+          <updated>2024-01-01T12:00:00Z</updated>
+        </entry>
+      </feed>
+    ATOM
+
+    attrs = Entry.attributes_from_rss_item(parsed.items.first)
+    assert_equal "urn:atom:1", attrs[:guid]
+    assert_equal "Atom Title", attrs[:title]
+    assert_equal "https://example.com/atom1", attrs[:url]
+    assert_equal "Summary text", attrs[:body]
+    assert_equal "Alice", attrs[:author]
+  end
+
+  test "attributes_from_rss_item extracts RDF (RSS 1.0) item" do
+    parsed = RSS::Parser.parse(<<~RDF, false)
+      <?xml version="1.0"?>
+      <rdf:RDF
+        xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+        xmlns="http://purl.org/rss/1.0/"
+        xmlns:dc="http://purl.org/dc/elements/1.1/"
+        xmlns:content="http://purl.org/rss/1.0/modules/content/">
+        <channel rdf:about="https://example.com">
+          <title>RDF Feed</title>
+          <link>https://example.com</link>
+          <items><rdf:Seq><rdf:li rdf:resource="https://example.com/rdf1"/></rdf:Seq></items>
+        </channel>
+        <item rdf:about="https://example.com/rdf1">
+          <title>RDF Title</title>
+          <link>https://example.com/rdf1</link>
+          <dc:creator>Bob</dc:creator>
+          <content:encoded><![CDATA[<p>Full body</p>]]></content:encoded>
+        </item>
+      </rdf:RDF>
+    RDF
+
+    attrs = Entry.attributes_from_rss_item(parsed.items.first)
+    assert_equal "https://example.com/rdf1", attrs[:guid]
+    assert_equal "RDF Title", attrs[:title]
+    assert_equal "Bob", attrs[:author]
+    assert_match "<p>Full body</p>", attrs[:body]
+  end
+
+  test "attributes_from_rss_item prefers content:encoded over description" do
+    parsed = RSS::Parser.parse(<<~RSS, false)
+      <?xml version="1.0"?>
+      <rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+        <channel>
+          <title>Test</title>
+          <item>
+            <guid>g1</guid>
+            <title>T</title>
+            <description>Short</description>
+            <content:encoded><![CDATA[<p>Full article</p>]]></content:encoded>
+          </item>
+        </channel>
+      </rss>
+    RSS
+
+    attrs = Entry.attributes_from_rss_item(parsed.items.first)
+    assert_match "Full article", attrs[:body]
+    assert_no_match(/Short/, attrs[:body])
+  end
+
+  test "attributes_from_rss_item returns nil when guid is blank" do
+    parsed = RSS::Parser.parse(<<~RSS, false)
+      <?xml version="1.0"?>
+      <rss version="2.0">
+        <channel>
+          <title>Test</title>
+          <item>
+            <title>No GUID</title>
+            <description>No guid here</description>
+          </item>
+        </channel>
+      </rss>
+    RSS
+
+    attrs = Entry.attributes_from_rss_item(parsed.items.first)
+    assert_nil attrs
+  end
+
+  test "attributes_from_rss_item strips HTML from title" do
+    parsed = RSS::Parser.parse(<<~RSS, false)
+      <?xml version="1.0"?>
+      <rss version="2.0">
+        <channel>
+          <title>Test</title>
+          <item>
+            <guid>g1</guid>
+            <title><![CDATA[<b>Bold</b> title]]></title>
+            <description>Body</description>
+          </item>
+        </channel>
+      </rss>
+    RSS
+
+    attrs = Entry.attributes_from_rss_item(parsed.items.first)
+    assert_equal "Bold title", attrs[:title]
   end
 end
