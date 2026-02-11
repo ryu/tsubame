@@ -1,4 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
+import { openHatenaBookmarkPage } from "lib/hatena_bookmark"
 
 export default class extends Controller {
   static targets = ["feedList", "entryList", "entryDetail"]
@@ -95,6 +96,14 @@ export default class extends Controller {
       case "r":
         event.preventDefault()
         this._reloadPage()
+        break
+      case "b":
+        event.preventDefault()
+        this._openCurrentEntryHatenaBookmark()
+        break
+      case "h":
+        event.preventDefault()
+        this._openCurrentEntryHatenaBookmarkAdd()
         break
     }
   }
@@ -316,6 +325,27 @@ export default class extends Controller {
       icon.textContent = "📌"
       titleRow.insertBefore(icon, titleRow.firstChild)
     }
+  }
+
+  _openCurrentEntryHatenaBookmark() {
+    const entryItems = this._getEntryItems()
+    if (this.activeEntryIndexValue < 0 || this.activeEntryIndexValue >= entryItems.length) return
+
+    const entryItem = entryItems[this.activeEntryIndexValue]
+    const countSpan = entryItem.querySelector(".hatena-count-clickable")
+    const url = (countSpan && countSpan.dataset.url) || entryItem.dataset.entryUrl
+    if (!url) return
+
+    openHatenaBookmarkPage(url)
+  }
+
+  _openCurrentEntryHatenaBookmarkAdd() {
+    if (!this.hasEntryDetailTarget) return
+
+    const hatenaLink = this.entryDetailTarget.querySelector(".hatena-add-link")
+    if (!hatenaLink) return
+
+    window.open(hatenaLink.href, "_blank", "noopener,noreferrer")
   }
 
   _markAllAsRead() {

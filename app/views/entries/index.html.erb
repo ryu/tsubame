@@ -1,4 +1,4 @@
-<%= turbo_frame_tag "entry_list" do %>
+<%= turbo_frame_tag "entry_list", data: { controller: "hatena-bookmark" } do %>
   <button class="mobile-back-button" data-action="click->mobile-pane#showFeeds">&larr; フィード</button>
   <div class="pane-header">
     <h2><%= @feed.title || @feed.url %></h2>
@@ -7,7 +7,7 @@
   <div class="entry-list">
     <% if @entries.any? %>
       <% @entries.each do |entry| %>
-        <%= link_to entry_path(entry), data: { turbo_frame: "entry_detail" }, class: "entry-item #{'entry-unread' if entry.read_at.nil?}", id: "entry_#{entry.id}", tabindex: "-1" do %>
+        <%= link_to entry_path(entry), data: { turbo_frame: "entry_detail", entry_url: entry.safe_url }, class: "entry-item #{'entry-unread' if entry.read_at.nil?}", id: "entry_#{entry.id}", tabindex: "-1" do %>
           <div class="entry-title-row">
             <% if entry.pinned %>
               <span class="pin-icon">📌</span>
@@ -23,6 +23,7 @@
             <% if entry.author.present? %>
               <span class="entry-author"><%= entry.author %></span>
             <% end %>
+            <span class="hatena-count"></span>
           </div>
         <% end %>
       <% end %>

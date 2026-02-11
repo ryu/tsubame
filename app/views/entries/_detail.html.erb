@@ -19,6 +19,7 @@
         <% end %>
         <% if entry.safe_url.present? %>
           <%= link_to "元記事を開く", entry.safe_url, target: "_blank", rel: "noopener noreferrer", class: "external-link" %>
+          <%= link_to "はてブに追加", "https://b.hatena.ne.jp/entry/panel/?url=#{ERB::Util.url_encode(entry.safe_url)}", target: "_blank", rel: "noopener noreferrer", class: "external-link hatena-add-link" %>
         <% end %>
       </div>
     </header>

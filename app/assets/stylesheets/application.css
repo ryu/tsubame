@@ -242,6 +242,20 @@ body:has(.three-pane-layout) {
   gap: 12px;
 }
 
+/* Hatena Bookmark count (Hatena brand orange) */
+.hatena-count {
+  font-size: 11px;
+  color: #ff6600;
+}
+
+.hatena-count-clickable {
+  cursor: pointer;
+}
+
+.hatena-count-clickable:hover {
+  text-decoration: underline;
+}
+
 /* Entry detail */
 .entry-detail {
   padding: 24px;
