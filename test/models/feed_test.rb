@@ -192,6 +192,27 @@ class FeedTest < ActiveSupport::TestCase
     end
   end
 
+  test "changing fetch_interval_minutes recalculates next_fetch_at" do
+    feed = feeds(:ruby_blog)
+
+    travel_to Time.zone.parse("2025-02-10 10:00:00") do
+      feed.update!(last_fetched_at: Time.zone.parse("2025-02-10 09:50:00"), next_fetch_at: Time.zone.parse("2025-02-10 10:00:00"))
+      feed.update!(fetch_interval_minutes: 60)
+
+      assert_equal Time.zone.parse("2025-02-10 10:50:00"), feed.reload.next_fetch_at
+    end
+  end
+
+  test "changing fetch_interval_minutes without prior fetch sets next_fetch_at to now plus interval" do
+    feed = Feed.create!(url: "https://example.com/new-feed.xml", next_fetch_at: Time.current)
+
+    travel_to Time.zone.parse("2025-02-10 10:00:00") do
+      feed.update!(fetch_interval_minutes: 180)
+
+      assert_equal Time.zone.parse("2025-02-10 13:00:00"), feed.reload.next_fetch_at
+    end
+  end
+
   test "mark_as_fetched! should update feed with success status" do
     feed = feeds(:error_feed)
     feed.update!(

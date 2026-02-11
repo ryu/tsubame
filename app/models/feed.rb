@@ -27,6 +27,8 @@ class Feed < ApplicationRecord
 
   validates :fetch_interval_minutes, inclusion: { in: FETCH_INTERVAL_OPTIONS.keys }
 
+  after_save_commit :recalculate_next_fetch_at, if: :saved_change_to_fetch_interval_minutes?
+
   scope :due_for_fetch, -> { where("next_fetch_at <= ?", Time.current).where.not(next_fetch_at: nil) }
 
   def mark_as_fetched!(etag: nil, last_modified: nil)
@@ -150,6 +152,11 @@ class Feed < ApplicationRecord
   end
 
   private
+
+  def recalculate_next_fetch_at
+    base = last_fetched_at || Time.current
+    update_column(:next_fetch_at, base + fetch_interval_minutes.minutes)
+  end
 
   def url_must_be_http
     uri = URI.parse(url)
