@@ -8,9 +8,9 @@
   <p>
     <%= link_to "フィードを追加", new_feed_path, class: "manage-action-link" %>
     |
-    <%= link_to "OPMLをインポート", import_feeds_path, class: "manage-action-link" %>
+    <%= link_to "OPMLをインポート", new_feed_import_path, class: "manage-action-link" %>
     |
-    <%= link_to "OPMLをエクスポート", export_feeds_path, class: "manage-action-link" %>
+    <%= link_to "OPMLをエクスポート", feed_export_path, class: "manage-action-link" %>
   </p>
 
   <% if @feeds.any? %>
@@ -51,7 +51,7 @@
             <td>
               <div class="manage-actions">
                 <%= link_to "編集", edit_feed_path(feed), class: "manage-btn-small" %>
-                <%= button_to "↻", fetch_now_feed_path(feed), method: :post, class: "manage-btn-small", title: "フェッチ" %>
+                <%= button_to "↻", feed_fetch_path(feed), method: :post, class: "manage-btn-small", title: "フェッチ" %>
                 <%= link_to "削除", feed_path(feed), data: { turbo_method: :delete, turbo_confirm: "「#{feed.title || feed.url}」を削除しますか？" }, class: "manage-btn-small manage-btn-danger" %>
               </div>
             </td>

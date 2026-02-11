@@ -332,7 +332,7 @@ export default class extends Controller {
       return
     }
 
-    fetch(`/feeds/${feedId}/mark_all_as_read`, {
+    fetch(`/feeds/${feedId}/mark_as_read`, {
       method: "POST",
       headers: {
         "X-CSRF-Token": this.csrfToken,

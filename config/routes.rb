@@ -2,17 +2,13 @@ Rails.application.routes.draw do
   resource :session
 
   resources :feeds, only: [ :index, :new, :create, :edit, :update, :destroy ] do
-    collection do
-      get :import
-      post :import, action: :create_import
-      get :export
-    end
-    member do
-      post :mark_all_as_read
-      post :fetch_now
-    end
+    resource :mark_as_read, only: :create, controller: "feed_mark_as_reads"
+    resource :fetch, only: :create, controller: "feed_fetches"
     resources :entries, only: [ :index ]
   end
+
+  resources :feed_imports, only: [ :new, :create ]
+  resource :feed_export, only: :show
 
   resources :entries, only: [ :show ] do
     collection do

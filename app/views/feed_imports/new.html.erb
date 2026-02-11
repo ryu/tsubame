@@ -5,7 +5,7 @@
 
   <h1>OPMLインポート</h1>
 
-  <%= form_with url: import_feeds_path, method: :post, multipart: true, class: "manage-form" do |form| %>
+  <%= form_with url: feed_imports_path, method: :post, multipart: true, class: "manage-form" do |form| %>
     <div class="manage-form-field">
       <%= form.label :opml_file, "OPMLファイル" %>
       <%= form.file_field :opml_file, accept: ".opml,.xml" %>
