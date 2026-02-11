@@ -339,6 +339,152 @@ class FetchFeedJobTest < ActiveJob::TestCase
                     times: 1
   end
 
+  test "should handle EUC-JP feed without Content-Type charset" do
+    eucjp_rss = <<~RSS.encode("EUC-JP")
+      <?xml version="1.0" encoding="EUC-JP"?>
+      <rss version="2.0">
+        <channel>
+          <title>日本語フィード</title>
+          <link>https://example.com</link>
+          <description>説明</description>
+          <item>
+            <guid>https://example.com/entry1</guid>
+            <title>日本語エントリー</title>
+            <link>https://example.com/entry1</link>
+            <description>日本語の本文です</description>
+          </item>
+        </channel>
+      </rss>
+    RSS
+
+    stub_request(:get, "https://example.com/feed.xml")
+      .to_return(
+        status: 200,
+        body: eucjp_rss,
+        headers: { "Content-Type" => "application/xml" }
+      )
+
+    assert_difference -> { @feed.entries.count }, 1 do
+      FetchFeedJob.perform_now(@feed.id)
+    end
+
+    entry = @feed.entries.last
+    assert_equal "日本語エントリー", entry.title
+    assert_equal "日本語の本文です", entry.body
+  end
+
+  test "should handle Shift_JIS feed without Content-Type charset" do
+    sjis_rss = <<~RSS.encode("Shift_JIS")
+      <?xml version="1.0" encoding="Shift_JIS"?>
+      <rss version="2.0">
+        <channel>
+          <title>Shift_JISフィード</title>
+          <link>https://example.com</link>
+          <description>説明</description>
+          <item>
+            <guid>https://example.com/sjis1</guid>
+            <title>シフトJISの記事</title>
+            <link>https://example.com/sjis1</link>
+            <description>本文テスト</description>
+          </item>
+        </channel>
+      </rss>
+    RSS
+
+    stub_request(:get, "https://example.com/feed.xml")
+      .to_return(
+        status: 200,
+        body: sjis_rss,
+        headers: { "Content-Type" => "application/rss+xml" }
+      )
+
+    assert_difference -> { @feed.entries.count }, 1 do
+      FetchFeedJob.perform_now(@feed.id)
+    end
+
+    entry = @feed.entries.last
+    assert_equal "シフトJISの記事", entry.title
+    assert_equal "本文テスト", entry.body
+  end
+
+  test "should fetch and parse RSS 1.0 (RDF) feed with content:encoded" do
+    rdf_content = <<~RDF
+      <?xml version="1.0" encoding="UTF-8"?>
+      <rdf:RDF
+        xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+        xmlns="http://purl.org/rss/1.0/"
+        xmlns:content="http://purl.org/rss/1.0/modules/content/"
+        xmlns:dc="http://purl.org/dc/elements/1.1/">
+        <channel rdf:about="https://example.com">
+          <title>RDF Feed</title>
+          <link>https://example.com</link>
+          <items>
+            <rdf:Seq>
+              <rdf:li rdf:resource="https://example.com/rdf-entry1"/>
+            </rdf:Seq>
+          </items>
+        </channel>
+        <item rdf:about="https://example.com/rdf-entry1">
+          <title>RDF Entry</title>
+          <link>https://example.com/rdf-entry1</link>
+          <description>Short summary</description>
+          <content:encoded><![CDATA[<p>Full HTML content with <strong>markup</strong></p>]]></content:encoded>
+          <dc:creator>Author Name</dc:creator>
+          <dc:date>2024-01-01T12:00:00+00:00</dc:date>
+        </item>
+      </rdf:RDF>
+    RDF
+
+    stub_request(:get, "https://example.com/feed.xml")
+      .to_return(status: 200, body: rdf_content)
+
+    assert_difference -> { @feed.entries.count }, 1 do
+      FetchFeedJob.perform_now(@feed.id)
+    end
+
+    @feed.reload
+    assert_equal "RDF Feed", @feed.title
+
+    entry = @feed.entries.last
+    assert_equal "RDF Entry", entry.title
+    assert_equal "https://example.com/rdf-entry1", entry.url
+    assert_equal "Author Name", entry.author
+    assert_match "<p>Full HTML content", entry.body
+    assert_match "<strong>markup</strong>", entry.body
+    assert_no_match(/Short summary/, entry.body)
+  end
+
+  test "should prefer content:encoded over description in RSS 2.0" do
+    rss_content = <<~RSS
+      <?xml version="1.0"?>
+      <rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+        <channel>
+          <title>Feed with content:encoded</title>
+          <link>https://example.com</link>
+          <description>Feed description</description>
+          <item>
+            <guid>https://example.com/ce1</guid>
+            <title>Entry with both</title>
+            <link>https://example.com/ce1</link>
+            <description>Short summary only</description>
+            <content:encoded><![CDATA[<p>Full article body</p>]]></content:encoded>
+          </item>
+        </channel>
+      </rss>
+    RSS
+
+    stub_request(:get, "https://example.com/feed.xml")
+      .to_return(status: 200, body: rss_content)
+
+    assert_difference -> { @feed.entries.count }, 1 do
+      FetchFeedJob.perform_now(@feed.id)
+    end
+
+    entry = @feed.entries.last
+    assert_match "Full article body", entry.body
+    assert_no_match(/Short summary/, entry.body)
+  end
+
   private
 
   def minimal_rss

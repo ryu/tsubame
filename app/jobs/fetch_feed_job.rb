@@ -177,7 +177,9 @@ class FetchFeedJob < ApplicationJob
   end
 
   def extract_body(item)
-    if item.respond_to?(:content) && item.content
+    if item.respond_to?(:content_encoded) && item.content_encoded
+      item.content_encoded
+    elsif item.respond_to?(:content) && item.content
       item.content.respond_to?(:content) ? item.content.content : item.content.to_s
     elsif item.respond_to?(:description) && item.description
       item.description.to_s
@@ -200,16 +202,34 @@ class FetchFeedJob < ApplicationJob
   end
 
   def normalize_encoding(response)
-    body = response.body
-    charset = response.type_params["charset"] rescue nil
+    body = response.body.dup
+    charset = begin
+      response.type_params["charset"]
+    rescue NoMethodError, TypeError
+      nil
+    end
+    charset ||= detect_xml_encoding(body)
 
     if charset.present?
-      body.force_encoding(charset).encode("UTF-8", invalid: :replace, undef: :replace, replace: "")
+      encoded = body.force_encoding(charset).encode("UTF-8", invalid: :replace, undef: :replace)
+      encoded.sub!(/(<\?xml[^?]*encoding=)["'][^"']+["']/i, '\1"UTF-8"')
+      encoded
     elsif body.encoding == Encoding::ASCII_8BIT
       utf8_body = body.dup.force_encoding("UTF-8")
-      utf8_body.valid_encoding? ? utf8_body : body.encode("UTF-8", invalid: :replace, undef: :replace, replace: "")
+      utf8_body.valid_encoding? ? utf8_body : body.encode("UTF-8", invalid: :replace, undef: :replace)
     else
-      body.encode("UTF-8", invalid: :replace, undef: :replace, replace: "")
+      body.encode("UTF-8", invalid: :replace, undef: :replace)
+    end
+  end
+
+  def detect_xml_encoding(body)
+    header = body.byteslice(0, 200)
+    return unless header
+
+    ascii_header = header.dup.force_encoding("ASCII-8BIT")
+    if ascii_header.match?(/\A\s*<\?xml/i)
+      match = ascii_header.match(/encoding=["']([^"']+)["']/i)
+      match[1] if match
     end
   end
 
