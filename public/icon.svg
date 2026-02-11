@@ -1,3 +1,19 @@
-<svg width="512" height="512" xmlns="http://www.w3.org/2000/svg">
-  <circle cx="256" cy="256" r="256" fill="red"/>
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="256" cy="256" r="256" fill="#1a365d"/>
+  <path fill="white" d="
+    M 418 248
+    Q 385 225, 345 215
+    Q 285 195, 235 162
+    Q 165 112, 85 65
+    Q 135 128, 182 178
+    Q 168 192, 150 210
+    L 55 168
+    Q 102 218, 158 238
+    L 42 308
+    Q 112 272, 172 252
+    Q 220 246, 278 258
+    Q 345 278, 390 262
+    Q 412 254, 418 248
+    Z
+  "/>
 </svg>
