@@ -3,9 +3,10 @@
 ## 構成
 
 - デプロイツール: Kamal 2
-- デプロイ先: さくらのVPS
-- コンテナレジストリ: (要設定)
+- デプロイ先: さくらのVPS (153.120.7.202)
+- コンテナレジストリ: GitHub Container Registry (ghcr.io)
 - SSL: Let's Encrypt (kamal-proxy 経由)
+- ホスト: tsubame.ryu-yamamoto.org
 
 ## 初回セットアップ
 
@@ -16,21 +17,16 @@
 curl -fsSL https://get.docker.com | sh
 ```
 
-### 2. config/deploy.yml の設定
+### 2. シークレットの設定
 
-- `servers.web` にVPSのIPアドレスを設定
-- `proxy.ssl` と `proxy.host` を設定
-- `registry` にコンテナレジストリを設定
+`.kamal/secrets` に以下を設定:
 
-### 3. シークレットの設定
-
-```bash
-# .kamal/secrets に以下を設定
-KAMAL_REGISTRY_PASSWORD=<レジストリのパスワード>
+```
+KAMAL_REGISTRY_PASSWORD=<GitHub Personal Access Token (write:packages)>
 RAILS_MASTER_KEY=<config/master.key の内容>
 ```
 
-### 4. 初回デプロイ
+### 3. 初回デプロイ
 
 ```bash
 bin/kamal setup
@@ -47,7 +43,7 @@ bin/kamal deploy
 ```bash
 bin/kamal console    # Rails コンソール
 bin/kamal shell      # bash
-bin/kamal logs       # ログ表示
+bin/kamal logs       # ログ表示（-f でフォロー）
 bin/kamal dbc        # DB コンソール
 ```
 

@@ -40,11 +40,13 @@ Hotwire (Turbo + Stimulus) + Vanilla CSS による SPA ライクな操作感。
 
 ### Stimulus コントローラー構成
 
-- `keyboard_controller` — グローバルショートカット受付・ディスパッチ
-- `entry_navigation_controller` — j/k でエントリ間移動、既読マーク
-- `feed_navigation_controller` — s/a でフィード間移動
-- `entry_actions_controller` — p(ピン), v(新タブ), c(開閉)
-- `left_pane_controller` — z で左ペイン開閉
+- `keyboard_controller` — グローバルキーボードショートカット（フィード/エントリナビゲーション、アクション）
+- `hatena_bookmark_controller` — はてなブックマーク数取得・表示（外部API連携）
+- `mobile_pane_controller` — モバイル向けペイン切り替え
+
+### JavaScript ライブラリ (`app/javascript/lib/`)
+
+- `hatena_bookmark.js` — はてなブックマークページURL生成・オープン（共通ユーティリティ）
 
 ## 認証
 
