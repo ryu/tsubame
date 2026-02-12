@@ -38,3 +38,6 @@
 # IDE
 .idea
 
+# Claude Code
+/.claude
+
