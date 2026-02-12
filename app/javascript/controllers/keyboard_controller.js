@@ -463,10 +463,10 @@ export default class extends Controller {
     }
   }
 
-  // Open a URL in a background tab (blur new window, refocus original)
+  // Open a URL in a background tab (works in Chrome/Firefox; Safari requires
+  // unchecking "When a new tab or window opens, make it active" in settings)
   _openInBackground(url) {
-    const newWindow = window.open(url, "_blank")
-    if (newWindow) newWindow.blur()
+    window.open(url, "_blank", "noopener,noreferrer")
     window.focus()
   }
 
