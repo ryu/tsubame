@@ -29,6 +29,24 @@ class Feed < ApplicationRecord
 
   scope :due_for_fetch, -> { where("next_fetch_at <= ?", Time.current).where.not(next_fetch_at: nil) }
 
+  scope :with_unread_count, -> {
+    left_joins(:entries)
+      .select("feeds.*, COUNT(CASE WHEN entries.id IS NOT NULL AND entries.read_at IS NULL THEN 1 END) as unread_count")
+      .group("feeds.id")
+  }
+
+  # Only feeds that have at least one unread entry
+  # SQLite does not support column aliases in HAVING, so we repeat the full expression
+  scope :with_unreads, -> {
+    with_unread_count
+      .having("COUNT(CASE WHEN entries.id IS NOT NULL AND entries.read_at IS NULL THEN 1 END) > 0")
+  }
+
+  # Virtual attribute populated by with_unread_count / with_unreads scope
+  def unread_count
+    self[:unread_count] || 0
+  end
+
   def mark_as_fetched!(etag: nil, last_modified: nil)
     update!(
       status: :ok,

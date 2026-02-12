@@ -935,4 +935,37 @@ class FeedTest < ActiveSupport::TestCase
       </rss>
     RSS
   end
+
+  # -- Scope tests: with_unread_count / with_unreads --
+
+  test "with_unread_count calculates unread count for each feed" do
+    feeds = Feed.with_unread_count.order(:title)
+
+    error_feed = feeds.find { |f| f.id == feeds(:error_feed).id }
+    rails_news = feeds.find { |f| f.id == feeds(:rails_news).id }
+    ruby_blog = feeds.find { |f| f.id == feeds(:ruby_blog).id }
+
+    assert_equal 0, error_feed.unread_count
+    assert_equal 1, rails_news.unread_count
+    assert_equal 1, ruby_blog.unread_count
+  end
+
+  test "with_unreads returns only feeds with unread entries" do
+    feed_ids = Feed.with_unreads.pluck(:id)
+
+    assert_includes feed_ids, feeds(:ruby_blog).id
+    assert_includes feed_ids, feeds(:rails_news).id
+    assert_not_includes feed_ids, feeds(:error_feed).id
+  end
+
+  test "with_unreads returns empty when all entries are read" do
+    Entry.update_all(read_at: Time.current)
+
+    assert_empty Feed.with_unreads.to_a
+  end
+
+  test "unread_count returns 0 when scope not used" do
+    feed = Feed.find(feeds(:ruby_blog).id)
+    assert_equal 0, feed.unread_count
+  end
 end
