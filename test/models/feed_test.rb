@@ -199,22 +199,22 @@ class FeedTest < ActiveSupport::TestCase
     assert_not_includes Feed.due_for_fetch, feed
   end
 
-  test "mark_as_fetched! uses custom fetch_interval_minutes for next_fetch_at" do
+  test "record_successful_fetch! uses custom fetch_interval_minutes for next_fetch_at" do
     feed = feeds(:ruby_blog)
     feed.update!(fetch_interval_minutes: 180)
 
     travel_to Time.zone.parse("2025-02-10 10:00:00") do
-      feed.mark_as_fetched!
+      feed.record_successful_fetch!
       assert_equal Time.zone.parse("2025-02-10 13:00:00"), feed.next_fetch_at
     end
   end
 
-  test "mark_as_error! uses ERROR_BACKOFF_MINUTES regardless of fetch_interval_minutes" do
+  test "record_fetch_error! uses ERROR_BACKOFF_MINUTES regardless of fetch_interval_minutes" do
     feed = feeds(:ruby_blog)
     feed.update!(fetch_interval_minutes: 1440)
 
     travel_to Time.zone.parse("2025-02-10 10:00:00") do
-      feed.mark_as_error!("Test error")
+      feed.record_fetch_error!("Test error")
       assert_equal Time.zone.parse("2025-02-10 10:30:00"), feed.next_fetch_at
       assert_equal "error", feed.status
     end
@@ -255,7 +255,7 @@ class FeedTest < ActiveSupport::TestCase
     end
   end
 
-  test "mark_as_fetched! should update feed with success status" do
+  test "record_successful_fetch! should update feed with success status" do
     feed = feeds(:error_feed)
     feed.update!(
       status: :error,
@@ -264,7 +264,7 @@ class FeedTest < ActiveSupport::TestCase
       next_fetch_at: 1.hour.ago
     )
 
-    feed.mark_as_fetched!(etag: "new-etag", last_modified: "Mon, 01 Jan 2024 00:00:00 GMT")
+    feed.record_successful_fetch!(new_etag: "new-etag", new_last_modified: "Mon, 01 Jan 2024 00:00:00 GMT")
 
     feed.reload
     assert feed.ok?
@@ -275,18 +275,18 @@ class FeedTest < ActiveSupport::TestCase
     assert_equal "Mon, 01 Jan 2024 00:00:00 GMT", feed.last_modified
   end
 
-  test "mark_as_fetched! should preserve existing etag and last_modified if not provided" do
+  test "record_successful_fetch! should preserve existing etag and last_modified if not provided" do
     feed = feeds(:ruby_blog)
     feed.update!(etag: "old-etag", last_modified: "Sun, 31 Dec 2023 00:00:00 GMT")
 
-    feed.mark_as_fetched!
+    feed.record_successful_fetch!
 
     feed.reload
     assert_equal "old-etag", feed.etag
     assert_equal "Sun, 31 Dec 2023 00:00:00 GMT", feed.last_modified
   end
 
-  test "mark_as_error! should update feed with error status" do
+  test "record_fetch_error! should update feed with error status" do
     feed = feeds(:ruby_blog)
     feed.update!(
       status: :ok,
@@ -295,7 +295,7 @@ class FeedTest < ActiveSupport::TestCase
       next_fetch_at: 1.hour.ago
     )
 
-    feed.mark_as_error!("Connection timeout")
+    feed.record_fetch_error!("Connection timeout")
 
     feed.reload
     assert feed.error?

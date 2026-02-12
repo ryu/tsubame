@@ -25,7 +25,9 @@ class Feed < ApplicationRecord
 
   validates :fetch_interval_minutes, inclusion: { in: FETCH_INTERVAL_OPTIONS.keys }
 
-  after_save_commit :recalculate_next_fetch_at, if: :saved_change_to_fetch_interval_minutes?
+  # record_successful_fetch! / record_fetch_error! set next_fetch_at explicitly;
+  # this callback only fires when fetch_interval_minutes is changed (e.g. from settings).
+  before_save :set_next_fetch_at, if: :fetch_interval_minutes_changed?
 
   scope :due_for_fetch, -> { where("next_fetch_at <= ?", Time.current).where.not(next_fetch_at: nil) }
 
@@ -47,18 +49,18 @@ class Feed < ApplicationRecord
     self[:unread_count] || 0
   end
 
-  def mark_as_fetched!(etag: nil, last_modified: nil)
+  def record_successful_fetch!(new_etag: nil, new_last_modified: nil)
     update!(
       status: :ok,
       error_message: nil,
       last_fetched_at: Time.current,
       next_fetch_at: fetch_interval_minutes.minutes.from_now,
-      etag: etag || self.etag,
-      last_modified: last_modified || self.last_modified
+      etag: new_etag || etag,
+      last_modified: new_last_modified || last_modified
     )
   end
 
-  def mark_as_error!(message)
+  def record_fetch_error!(message)
     update!(
       status: :error,
       error_message: message,
@@ -80,10 +82,9 @@ class Feed < ApplicationRecord
 
   private
 
-  def recalculate_next_fetch_at
+  def set_next_fetch_at
     base = last_fetched_at || Time.current
-    # Skip callbacks to avoid triggering after_save_commit again (would cause infinite loop)
-    update_column(:next_fetch_at, base + fetch_interval_minutes.minutes)
+    self.next_fetch_at = base + fetch_interval_minutes.minutes
   end
 
   def url_must_be_http

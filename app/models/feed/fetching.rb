@@ -36,12 +36,12 @@ module Feed::Fetching
     response = fetch_with_redirects(url, conditional_get_headers)
 
     if response.is_a?(Net::HTTPNotModified)
-      mark_as_fetched!
+      record_successful_fetch!
       return
     end
 
     unless response.is_a?(Net::HTTPSuccess)
-      mark_as_error!("HTTP error #{response.code}")
+      record_fetch_error!("HTTP error #{response.code}")
       Rails.logger.warn("Feed#fetch: HTTP #{response.code} for feed #{id}: #{response.message}")
       return
     end
@@ -52,15 +52,15 @@ module Feed::Fetching
 
     import_entries(parsed)
 
-    mark_as_fetched!(
-      etag: response["ETag"],
-      last_modified: response["Last-Modified"]
+    record_successful_fetch!(
+      new_etag: response["ETag"],
+      new_last_modified: response["Last-Modified"]
     )
   rescue Net::OpenTimeout, Net::ReadTimeout => e
-    mark_as_error!("Request timed out")
+    record_fetch_error!("Request timed out")
     Rails.logger.error("Feed#fetch timeout for feed #{id}: #{e.class} - #{e.message}")
   rescue StandardError => e
-    mark_as_error!("Failed to fetch feed")
+    record_fetch_error!("Failed to fetch feed")
     Rails.logger.error("Feed#fetch error for feed #{id}: #{e.class} - #{e.message}")
   end
 
@@ -143,12 +143,12 @@ module Feed::Fetching
   def parse_feed(body)
     parsed = RSS::Parser.parse(body, false)
     unless parsed
-      mark_as_error!("Feed format error")
+      record_fetch_error!("Feed format error")
       return nil
     end
     parsed
   rescue RSS::Error => e
-    mark_as_error!("Feed format error")
+    record_fetch_error!("Feed format error")
     Rails.logger.warn("Feed#fetch: parse error for feed #{id}: #{e.message}")
     nil
   end

@@ -60,7 +60,7 @@ app/models/
     └── opml.rb          # OPML インポート/エクスポート
 ```
 
-- **Feed** — `has_many :entries`, enum, バリデーション, `mark_as_fetched!` / `mark_as_error!`
+- **Feed** — `has_many :entries`, enum, バリデーション, `record_successful_fetch!` / `record_fetch_error!`
 - **Feed::Fetching** — `fetch`, HTTP リダイレクト追従, SSRF 防御, `private_ip?`, RSS/Atom パース
 - **Feed::Opml** — `import_from_opml`, `to_opml`
 
