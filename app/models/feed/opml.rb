@@ -9,46 +9,13 @@ module Feed::Opml
     # Returns { added: N, skipped: N }
     def import_from_opml(xml_content)
       doc = REXML::Document.new(xml_content, entity_expansion_text_limit: 0)
-      added = 0
-      skipped = 0
-      existing_urls = pluck(:url).to_set
-
-      process_outline = ->(element) do
-        element.each_element("outline") do |outline|
-          xml_url = outline.attributes["xmlUrl"]
-
-          if xml_url.present?
-            normalized_url = xml_url.strip
-            unless existing_urls.include?(normalized_url)
-              raw_title = outline.attributes["title"] || outline.attributes["text"]
-              begin
-                create!(
-                  url: normalized_url,
-                  title: raw_title ? CGI.unescapeHTML(raw_title) : nil,
-                  site_url: outline.attributes["htmlUrl"],
-                  status: :ok,
-                  next_fetch_at: Time.current
-                )
-                existing_urls << normalized_url
-                added += 1
-              rescue ActiveRecord::RecordInvalid => e
-                Rails.logger.warn("OPML import: skipped invalid feed #{normalized_url}: #{e.message}")
-                skipped += 1
-              end
-            else
-              skipped += 1
-            end
-          else
-            process_outline.call(outline)
-          end
-        end
-      end
+      state = { added: 0, skipped: 0, existing_urls: pluck(:url).to_set }
 
       doc.each_element("//body") do |body|
-        process_outline.call(body)
+        import_outlines(body, state)
       end
 
-      { added: added, skipped: skipped }
+      { added: state[:added], skipped: state[:skipped] }
     rescue REXML::ParseException
       raise "OPMLファイルの形式が正しくありません。"
     end
@@ -79,6 +46,41 @@ module Feed::Opml
       output = ""
       doc.write(output)
       output
+    end
+
+    private
+
+    def import_outlines(element, state)
+      element.each_element("outline") do |outline|
+        if outline.attributes["xmlUrl"].present?
+          import_feed_from_outline(outline, state)
+        else
+          import_outlines(outline, state)
+        end
+      end
+    end
+
+    def import_feed_from_outline(outline, state)
+      url = outline.attributes["xmlUrl"].strip
+
+      if state[:existing_urls].include?(url)
+        state[:skipped] += 1
+        return
+      end
+
+      raw_title = outline.attributes["title"] || outline.attributes["text"]
+      create!(
+        url: url,
+        title: raw_title ? CGI.unescapeHTML(raw_title) : nil,
+        site_url: outline.attributes["htmlUrl"],
+        status: :ok,
+        next_fetch_at: Time.current
+      )
+      state[:existing_urls] << url
+      state[:added] += 1
+    rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotUnique => e
+      Rails.logger.warn("OPML import: skipped invalid feed #{url}: #{e.message}")
+      state[:skipped] += 1
     end
   end
 end

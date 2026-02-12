@@ -48,6 +48,22 @@ Hotwire (Turbo + Stimulus) + Vanilla CSS による SPA ライクな操作感。
 
 - `hatena_bookmark.js` — はてなブックマークページURL生成・オープン（共通ユーティリティ）
 
+## Feed モデル構成
+
+`Feed` モデル (324行) は責務ごとに concern に分離されている。
+
+```
+app/models/
+├── feed.rb              # コア（associations, validations, enums, scopes, ステータス管理）
+└── feed/
+    ├── fetching.rb      # HTTP fetch, エンコーディング変換, パース, エントリ取り込み
+    └── opml.rb          # OPML インポート/エクスポート
+```
+
+- **Feed** — `has_many :entries`, enum, バリデーション, `mark_as_fetched!` / `mark_as_error!`
+- **Feed::Fetching** — `fetch`, HTTP リダイレクト追従, SSRF 防御, `private_ip?`, RSS/Atom パース
+- **Feed::Opml** — `import_from_opml`, `to_opml`
+
 ## 認証
 
 Rails 8 の `bin/rails generate authentication` を使用。

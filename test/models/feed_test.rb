@@ -58,6 +58,12 @@ class FeedTest < ActiveSupport::TestCase
     assert_includes feed.errors[:url], "cannot point to private network"
   end
 
+  test "should reject IPv6 loopback URL" do
+    feed = Feed.new(url: "http://[::1]/feed.xml")
+    assert_not feed.valid?
+    assert_includes feed.errors[:url], "cannot point to private network"
+  end
+
   test "private_ip? should detect loopback addresses" do
     assert Feed.private_ip?("127.0.0.1")
   end

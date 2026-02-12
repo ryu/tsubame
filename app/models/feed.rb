@@ -75,17 +75,22 @@ class Feed < ApplicationRecord
       return
     end
 
-    # Block obvious private IP URLs at validation time.
+    # Block IP literal URLs pointing to private networks at validation time.
     # Hostname-based SSRF (DNS rebinding etc.) is caught at fetch time by validate_url_safety!
-    if url_changed?
+    if url_changed? && ip_literal?(uri.host)
       ip = IPAddr.new(uri.host)
       if Feed::Fetching::BLOCKED_IP_RANGES.any? { |range| range.include?(ip) }
         errors.add(:url, "cannot point to private network")
       end
     end
-  rescue IPAddr::InvalidAddressError
-    # Host is a hostname, not an IP literal — OK at validation time
   rescue URI::InvalidURIError
     errors.add(:url, "is not a valid URL")
+  end
+
+  def ip_literal?(host)
+    IPAddr.new(host)
+    true
+  rescue IPAddr::InvalidAddressError
+    false
   end
 end
