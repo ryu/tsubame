@@ -72,7 +72,19 @@ class Feed < ApplicationRecord
     uri = URI.parse(url)
     unless uri.is_a?(URI::HTTP) || uri.is_a?(URI::HTTPS)
       errors.add(:url, "must be an HTTP or HTTPS URL")
+      return
     end
+
+    # Block obvious private IP URLs at validation time.
+    # Hostname-based SSRF (DNS rebinding etc.) is caught at fetch time by validate_url_safety!
+    if url_changed?
+      ip = IPAddr.new(uri.host)
+      if Feed::Fetching::BLOCKED_IP_RANGES.any? { |range| range.include?(ip) }
+        errors.add(:url, "cannot point to private network")
+      end
+    end
+  rescue IPAddr::InvalidAddressError
+    # Host is a hostname, not an IP literal — OK at validation time
   rescue URI::InvalidURIError
     errors.add(:url, "is not a valid URL")
   end

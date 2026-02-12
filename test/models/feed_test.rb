@@ -40,6 +40,24 @@ class FeedTest < ActiveSupport::TestCase
     assert feed.valid?
   end
 
+  test "should reject loopback URL" do
+    feed = Feed.new(url: "http://127.0.0.1/feed.xml")
+    assert_not feed.valid?
+    assert_includes feed.errors[:url], "cannot point to private network"
+  end
+
+  test "should reject private network URL" do
+    feed = Feed.new(url: "http://192.168.1.1/feed.xml")
+    assert_not feed.valid?
+    assert_includes feed.errors[:url], "cannot point to private network"
+  end
+
+  test "should reject link-local URL" do
+    feed = Feed.new(url: "http://169.254.169.254/latest/meta-data/")
+    assert_not feed.valid?
+    assert_includes feed.errors[:url], "cannot point to private network"
+  end
+
   test "private_ip? should detect loopback addresses" do
     assert Feed.private_ip?("127.0.0.1")
   end
@@ -128,6 +146,24 @@ class FeedTest < ActiveSupport::TestCase
     assert Feed.exists?(url: "https://news.ycombinator.com/rss")
     # And the top-level feed
     assert Feed.exists?(url: "https://rubyweekly.com/rss")
+  end
+
+  test "import_from_opml should skip invalid feeds and continue" do
+    opml_content = <<~OPML
+      <?xml version="1.0"?>
+      <opml version="1.0">
+        <body>
+          <outline type="rss" xmlUrl="http://127.0.0.1/evil" title="Private IP Feed"/>
+          <outline type="rss" xmlUrl="https://example.com/good-feed.xml" title="Good Feed"/>
+        </body>
+      </opml>
+    OPML
+
+    result = Feed.import_from_opml(opml_content)
+    assert_equal 1, result[:added]
+    assert_equal 1, result[:skipped]
+    assert Feed.exists?(url: "https://example.com/good-feed.xml")
+    assert_not Feed.exists?(url: "http://127.0.0.1/evil")
   end
 
   test "import_from_opml should raise error for invalid XML" do

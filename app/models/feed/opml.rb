@@ -21,15 +21,20 @@ module Feed::Opml
             normalized_url = xml_url.strip
             unless existing_urls.include?(normalized_url)
               raw_title = outline.attributes["title"] || outline.attributes["text"]
-            create!(
-                url: normalized_url,
-                title: raw_title ? CGI.unescapeHTML(raw_title) : nil,
-                site_url: outline.attributes["htmlUrl"],
-                status: :ok,
-                next_fetch_at: Time.current
-              )
-              existing_urls << normalized_url
-              added += 1
+              begin
+                create!(
+                  url: normalized_url,
+                  title: raw_title ? CGI.unescapeHTML(raw_title) : nil,
+                  site_url: outline.attributes["htmlUrl"],
+                  status: :ok,
+                  next_fetch_at: Time.current
+                )
+                existing_urls << normalized_url
+                added += 1
+              rescue ActiveRecord::RecordInvalid => e
+                Rails.logger.warn("OPML import: skipped invalid feed #{normalized_url}: #{e.message}")
+                skipped += 1
+              end
             else
               skipped += 1
             end
