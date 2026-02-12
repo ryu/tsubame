@@ -1,5 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
-import { openHatenaBookmarkPage } from "lib/hatena_bookmark"
+import { hatenaBookmarkUrl } from "lib/hatena_bookmark"
 
 export default class extends Controller {
   static targets = ["feedList", "entryList", "entryDetail", "helpDialog"]
@@ -286,8 +286,7 @@ export default class extends Controller {
       return
     }
 
-    window.open(externalLink.href, "_blank", "noopener,noreferrer")
-    window.focus()
+    this._openInBackground(externalLink.href)
   }
 
   _toggleCurrentEntryPin() {
@@ -347,8 +346,8 @@ export default class extends Controller {
     const url = (countSpan && countSpan.dataset.url) || entryItem.dataset.entryUrl
     if (!url) return
 
-    openHatenaBookmarkPage(url)
-    window.focus()
+    const bookmarkUrl = hatenaBookmarkUrl(url)
+    if (bookmarkUrl) this._openInBackground(bookmarkUrl)
   }
 
   _openCurrentEntryHatenaBookmarkAdd() {
@@ -357,8 +356,7 @@ export default class extends Controller {
     const hatenaLink = this.entryDetailTarget.querySelector(".hatena-add-link")
     if (!hatenaLink) return
 
-    window.open(hatenaLink.href, "_blank", "noopener,noreferrer")
-    window.focus()
+    this._openInBackground(hatenaLink.href)
   }
 
   _markAllAsRead() {
@@ -412,8 +410,7 @@ export default class extends Controller {
     })
       .then(response => response.json())
       .then(data => {
-        data.urls.forEach(url => window.open(url, "_blank", "noopener,noreferrer"))
-        window.focus()
+        data.urls.forEach(url => this._openInBackground(url))
         data.entry_ids.forEach(id => this._removePinIcon(id))
         this._updatePinBadge(data.pinned_count)
       })
@@ -464,6 +461,13 @@ export default class extends Controller {
     } else {
       this.helpDialogTarget.showModal()
     }
+  }
+
+  // Open a URL in a background tab (blur new window, refocus original)
+  _openInBackground(url) {
+    const newWindow = window.open(url, "_blank")
+    if (newWindow) newWindow.blur()
+    window.focus()
   }
 
   // Utilities
