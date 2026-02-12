@@ -24,6 +24,8 @@ proxy:
   ssl: true
   host: tsubame.ryu-yamamoto.org
 
+deploy_timeout: 60
+
 # Where you keep your container images.
 registry:
   # GitHub Container Registry
