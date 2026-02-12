@@ -11,15 +11,14 @@ Rails.application.routes.draw do
   resource :feed_export, only: :show
 
   resources :entries, only: [ :show ] do
+    resource :mark_as_read, only: :create, controller: "entry_mark_as_reads"
+    resource :pin, only: :create, controller: "entry_pins"
     collection do
       get :pinned
-      post :open_pinned
-    end
-    member do
-      patch :mark_as_read
-      patch :toggle_pin
     end
   end
+
+  resource :pinned_entry_open, only: :create
 
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
 

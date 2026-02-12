@@ -14,7 +14,7 @@
         <% end %>
       </div>
       <div class="entry-actions">
-        <%= button_to toggle_pin_entry_path(entry), method: :patch, class: "pin-button" do %>
+        <%= button_to entry_pin_path(entry), class: "pin-button" do %>
           <%= entry.pinned ? "📌 ピン解除" : "📌 ピン留め" %>
         <% end %>
         <% if entry.safe_url.present? %>

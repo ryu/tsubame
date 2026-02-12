@@ -297,8 +297,8 @@ export default class extends Controller {
     const entryId = this._extractEntryId(entryItem)
     if (!entryId || !this.csrfToken) return
 
-    fetch(`/entries/${entryId}/toggle_pin`, {
-      method: "PATCH",
+    fetch(`/entries/${entryId}/pin`, {
+      method: "POST",
       headers: {
         "X-CSRF-Token": this.csrfToken,
         "Accept": "text/vnd.turbo-stream.html",
@@ -399,7 +399,7 @@ export default class extends Controller {
   _openPinnedEntries() {
     if (!this.csrfToken) return
 
-    fetch("/entries/open_pinned", {
+    fetch("/pinned_entry_open", {
       method: "POST",
       headers: {
         "X-CSRF-Token": this.csrfToken,
