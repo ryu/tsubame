@@ -286,7 +286,8 @@ export default class extends Controller {
       return
     }
 
-    window.open(externalLink.href, "_blank")
+    window.open(externalLink.href, "_blank", "noopener,noreferrer")
+    window.focus()
   }
 
   _toggleCurrentEntryPin() {
@@ -347,6 +348,7 @@ export default class extends Controller {
     if (!url) return
 
     openHatenaBookmarkPage(url)
+    window.focus()
   }
 
   _openCurrentEntryHatenaBookmarkAdd() {
@@ -356,6 +358,7 @@ export default class extends Controller {
     if (!hatenaLink) return
 
     window.open(hatenaLink.href, "_blank", "noopener,noreferrer")
+    window.focus()
   }
 
   _markAllAsRead() {
@@ -409,7 +412,8 @@ export default class extends Controller {
     })
       .then(response => response.json())
       .then(data => {
-        data.urls.forEach(url => window.open(url, "_blank"))
+        data.urls.forEach(url => window.open(url, "_blank", "noopener,noreferrer"))
+        window.focus()
         data.entry_ids.forEach(id => this._removePinIcon(id))
         this._updatePinBadge(data.pinned_count)
       })
