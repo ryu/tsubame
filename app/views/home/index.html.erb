@@ -54,4 +54,49 @@
       <% end %>
     </section>
   </div>
+
+  <dialog class="help-dialog" data-keyboard-target="helpDialog">
+    <div class="help-dialog-header">
+      <h2>キーボードショートカット</h2>
+      <button class="help-dialog-close" aria-label="ヘルプを閉じる" data-action="click->keyboard#closeHelpDialog">✕</button>
+    </div>
+
+    <h3>フィードナビゲーション</h3>
+    <table>
+      <tbody>
+        <tr><td><kbd>s</kbd></td><td>次のフィード</td></tr>
+        <tr><td><kbd>a</kbd></td><td>前のフィード</td></tr>
+        <tr><td><kbd>r</kbd></td><td>ページ再読み込み</td></tr>
+      </tbody>
+    </table>
+
+    <h3>エントリナビゲーション</h3>
+    <table>
+      <tbody>
+        <tr><td><kbd>j</kbd></td><td>次のエントリ</td></tr>
+        <tr><td><kbd>k</kbd></td><td>前のエントリ</td></tr>
+        <tr><td><kbd>Space</kbd></td><td>エントリ詳細をスクロールダウン</td></tr>
+        <tr><td><kbd>Shift+Space</kbd></td><td>エントリ詳細をスクロールアップ</td></tr>
+      </tbody>
+    </table>
+
+    <h3>アクション</h3>
+    <table>
+      <tbody>
+        <tr><td><kbd>v</kbd></td><td>エントリを新タブで開く</td></tr>
+        <tr><td><kbd>p</kbd></td><td>ピン追加/解除</td></tr>
+        <tr><td><kbd>o</kbd></td><td>ピン留めエントリを新タブで開く</td></tr>
+        <tr><td><kbd>Shift+A</kbd></td><td>現在のフィードを全既読</td></tr>
+        <tr><td><kbd>b</kbd></td><td>はてなブックマークページを開く</td></tr>
+        <tr><td><kbd>h</kbd></td><td>はてなブックマークに追加</td></tr>
+      </tbody>
+    </table>
+
+    <h3>その他</h3>
+    <table>
+      <tbody>
+        <tr><td><kbd>?</kbd></td><td>このヘルプを表示/非表示</td></tr>
+      </tbody>
+    </table>
+  </dialog>
 </div>

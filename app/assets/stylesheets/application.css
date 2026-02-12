@@ -481,6 +481,77 @@ body:has(.three-pane-layout) {
 .form-errors { background: #fce4ec; color: #c62828; padding: 12px 16px; border-radius: 4px; margin-bottom: 16px; }
 .form-errors ul { margin-left: 16px; }
 
+/* Help dialog */
+.help-dialog {
+  max-width: 480px;
+  width: 90%;
+  border: none;
+  border-radius: 8px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  padding: 24px;
+}
+
+.help-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.help-dialog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.help-dialog-header h2 {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.help-dialog-close {
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  color: #666;
+  padding: 4px 8px;
+}
+
+.help-dialog-close:hover {
+  color: #333;
+}
+
+.help-dialog h3 {
+  font-size: 13px;
+  font-weight: 600;
+  color: #666;
+  margin: 16px 0 8px;
+}
+
+.help-dialog table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.help-dialog td {
+  padding: 4px 8px;
+  font-size: 13px;
+}
+
+.help-dialog td:first-child {
+  width: 100px;
+  white-space: nowrap;
+}
+
+.help-dialog kbd {
+  display: inline-block;
+  padding: 2px 6px;
+  font-family: Monaco, Consolas, "Courier New", monospace;
+  font-size: 12px;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  background: #f5f5f5;
+}
+
 /* Mobile back button (hidden on desktop) */
 .mobile-back-button {
   display: none;

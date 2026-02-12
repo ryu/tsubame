@@ -2,7 +2,7 @@ import { Controller } from "@hotwired/stimulus"
 import { openHatenaBookmarkPage } from "lib/hatena_bookmark"
 
 export default class extends Controller {
-  static targets = ["feedList", "entryList", "entryDetail"]
+  static targets = ["feedList", "entryList", "entryDetail", "helpDialog"]
   static values = {
     activeFeedIndex: { type: Number, default: -1 },
     activeEntryIndex: { type: Number, default: -1 }
@@ -45,6 +45,16 @@ export default class extends Controller {
       activeElement.tagName === "SELECT" ||
       activeElement.isContentEditable
     )) return
+
+    // Help dialog toggle (handles both open and closed state)
+    if (event.key === "?") {
+      event.preventDefault()
+      this._toggleHelpDialog()
+      return
+    }
+
+    // Skip all other shortcuts when help dialog is open
+    if (this.hasHelpDialogTarget && this.helpDialogTarget.open) return
 
     const key = event.key
     const shiftKey = event.shiftKey
@@ -433,6 +443,23 @@ export default class extends Controller {
 
   _reloadPage() {
     window.Turbo.visit(window.location.href, { action: "replace" })
+  }
+
+  // Help dialog
+
+  closeHelpDialog() {
+    if (this.hasHelpDialogTarget && this.helpDialogTarget.open) {
+      this.helpDialogTarget.close()
+    }
+  }
+
+  _toggleHelpDialog() {
+    if (!this.hasHelpDialogTarget) return
+    if (this.helpDialogTarget.open) {
+      this.helpDialogTarget.close()
+    } else {
+      this.helpDialogTarget.showModal()
+    }
   }
 
   // Utilities

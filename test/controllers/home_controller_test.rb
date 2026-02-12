@@ -35,6 +35,22 @@ class HomeControllerTest < ActionDispatch::IntegrationTest
     assert_select ".unread-badge", minimum: 1
   end
 
+  test "home page contains keyboard shortcut help dialog" do
+    sign_in_as(users(:one))
+
+    get root_url
+    assert_response :success
+    assert_select "dialog.help-dialog" do
+      assert_select "h2", "キーボードショートカット"
+      assert_select "h3", "フィードナビゲーション"
+      assert_select "h3", "エントリナビゲーション"
+      assert_select "h3", "アクション"
+      assert_select "h3", "その他"
+      assert_select "kbd", text: "j"
+      assert_select "kbd", text: "?"
+    end
+  end
+
   test "home page links to feed entries" do
     sign_in_as(users(:one))
 
