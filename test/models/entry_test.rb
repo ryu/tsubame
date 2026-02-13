@@ -62,8 +62,8 @@ class EntryTest < ActiveSupport::TestCase
     assert_not_includes pinned, entries(:rails_article_one)
   end
 
-  test "recent scope should order by published_at desc" do
-    recent = Entry.recent.to_a
+  test "recently_published scope should order by published_at desc" do
+    recent = Entry.recently_published.to_a
     assert_equal entries(:rails_article_one), recent.first
     assert_equal entries(:ruby_article_one), recent.last
   end
@@ -103,27 +103,27 @@ class EntryTest < ActiveSupport::TestCase
     assert_equal false, entry.reload.pinned
   end
 
-  test "safe_url returns url for valid http url" do
+  test "safe_url_for_link returns url for valid http url" do
     entry = entries(:ruby_article_one)
-    assert_equal entry.url, entry.safe_url
+    assert_equal entry.url, entry.safe_url_for_link
   end
 
-  test "safe_url returns nil for invalid url" do
+  test "safe_url_for_link returns nil for invalid url" do
     entry = Entry.new(
       feed: feeds(:ruby_blog),
       guid: "test",
       url: "javascript:alert('xss')"
     )
-    assert_nil entry.safe_url
+    assert_nil entry.safe_url_for_link
   end
 
-  test "safe_url returns nil for blank url" do
+  test "safe_url_for_link returns nil for blank url" do
     entry = Entry.new(
       feed: feeds(:ruby_blog),
       guid: "test",
       url: nil
     )
-    assert_nil entry.safe_url
+    assert_nil entry.safe_url_for_link
   end
 
   # -- attributes_from_rss_item tests --

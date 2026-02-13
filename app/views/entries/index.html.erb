@@ -7,7 +7,7 @@
   <div class="entry-list">
     <% if @entries.any? %>
       <% @entries.each do |entry| %>
-        <%= link_to entry_path(entry), data: { turbo_frame: "entry_detail", entry_url: entry.safe_url }, class: "entry-item #{'entry-unread' if entry.read_at.nil?}", id: "entry_#{entry.id}", tabindex: "-1" do %>
+        <%= link_to entry_path(entry), data: { turbo_frame: "entry_detail", entry_url: entry.safe_url_for_link }, class: "entry-item #{'entry-unread' if entry.read_at.nil?}", id: "entry_#{entry.id}", tabindex: "-1" do %>
           <div class="entry-title-row">
             <% if entry.pinned %>
               <span class="pin-icon">📌</span>
