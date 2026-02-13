@@ -1,6 +1,21 @@
 <div class="three-pane-layout"
-     data-controller="keyboard mobile-pane"
-     data-mobile-pane="feeds">
+     data-controller="keyboard selection pin help-dialog mobile-pane"
+     data-pin-selection-outlet=".three-pane-layout"
+     data-mobile-pane="feeds"
+     data-action="keyboard:next-entry->selection#nextEntry
+                  keyboard:previous-entry->selection#previousEntry
+                  keyboard:next-feed->selection#nextFeed
+                  keyboard:previous-feed->selection#previousFeed
+                  keyboard:scroll-entry-detail-down->selection#scrollEntryDetailDown
+                  keyboard:scroll-entry-detail-up->selection#scrollEntryDetailUp
+                  keyboard:open-entry-in-new-tab->selection#openEntryInNewTab
+                  keyboard:toggle-pin->pin#togglePin
+                  keyboard:open-pinned->pin#openPinned
+                  keyboard:mark-all-as-read->selection#markAllAsRead
+                  keyboard:reload-page->selection#reloadPage
+                  keyboard:open-hatena-bookmark->selection#openHatenaBookmark
+                  keyboard:open-hatena-bookmark-add->selection#openHatenaBookmarkAdd
+                  keyboard:toggle-help->help-dialog#toggle">
   <!-- Left pane: Feed list -->
   <aside class="feed-list-pane">
     <div class="pane-header">
@@ -18,7 +33,7 @@
       </div>
     </div>
 
-    <div class="feed-list" data-keyboard-target="feedList">
+    <div class="feed-list" data-selection-target="feedList">
       <% if @feeds.any? %>
         <% @feeds.each do |feed| %>
           <%= link_to feed_entries_path(feed), data: { turbo_frame: "entry_list", feed_id: feed.id }, class: "feed-item", tabindex: "-1" do %>
@@ -37,7 +52,7 @@
   <!-- Right pane: Entry list and detail -->
   <div class="content-pane">
     <!-- Top: Entry list -->
-    <section class="entry-list-pane" data-keyboard-target="entryList">
+    <section class="entry-list-pane" data-selection-target="entryList">
       <%= turbo_frame_tag "entry_list" do %>
         <div class="empty-message">
           <p>左からフィードを選択してください</p>
@@ -46,7 +61,7 @@
     </section>
 
     <!-- Bottom: Entry detail -->
-    <section class="entry-detail-pane" data-keyboard-target="entryDetail">
+    <section class="entry-detail-pane" data-selection-target="entryDetail">
       <%= turbo_frame_tag "entry_detail" do %>
         <div class="empty-message">
           <p>エントリを選択してください</p>
@@ -55,10 +70,10 @@
     </section>
   </div>
 
-  <dialog class="help-dialog" data-keyboard-target="helpDialog">
+  <dialog class="help-dialog" data-help-dialog-target="dialog">
     <div class="help-dialog-header">
       <h2>キーボードショートカット</h2>
-      <button class="help-dialog-close" aria-label="ヘルプを閉じる" data-action="click->keyboard#closeHelpDialog">✕</button>
+      <button class="help-dialog-close" aria-label="ヘルプを閉じる" data-action="click->help-dialog#close">✕</button>
     </div>
 
     <h3>フィードナビゲーション</h3>
