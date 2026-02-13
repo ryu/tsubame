@@ -1,8 +1,15 @@
-<%= tag.div(flash[:alert], class: "flash-alert") if flash[:alert] %>
-<%= tag.div(flash[:notice], class: "flash-notice") if flash[:notice] %>
+<div class="login-page">
+  <div class="login-card">
+    <h1 class="login-title">Tsubame</h1>
 
-<%= form_with url: session_path do |form| %>
-  <%= form.email_field :email_address, required: true, autofocus: true, autocomplete: "username", placeholder: "Enter your email address", value: params[:email_address] %><br>
-  <%= form.password_field :password, required: true, autocomplete: "current-password", placeholder: "Enter your password", maxlength: 72 %><br>
-  <%= form.submit "Sign in" %>
-<% end %>
+    <%= form_with url: session_path, class: "login-form" do |form| %>
+      <div class="login-field">
+        <%= form.email_field :email_address, required: true, autofocus: true, autocomplete: "username", placeholder: "メールアドレス", value: params[:email_address], class: "login-input" %>
+      </div>
+      <div class="login-field">
+        <%= form.password_field :password, required: true, autocomplete: "current-password", placeholder: "パスワード", maxlength: 72, class: "login-input" %>
+      </div>
+      <%= form.submit "ログイン", class: "login-submit" %>
+    <% end %>
+  </div>
+</div>
