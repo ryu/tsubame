@@ -9,14 +9,14 @@ class FeedTest < ActiveSupport::TestCase
   test "should require url" do
     feed = Feed.new(url: nil)
     assert_not feed.valid?
-    assert_includes feed.errors[:url], "can't be blank"
+    assert_includes feed.errors[:url], "を入力してください"
   end
 
   test "should enforce unique url" do
     existing = feeds(:ruby_blog)
     feed = Feed.new(url: existing.url)
     assert_not feed.valid?
-    assert_includes feed.errors[:url], "has already been taken"
+    assert_includes feed.errors[:url], "はすでに存在します"
   end
 
   test "should reject non-HTTP URLs" do
@@ -223,7 +223,7 @@ class FeedTest < ActiveSupport::TestCase
   test "validates fetch_interval_minutes is in FETCH_INTERVAL_OPTIONS keys" do
     feed = Feed.new(url: "https://example.com/feed", fetch_interval_minutes: 999)
     assert_not feed.valid?
-    assert_includes feed.errors[:fetch_interval_minutes], "is not included in the list"
+    assert_includes feed.errors[:fetch_interval_minutes], "は一覧にありません"
   end
 
   test "accepts all FETCH_INTERVAL_OPTIONS preset values" do

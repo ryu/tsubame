@@ -13,13 +13,13 @@ class EntryTest < ActiveSupport::TestCase
   test "should require guid" do
     entry = Entry.new(feed: feeds(:ruby_blog), guid: nil)
     assert_not entry.valid?
-    assert_includes entry.errors[:guid], "can't be blank"
+    assert_includes entry.errors[:guid], "を入力してください"
   end
 
   test "should require feed" do
     entry = Entry.new(guid: "https://example.com/test")
     assert_not entry.valid?
-    assert_includes entry.errors[:feed], "must exist"
+    assert_includes entry.errors[:feed], "を入力してください"
   end
 
   test "should enforce unique guid within feed scope" do
@@ -29,7 +29,7 @@ class EntryTest < ActiveSupport::TestCase
       guid: existing.guid
     )
     assert_not entry.valid?
-    assert_includes entry.errors[:guid], "has already been taken"
+    assert_includes entry.errors[:guid], "はすでに存在します"
   end
 
   test "should allow same guid in different feeds" do
