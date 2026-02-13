@@ -2,6 +2,8 @@ require "cgi"
 require "rexml/document"
 
 module Feed::Opml
+  class ImportError < StandardError; end
+
   extend ActiveSupport::Concern
 
   class_methods do
@@ -17,7 +19,7 @@ module Feed::Opml
 
       { added: state[:added], skipped: state[:skipped] }
     rescue REXML::ParseException
-      raise "OPMLファイルの形式が正しくありません。"
+      raise ImportError, "OPMLファイルの形式が正しくありません。"
     end
 
     # Export feeds to OPML 1.0 XML format

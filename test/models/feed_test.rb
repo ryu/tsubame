@@ -175,7 +175,7 @@ class FeedTest < ActiveSupport::TestCase
   test "import_from_opml should raise error for invalid XML" do
     invalid_xml = "<invalid>not closed"
 
-    assert_raises(RuntimeError, match: /OPML/) do
+    assert_raises(Feed::Opml::ImportError) do
       Feed.import_from_opml(invalid_xml)
     end
   end

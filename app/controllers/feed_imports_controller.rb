@@ -5,20 +5,22 @@ class FeedImportsController < ApplicationController
   def create
     file = params[:opml_file]
 
-    if file.blank?
-      redirect_to new_feed_import_path, alert: "ファイルを選択してください。"
-      return
-    end
+    return redirect_with_alert("ファイルを選択してください。") if file.blank?
+    return redirect_with_alert("ファイルサイズは5MB以下にしてください。") if file.size > 5.megabytes
 
-    if file.size > 5.megabytes
-      redirect_to new_feed_import_path, alert: "ファイルサイズは5MB以下にしてください。"
-      return
-    end
+    content = file.read
+    return redirect_with_alert("XMLファイルを選択してください。") unless content.start_with?("<?xml")
 
-    result = Feed.import_from_opml(file.read)
+    result = Feed.import_from_opml(content)
     redirect_to feeds_path, notice: "#{result[:added]}件のフィードを追加しました。（#{result[:skipped]}件スキップ）"
-  rescue => e
-    Rails.logger.error("OPML import failed: #{e.class} - #{e.message}")
-    redirect_to new_feed_import_path, alert: "インポートに失敗しました。ファイル形式を確認してください。"
+  rescue Feed::Opml::ImportError => e
+    Rails.logger.error("OPML import failed: #{e.message}")
+    redirect_with_alert("インポートに失敗しました。ファイル形式を確認してください。")
+  end
+
+  private
+
+  def redirect_with_alert(message)
+    redirect_to new_feed_import_path, alert: message
   end
 end

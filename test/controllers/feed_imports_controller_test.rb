@@ -60,6 +60,41 @@ class FeedImportsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "ファイルを選択してください。", flash[:alert]
   end
 
+  test "create rejects non-XML file content" do
+    sign_in_as(@user)
+    non_xml = Rack::Test::UploadedFile.new(
+      StringIO.new("This is not XML at all"),
+      "application/xml",
+      original_filename: "fake.opml"
+    )
+
+    assert_no_difference "Feed.count" do
+      post feed_imports_path, params: { opml_file: non_xml }
+    end
+
+    assert_redirected_to new_feed_import_path
+    assert_equal "XMLファイルを選択してください。", flash[:alert]
+  end
+
+  test "create rejects files larger than 5MB" do
+    sign_in_as(@user)
+    file = Tempfile.new([ "large", ".opml" ])
+    file.write("x" * (5.megabytes + 1))
+    file.rewind
+
+    assert_no_difference "Feed.count" do
+      post feed_imports_path, params: {
+        opml_file: Rack::Test::UploadedFile.new(file.path, "application/xml")
+      }
+    end
+
+    assert_redirected_to new_feed_import_path
+    assert_equal "ファイルサイズは5MB以下にしてください。", flash[:alert]
+  ensure
+    file&.close
+    file&.unlink
+  end
+
   test "create handles invalid OPML file" do
     sign_in_as(@user)
     invalid_file = fixture_file_upload("invalid.opml", "application/xml")
