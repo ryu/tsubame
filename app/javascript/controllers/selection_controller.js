@@ -2,6 +2,8 @@ import { Controller } from "@hotwired/stimulus"
 import { hatenaBookmarkUrl } from "lib/hatena_bookmark"
 import { fetchWithCsrf, openInBackground } from "lib/fetch_helper"
 
+const SCROLL_RATIO = 0.8
+
 // Manages feed/entry navigation, active state, and entry actions
 export default class extends Controller {
   static targets = ["feedList", "entryList", "entryDetail"]
@@ -11,14 +13,15 @@ export default class extends Controller {
   }
 
   connect() {
-    this.boundHandleFrameLoad = this._handleFrameLoad.bind(this)
-    document.addEventListener("turbo:frame-load", this.boundHandleFrameLoad)
+    this.markAllAbort = null
 
-    this._restoreActiveStates()
+    this.boundHandleFrameLoad = this._handleFrameLoad.bind(this)
+    this._entryListFrame()?.addEventListener("turbo:frame-load", this.boundHandleFrameLoad)
   }
 
   disconnect() {
-    document.removeEventListener("turbo:frame-load", this.boundHandleFrameLoad)
+    this.markAllAbort?.abort()
+    this._entryListFrame()?.removeEventListener("turbo:frame-load", this.boundHandleFrameLoad)
   }
 
   // Feed navigation actions
@@ -119,10 +122,11 @@ export default class extends Controller {
       return
     }
 
-    const abortController = new AbortController()
+    this.markAllAbort?.abort()
+    this.markAllAbort = new AbortController()
     fetchWithCsrf(`/feeds/${feedId}/mark_as_read`, {
       method: "POST",
-      signal: abortController.signal
+      signal: this.markAllAbort.signal
     })
       .then(response => response.json())
       .then(data => {
@@ -158,26 +162,13 @@ export default class extends Controller {
 
   // Private methods
 
-  _handleFrameLoad(event) {
-    // Reset entry index when entry_list frame is updated
-    if (event.target.id === "entry_list") {
-      this.activeEntryIndexValue = -1
-      // Auto-select first entry if available
-      const entryItems = this._getEntryItems()
-      if (entryItems.length > 0) {
-        this.activeEntryIndexValue = 0
-        this._activateEntry(0)
-      }
-    }
-  }
-
-  _restoreActiveStates() {
-    // Restore visual active state on page load/reconnect
-    if (this.activeFeedIndexValue >= 0) {
-      this._updateFeedActiveState()
-    }
-    if (this.activeEntryIndexValue >= 0) {
-      this._updateEntryActiveState()
+  _handleFrameLoad() {
+    this.activeEntryIndexValue = -1
+    // Auto-select first entry if available
+    const entryItems = this._getEntryItems()
+    if (entryItems.length > 0) {
+      this.activeEntryIndexValue = 0
+      this._activateEntry(0)
     }
   }
 
@@ -272,11 +263,16 @@ export default class extends Controller {
   _scrollEntryDetail(direction) {
     if (!this.hasEntryDetailTarget) return
 
-    const scrollAmount = this.entryDetailTarget.clientHeight * 0.8
+    const scrollAmount = this.entryDetailTarget.clientHeight * SCROLL_RATIO
     this.entryDetailTarget.scrollBy({
       top: scrollAmount * direction,
       behavior: "smooth"
     })
+  }
+
+  _entryListFrame() {
+    if (!this.hasEntryListTarget) return null
+    return this.entryListTarget.querySelector("turbo-frame#entry_list")
   }
 
   _scrollIntoViewIfNeeded(element, container) {
