@@ -1,20 +1,22 @@
 import { Controller } from "@hotwired/stimulus"
 import { openHatenaBookmarkPage } from "lib/hatena_bookmark"
 
+const BATCH_SIZE = 20
+
 export default class extends Controller {
   connect() {
-    this.abortController = new AbortController()
-    this.isLoading = false
+    this.abortController = null
+    this.pendingFetch = false
 
     this.boundHandleFrameLoad = this._handleFrameLoad.bind(this)
-    document.addEventListener("turbo:frame-load", this.boundHandleFrameLoad)
+    this.element.addEventListener("turbo:frame-load", this.boundHandleFrameLoad)
 
     this._fetchBookmarkCounts()
   }
 
   disconnect() {
-    this.abortController.abort()
-    document.removeEventListener("turbo:frame-load", this.boundHandleFrameLoad)
+    this.abortController?.abort()
+    this.element.removeEventListener("turbo:frame-load", this.boundHandleFrameLoad)
   }
 
   // Stimulus action: called via data-action on count spans
@@ -27,18 +29,24 @@ export default class extends Controller {
   // Private methods
 
   _handleFrameLoad(event) {
-    if (event.target.id === "entry_list") {
-      this._fetchBookmarkCounts()
-    }
+    if (event.target !== this.element) return
+
+    this._fetchBookmarkCounts()
   }
 
+  // If a fetch is already in progress, queue one re-fetch after it completes.
+  // Multiple queued requests collapse into a single re-fetch (1-stage queue).
   _fetchBookmarkCounts() {
-    if (this.isLoading) return
-    this.isLoading = true
+    if (this.abortController) {
+      this.pendingFetch = true
+      return
+    }
+
+    this.abortController = new AbortController()
 
     const entryItems = this._getEntryItems()
     if (entryItems.length === 0) {
-      this.isLoading = false
+      this._finishFetch()
       return
     }
 
@@ -57,18 +65,27 @@ export default class extends Controller {
     })
 
     if (urls.length === 0) {
-      this.isLoading = false
+      this._finishFetch()
       return
     }
 
-    const batches = this._createBatches(urls, 20)
+    const batches = this._createBatches(urls, BATCH_SIZE)
     const fetchPromises = batches.map(batch =>
       this._fetchBatchCounts(batch, urlToEntries)
     )
 
     Promise.allSettled(fetchPromises).finally(() => {
-      this.isLoading = false
+      this._finishFetch()
     })
+  }
+
+  _finishFetch() {
+    this.abortController = null
+
+    if (this.pendingFetch) {
+      this.pendingFetch = false
+      this._fetchBookmarkCounts()
+    }
   }
 
   _createBatches(array, size) {
@@ -119,6 +136,7 @@ export default class extends Controller {
           countSpan.textContent = ""
           countSpan.classList.remove("hatena-count-clickable")
           delete countSpan.dataset.action
+          delete countSpan.dataset.url
         }
       })
     })
