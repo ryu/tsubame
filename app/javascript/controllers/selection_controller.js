@@ -180,7 +180,7 @@ export default class extends Controller {
     this._updateFeedActiveState()
 
     // Click the feed link to load entries via Turbo Frame
-    const link = feedItem.querySelector("a")
+    const link = feedItem.matches("a") ? feedItem : feedItem.querySelector("a")
     if (link) link.click()
 
     this._scrollIntoViewIfNeeded(feedItem, this.feedListTarget)
@@ -220,7 +220,7 @@ export default class extends Controller {
     }
 
     // Click the entry link to load detail via Turbo Frame
-    const link = entryItem.querySelector("a")
+    const link = entryItem.matches("a") ? entryItem : entryItem.querySelector("a")
     if (link) link.click()
 
     this._scrollIntoViewIfNeeded(entryItem, this.entryListTarget)
