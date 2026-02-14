@@ -692,6 +692,8 @@ body:has(.three-pane-layout) {
     display: flex;
     border-top: 1px solid #ddd;
     background: #f9f9f9;
+    position: sticky;
+    bottom: 0;
   }
   .mobile-entry-nav-button {
     flex: 1;
