@@ -47,6 +47,17 @@ class EntriesControllerTest < ActionDispatch::IntegrationTest
     assert_not_nil @entry.reload.read_at
   end
 
+  test "show renders mobile navigation buttons" do
+    sign_in_as(@user)
+    get entry_path(@entry)
+    assert_response :success
+
+    assert_select "nav.mobile-entry-nav" do
+      assert_select "button[data-selection-target='prevButton'][aria-label='前のエントリに移動']", text: /前のエントリ/
+      assert_select "button[data-selection-target='nextButton'][aria-label='次のエントリに移動']", text: /次のエントリ/
+    end
+  end
+
   test "show is turbo frame compatible" do
     sign_in_as(@user)
     get entry_path(@entry), headers: { "Turbo-Frame": "entry_detail" }

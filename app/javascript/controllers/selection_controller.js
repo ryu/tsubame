@@ -6,7 +6,7 @@ const SCROLL_RATIO = 0.8
 
 // Manages feed/entry navigation, active state, and entry actions
 export default class extends Controller {
-  static targets = ["feedList", "entryList", "entryDetail"]
+  static targets = ["feedList", "entryList", "entryDetail", "prevButton", "nextButton"]
   static values = {
     activeFeedIndex: { type: Number, default: -1 },
     activeEntryIndex: { type: Number, default: -1 }
@@ -160,6 +160,10 @@ export default class extends Controller {
     return entryItems[this.activeEntryIndexValue]
   }
 
+  prevButtonTargetConnected() {
+    this._updateNavButtons()
+  }
+
   // Private methods
 
   _handleFrameLoad() {
@@ -169,6 +173,9 @@ export default class extends Controller {
     if (entryItems.length > 0) {
       this.activeEntryIndexValue = 0
       this._activateEntry(0)
+      // _updateNavButtons() will be called by prevButtonTargetConnected()
+    } else {
+      this._updateNavButtons()
     }
   }
 
@@ -258,6 +265,20 @@ export default class extends Controller {
     } else {
       badge.remove()
     }
+  }
+
+  _updateNavButtons() {
+    if (!this.hasPrevButtonTarget || !this.hasNextButtonTarget) return
+
+    const entryItems = this._getEntryItems()
+    if (entryItems.length === 0) {
+      this.prevButtonTarget.disabled = true
+      this.nextButtonTarget.disabled = true
+      return
+    }
+
+    this.prevButtonTarget.disabled = (this.activeEntryIndexValue <= 0)
+    this.nextButtonTarget.disabled = (this.activeEntryIndexValue >= entryItems.length - 1)
   }
 
   _scrollEntryDetail(direction) {

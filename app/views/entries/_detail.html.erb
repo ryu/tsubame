@@ -28,4 +28,9 @@
       <%= sanitize entry.body, tags: %w[p br div span strong em b i a ul ol li blockquote pre code h1 h2 h3 h4 h5 h6 img hr table thead tbody tr td th dl dt dd figure figcaption sup sub del ins small], attributes: %w[href src alt title width height colspan rowspan] %>
     </div>
   </article>
+
+  <nav class="mobile-entry-nav">
+    <button class="mobile-entry-nav-button" data-action="click->selection#previousEntry" data-selection-target="prevButton" aria-label="前のエントリに移動">&#8249; 前のエントリ</button>
+    <button class="mobile-entry-nav-button" data-action="click->selection#nextEntry" data-selection-target="nextButton" aria-label="次のエントリに移動">次のエントリ &#8250;</button>
+  </nav>
 </turbo-frame>

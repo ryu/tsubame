@@ -613,8 +613,9 @@ body:has(.three-pane-layout) {
   background: #0052a3;
 }
 
-/* Mobile back button (hidden on desktop) */
-.mobile-back-button {
+/* Mobile back button and entry nav (hidden on desktop) */
+.mobile-back-button,
+.mobile-entry-nav {
   display: none;
 }
 
@@ -684,6 +685,38 @@ body:has(.three-pane-layout) {
   }
   .mobile-back-button:active {
     background: #e8e8e8;
+  }
+
+  /* Mobile entry prev/next navigation */
+  .mobile-entry-nav {
+    display: flex;
+    border-top: 1px solid #ddd;
+    background: #f9f9f9;
+  }
+  .mobile-entry-nav-button {
+    flex: 1;
+    padding: 14px 16px;
+    background: none;
+    border: none;
+    font-size: 15px;
+    color: #0066cc;
+    cursor: pointer;
+    min-height: 48px;
+  }
+  .mobile-entry-nav-button:first-child {
+    text-align: left;
+    border-right: 1px solid #ddd;
+  }
+  .mobile-entry-nav-button:last-child {
+    text-align: right;
+  }
+  .mobile-entry-nav-button:active {
+    background: #e8e8e8;
+  }
+  .mobile-entry-nav-button:disabled {
+    color: #999;
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 
   /* Touch targets */
