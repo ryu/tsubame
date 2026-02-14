@@ -624,7 +624,7 @@ body:has(.three-pane-layout) {
   .three-pane-layout {
     display: block;
     position: relative;
-    height: 100vh;
+    height: 100dvh;
   }
 
   .feed-list-pane,
