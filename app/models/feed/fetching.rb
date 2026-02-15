@@ -13,13 +13,15 @@ module Feed::Fetching
   MAX_RESPONSE_SIZE = 10.megabytes
 
   BLOCKED_IP_RANGES = [
+    IPAddr.new("0.0.0.0/8"),
     IPAddr.new("127.0.0.0/8"),
     IPAddr.new("10.0.0.0/8"),
     IPAddr.new("172.16.0.0/12"),
     IPAddr.new("192.168.0.0/16"),
     IPAddr.new("169.254.0.0/16"),
     IPAddr.new("::1/128"),
-    IPAddr.new("fc00::/7")
+    IPAddr.new("fc00::/7"),
+    IPAddr.new("fe80::/10")
   ].freeze
 
   class_methods do
@@ -70,9 +72,10 @@ module Feed::Fetching
     raise "Too many redirects" if redirect_count >= MAX_REDIRECTS
 
     uri = URI.parse(target_url)
-    validate_url_safety!(uri)
+    resolved_ip = validate_url_safety!(uri)
 
     http = Net::HTTP.new(uri.host, uri.port)
+    http.ipaddr = resolved_ip
     http.use_ssl = (uri.scheme == "https")
     http.open_timeout = OPEN_TIMEOUT
     http.read_timeout = READ_TIMEOUT
@@ -99,7 +102,14 @@ module Feed::Fetching
 
   def validate_url_safety!(uri)
     raise "URL must use HTTP or HTTPS" unless uri.is_a?(URI::HTTP) || uri.is_a?(URI::HTTPS)
-    raise "URL points to private network" if self.class.private_ip?(uri.host)
+
+    ip = Resolv.getaddress(uri.host)
+    ip_addr = IPAddr.new(ip)
+    raise "URL points to private network" if BLOCKED_IP_RANGES.any? { |range| range.include?(ip_addr) }
+
+    ip
+  rescue Resolv::ResolvError, SocketError, IPAddr::InvalidAddressError
+    raise "Cannot resolve hostname"
   end
 
   def enforce_response_size!(response)

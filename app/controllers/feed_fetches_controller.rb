@@ -4,7 +4,7 @@ class FeedFetchesController < ApplicationController
     @feed.fetch
     @feed.reload
     redirect_to feeds_path, notice: "「#{@feed.title || @feed.url}」をフェッチしました。"
-  rescue => e
-    redirect_to feeds_path, alert: "フェッチに失敗しました。"
+  rescue ActiveRecord::RecordNotFound
+    redirect_to feeds_path, alert: "フィードが見つかりませんでした。"
   end
 end

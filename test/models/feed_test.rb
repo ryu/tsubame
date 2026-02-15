@@ -64,6 +64,12 @@ class FeedTest < ActiveSupport::TestCase
     assert_includes feed.errors[:url], "cannot point to private network"
   end
 
+  test "should reject 0.0.0.0/8 URL in validation" do
+    feed = Feed.new(url: "http://0.0.0.0/feed.xml")
+    assert_not feed.valid?
+    assert_includes feed.errors[:url], "cannot point to private network"
+  end
+
   test "private_ip? should detect loopback addresses" do
     assert Feed.private_ip?("127.0.0.1")
   end
@@ -76,6 +82,11 @@ class FeedTest < ActiveSupport::TestCase
 
   test "private_ip? should detect link-local addresses" do
     assert Feed.private_ip?("169.254.169.254")
+  end
+
+  test "private_ip? should detect 0.0.0.0/8 addresses" do
+    assert Feed.private_ip?("0.0.0.0")
+    assert Feed.private_ip?("0.255.255.255")
   end
 
   test "private_ip? should allow public addresses" do
@@ -685,6 +696,35 @@ class FeedTest < ActiveSupport::TestCase
 
     assert_requested :get, "https://example.com/feed.xml",
                     headers: { "If-Modified-Since" => "Wed, 03 Jan 2024 00:00:00 GMT" }, times: 1
+  end
+
+  test "fetch should reject 0.0.0.0 URL" do
+    feed = feeds(:ruby_blog)
+    feed.update_column(:url, "http://0.0.0.0/feed.xml")
+
+    feed.fetch
+
+    feed.reload
+    assert feed.error?
+    assert_match(/Failed to fetch feed/, feed.error_message)
+  end
+
+  test "validate_url_safety! returns resolved IP for pinning" do
+    feed = feeds(:ruby_blog)
+    uri = URI.parse("https://example.com/feed.xml")
+
+    # validate_url_safety! should return the resolved IP string (IPv4 or IPv6)
+    resolved = feed.send(:validate_url_safety!, uri)
+    assert IPAddr.new(resolved), "Expected a valid IP address, got: #{resolved}"
+  end
+
+  test "validate_url_safety! raises for hostname resolving to private IP" do
+    feed = feeds(:ruby_blog)
+    uri = URI.parse("http://localhost/feed.xml")
+
+    assert_raises(RuntimeError) do
+      feed.send(:validate_url_safety!, uri)
+    end
   end
 
   test "fetch should reject private network URLs" do

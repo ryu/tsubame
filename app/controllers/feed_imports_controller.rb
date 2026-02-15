@@ -9,7 +9,8 @@ class FeedImportsController < ApplicationController
     return redirect_with_alert("ファイルサイズは5MB以下にしてください。") if file.size > 5.megabytes
 
     content = file.read
-    return redirect_with_alert("XMLファイルを選択してください。") unless content.start_with?("<?xml")
+    stripped = content.sub(/\A\xEF\xBB\xBF/n, "").lstrip
+    return redirect_with_alert("XMLファイルを選択してください。") unless stripped.match?(/\A(<\?xml|<opml[\s>])/i)
 
     result = Feed.import_from_opml(content)
     redirect_to feeds_path, notice: "#{result[:added]}件のフィードを追加しました。（#{result[:skipped]}件スキップ）"

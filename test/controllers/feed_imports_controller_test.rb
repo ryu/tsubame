@@ -95,6 +95,60 @@ class FeedImportsControllerTest < ActionDispatch::IntegrationTest
     file&.unlink
   end
 
+  test "create accepts OPML with BOM" do
+    sign_in_as(@user)
+    bom_content = "\xEF\xBB\xBF#{file_fixture("sample.opml").read}"
+    bom_file = Rack::Test::UploadedFile.new(
+      StringIO.new(bom_content),
+      "application/xml",
+      original_filename: "bom.opml"
+    )
+
+    assert_difference "Feed.count", 3 do
+      post feed_imports_path, params: { opml_file: bom_file }
+    end
+
+    assert_redirected_to feeds_path
+  end
+
+  test "create accepts OPML with leading whitespace" do
+    sign_in_as(@user)
+    whitespace_content = "  \n  #{file_fixture("sample.opml").read}"
+    ws_file = Rack::Test::UploadedFile.new(
+      StringIO.new(whitespace_content),
+      "application/xml",
+      original_filename: "ws.opml"
+    )
+
+    assert_difference "Feed.count", 3 do
+      post feed_imports_path, params: { opml_file: ws_file }
+    end
+
+    assert_redirected_to feeds_path
+  end
+
+  test "create accepts OPML without XML declaration" do
+    sign_in_as(@user)
+    no_decl_content = <<~OPML
+      <opml version="1.0">
+        <body>
+          <outline type="rss" xmlUrl="https://nodecl.example.com/feed" title="No Decl"/>
+        </body>
+      </opml>
+    OPML
+    no_decl_file = Rack::Test::UploadedFile.new(
+      StringIO.new(no_decl_content),
+      "application/xml",
+      original_filename: "nodecl.opml"
+    )
+
+    assert_difference "Feed.count", 1 do
+      post feed_imports_path, params: { opml_file: no_decl_file }
+    end
+
+    assert_redirected_to feeds_path
+  end
+
   test "create handles invalid OPML file" do
     sign_in_as(@user)
     invalid_file = fixture_file_upload("invalid.opml", "application/xml")
