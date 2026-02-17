@@ -12,6 +12,9 @@ module Feed::Fetching
   MAX_REDIRECTS = 5
   MAX_RESPONSE_SIZE = 10.megabytes
 
+  # Number of bytes to probe for XML encoding declaration
+  XML_ENCODING_PROBE_SIZE = 200
+
   BLOCKED_IP_RANGES = [
     IPAddr.new("0.0.0.0/8"),
     IPAddr.new("127.0.0.0/8"),
@@ -35,7 +38,7 @@ module Feed::Fetching
   end
 
   def fetch
-    response = fetch_with_redirects(url, conditional_get_headers)
+    response, body = fetch_with_redirects(url, conditional_get_headers)
 
     if response.is_a?(Net::HTTPNotModified)
       record_successful_fetch!
@@ -48,9 +51,12 @@ module Feed::Fetching
       return
     end
 
-    body = normalize_encoding(response)
+    body = normalize_encoding(response, body)
     parsed = parse_feed(body)
-    return unless parsed
+    unless parsed
+      record_fetch_error!("Feed format error")
+      return
+    end
 
     import_entries(parsed)
 
@@ -68,12 +74,31 @@ module Feed::Fetching
 
   private
 
-  def fetch_with_redirects(target_url, headers, redirect_count = 0)
-    raise "Too many redirects" if redirect_count >= MAX_REDIRECTS
+  def fetch_with_redirects(target_url, headers)
+    current_url = target_url
+    redirect_count = 0
 
-    uri = URI.parse(target_url)
-    resolved_ip = validate_url_safety!(uri)
+    loop do
+      raise "Too many redirects" if redirect_count >= MAX_REDIRECTS
 
+      uri = URI.parse(current_url)
+      resolved_ip = validate_url_safety!(uri)
+      response, body = perform_request(uri, resolved_ip, headers)
+
+      if response.is_a?(Net::HTTPRedirection) && !response.is_a?(Net::HTTPNotModified)
+        location = response["Location"]
+        raise "Redirect without Location header" if location.blank?
+
+        redirect_uri = URI.parse(location)
+        current_url = redirect_uri.absolute? ? location : URI.join(current_url, location).to_s
+        redirect_count += 1
+      else
+        return [ response, body ]
+      end
+    end
+  end
+
+  def perform_request(uri, resolved_ip, headers)
     http = Net::HTTP.new(uri.host, uri.port)
     http.ipaddr = resolved_ip
     http.use_ssl = (uri.scheme == "https")
@@ -84,20 +109,32 @@ module Feed::Fetching
     request["User-Agent"] = USER_AGENT
     headers.each { |key, value| request[key] = value }
 
-    response = http.request(request)
-    enforce_response_size!(response)
+    result_response = nil
+    result_body = nil
 
-    if response.is_a?(Net::HTTPRedirection) && !response.is_a?(Net::HTTPNotModified)
-      location = response["Location"]
-      raise "Redirect without Location header" if location.blank?
+    http.request(request) do |response|
+      # Reject early based on Content-Length before reading the body
+      content_length = response["Content-Length"]&.to_i
+      raise "Response too large" if content_length && content_length > MAX_RESPONSE_SIZE
 
-      redirect_uri = URI.parse(location)
-      redirect_url = redirect_uri.absolute? ? location : URI.join(target_url, location).to_s
+      # Stream-read body with size limit only for success responses
+      if response.is_a?(Net::HTTPSuccess)
+        result_body = read_body_with_limit!(response)
+      end
 
-      fetch_with_redirects(redirect_url, headers, redirect_count + 1)
-    else
-      response
+      result_response = response
     end
+
+    [ result_response, result_body ]
+  end
+
+  def read_body_with_limit!(response)
+    body = +""
+    response.read_body do |chunk|
+      body << chunk
+      raise "Response too large" if body.bytesize > MAX_RESPONSE_SIZE
+    end
+    body
   end
 
   def validate_url_safety!(uri)
@@ -112,14 +149,8 @@ module Feed::Fetching
     raise "Cannot resolve hostname"
   end
 
-  def enforce_response_size!(response)
-    content_length = response["Content-Length"]&.to_i
-    raise "Response too large" if content_length && content_length > MAX_RESPONSE_SIZE
-    raise "Response too large" if response.body && response.body.bytesize > MAX_RESPONSE_SIZE
-  end
-
-  def normalize_encoding(response)
-    body = response.body.dup
+  def normalize_encoding(response, body)
+    body = body.dup
     charset = begin
       response.type_params["charset"]
     rescue NoMethodError, TypeError
@@ -140,7 +171,7 @@ module Feed::Fetching
   end
 
   def detect_xml_encoding(body)
-    header = body.byteslice(0, 200)
+    header = body.byteslice(0, XML_ENCODING_PROBE_SIZE)
     return unless header
 
     ascii_header = header.dup.force_encoding("ASCII-8BIT")
@@ -153,40 +184,12 @@ module Feed::Fetching
   def parse_feed(body)
     parsed = RSS::Parser.parse(body, false)
     unless parsed
-      record_fetch_error!("Feed format error")
+      Rails.logger.warn("Feed#fetch: empty parse result for feed #{id}")
       return nil
     end
     parsed
   rescue RSS::Error => e
-    record_fetch_error!("Feed format error")
     Rails.logger.warn("Feed#fetch: parse error for feed #{id}: #{e.message}")
     nil
-  end
-
-  def import_entries(parsed)
-    update_feed_title(parsed)
-
-    parsed.items.each do |item|
-      attrs = Entry.attributes_from_rss_item(item)
-      next unless attrs
-      next if entries.exists?(guid: attrs[:guid])
-
-      begin
-        entries.create!(attrs)
-      rescue ActiveRecord::RecordInvalid => e
-        Rails.logger.warn("Feed#fetch: failed to create entry for feed #{id}, guid #{attrs[:guid]}: #{e.message}")
-      end
-    end
-  end
-
-  def update_feed_title(parsed)
-    title = if parsed.respond_to?(:channel) && parsed.channel&.title
-      parsed.channel.title.to_s.presence
-    elsif parsed.respond_to?(:title) && parsed.title
-      t = parsed.title
-      (t.respond_to?(:content) ? t.content : t.to_s).presence
-    end
-    # Skip callbacks/validations — just persisting the parsed title, no need to touch updated_at
-    update_column(:title, title) if title.present?
   end
 end

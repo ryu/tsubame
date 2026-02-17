@@ -1,5 +1,6 @@
 class Feed < ApplicationRecord
-  include Feed::Fetching
+  include Feed::Fetching       # HTTP通信・SSRF保護・エンコーディング・パース（BLOCKED_IP_RANGESを定義）
+  include Feed::EntryImporter  # エントリインポート・フィードタイトル更新
   include Feed::Opml
 
   has_many :entries, dependent: :destroy

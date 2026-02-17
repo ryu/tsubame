@@ -23,13 +23,16 @@ Feed.find_by(id: feed_id)&.fetch
 
 ## Feed#fetch の処理フロー
 
-フィードのクロールロジックは `Feed::Fetching` concern に実装されている。
+クロールロジックは `Feed::Fetching` と `Feed::EntryImporter` の2つの concern に分離されている。
 
 ```
+Feed::Fetching (HTTP通信・パース):
+
 1. HTTP GET リクエスト (Net::HTTP)
    - ETag があれば If-None-Match ヘッダーを付与
    - Last-Modified があれば If-Modified-Since ヘッダーを付与
    - 304 Not Modified → next_fetch_at のみ更新して終了
+   - ストリーミング読み込みでレスポンスサイズを制限
 
 2. エンコーディング正規化
    - XML 宣言・HTTP ヘッダーからエンコーディングを検出
@@ -37,12 +40,16 @@ Feed.find_by(id: feed_id)&.fetch
 
 3. レスポンスパース
    - Ruby 標準ライブラリ `rss` で RSS 1.0/2.0/Atom をパース
-   - レスポンスヘッダーから ETag, Last-Modified を保存
+
+Feed::EntryImporter (エントリ登録):
 
 4. エントリ登録
    - Entry.attributes_from_rss_item でRSSアイテムから属性を抽出
-   - guid + feed_id で重複チェック
+   - 既存 guid を一括取得して重複チェック
    - 新規エントリのみ作成
+   - フィードタイトルの更新
+
+Feed#record_successful_fetch! (ステータス更新):
 
 5. フィード更新
    - status: ok

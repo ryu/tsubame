@@ -50,18 +50,20 @@ Hotwire (Turbo + Stimulus) + Vanilla CSS による SPA ライクな操作感。
 
 ## Feed モデル構成
 
-`Feed` モデル (324行) は責務ごとに concern に分離されている。
+`Feed` モデルは責務ごとに concern に分離されている。
 
 ```
 app/models/
 ├── feed.rb              # コア（associations, validations, enums, scopes, ステータス管理）
 └── feed/
-    ├── fetching.rb      # HTTP fetch, エンコーディング変換, パース, エントリ取り込み
+    ├── fetching.rb      # HTTP fetch, SSRF 防御, エンコーディング変換, パース
+    ├── entry_importer.rb # エントリインポート, フィードタイトル更新
     └── opml.rb          # OPML インポート/エクスポート
 ```
 
 - **Feed** — `has_many :entries`, enum, バリデーション, `record_successful_fetch!` / `record_fetch_error!`
 - **Feed::Fetching** — `fetch`, HTTP リダイレクト追従, SSRF 防御, `private_ip?`, RSS/Atom パース
+- **Feed::EntryImporter** — `import_entries`, `update_feed_title`
 - **Feed::Opml** — `import_from_opml`, `to_opml`
 
 ## 認証
