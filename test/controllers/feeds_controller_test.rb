@@ -134,6 +134,9 @@ class FeedsControllerTest < ActionDispatch::IntegrationTest
         body: html_content,
         headers: { "Content-Type" => "text/html; charset=utf-8" }
       )
+    Feed::Autodiscovery::GUESS_PATHS.each do |path|
+      stub_request(:head, "https://example.com#{path}").to_return(status: 404)
+    end
 
     assert_difference "Feed.count", 1 do
       post feeds_path, params: { feed: { url: "https://example.com/nofeed" } }

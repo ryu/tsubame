@@ -13,6 +13,18 @@ module Feed::Autodiscovery
     application/xml
   ].freeze
 
+  GUESS_PATHS = %w[
+    /feed
+    /feed.xml
+    /feed.atom
+    /rss
+    /rss.xml
+    /atom.xml
+    /index.xml
+  ].freeze
+
+  GUESS_TIMEOUT = 5
+
   # URL を受け取り、フィード URL の候補リストを返す。
   # 戻り値:
   #   { feed_urls: ["https://..."], content_type: :feed }   — URL 自体がフィード
@@ -38,6 +50,7 @@ module Feed::Autodiscovery
     return { feed_urls: [], content_type: :unknown } unless content_type == "text/html"
 
     feed_urls = extract_feed_links(body, url)
+    feed_urls = guess_feed_urls(uri) if feed_urls.empty?
     { feed_urls: feed_urls, content_type: :html }
   end
 
@@ -92,5 +105,33 @@ module Feed::Autodiscovery
       end
     end
     urls.uniq
+  end
+
+  # <link> タグが見つからない場合のフォールバック。
+  # よくあるフィードパスに HEAD リクエストを送り、Content-Type で判定する。
+  def guess_feed_urls(base_uri)
+    base = "#{base_uri.scheme}://#{base_uri.host}"
+    base << ":#{base_uri.port}" unless base_uri.default_port == base_uri.port
+
+    urls = []
+    GUESS_PATHS.each do |path|
+      guess_uri = URI.parse("#{base}#{path}")
+      resolved_ip = validate_url_safety!(guess_uri)
+
+      http = Net::HTTP.new(guess_uri.host, guess_uri.port)
+      http.ipaddr = resolved_ip
+      http.use_ssl = (guess_uri.scheme == "https")
+      http.open_timeout = GUESS_TIMEOUT
+      http.read_timeout = GUESS_TIMEOUT
+
+      response = http.head(guess_uri.request_uri)
+      next unless response.is_a?(Net::HTTPSuccess)
+
+      ct = response["Content-Type"].to_s.split(";").first.to_s.strip.downcase
+      urls << guess_uri.to_s if ct == "application/rss+xml" || ct == "application/atom+xml"
+    rescue StandardError
+      next
+    end
+    urls
   end
 end

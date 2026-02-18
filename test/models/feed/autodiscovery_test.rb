@@ -1,6 +1,16 @@
 require "test_helper"
 
 class Feed::AutodiscoveryTest < ActiveSupport::TestCase
+  private
+
+  def stub_guess_paths_not_found(host)
+    Feed::Autodiscovery::GUESS_PATHS.each do |path|
+      stub_request(:head, "#{host}#{path}").to_return(status: 404)
+    end
+  end
+
+  public
+
   # === Direct Feed URL Tests ===
 
   test "discover_from returns :feed content_type for RSS feed URL" do
@@ -157,6 +167,7 @@ class Feed::AutodiscoveryTest < ActiveSupport::TestCase
         body: html_content,
         headers: { "Content-Type" => "text/html; charset=utf-8" }
       )
+    stub_guess_paths_not_found("https://example.com")
 
     result = Feed.new.discover_from("https://example.com/nofeed")
 
@@ -306,6 +317,7 @@ class Feed::AutodiscoveryTest < ActiveSupport::TestCase
         body: html_content,
         headers: { "Content-Type" => "text/html; charset=utf-8" }
       )
+    stub_guess_paths_not_found("https://example.com")
 
     result = Feed.new.discover_from("https://example.com/page")
 
@@ -328,6 +340,7 @@ class Feed::AutodiscoveryTest < ActiveSupport::TestCase
         body: html_content,
         headers: { "Content-Type" => "text/html; charset=utf-8" }
       )
+    stub_guess_paths_not_found("https://example.com")
 
     result = Feed.new.discover_from("https://example.com/page")
 
@@ -474,5 +487,98 @@ class Feed::AutodiscoveryTest < ActiveSupport::TestCase
     assert_raises(StandardError) do
       Feed.new.discover_from("https://example.com/slow")
     end
+  end
+
+  # === URL Guessing Fallback ===
+
+  test "discover_from guesses /feed when HTML has no feed links" do
+    html_content = "<!DOCTYPE html><html><head><title>Blog</title></head><body></body></html>"
+
+    stub_request(:get, "https://example.com/blog")
+      .to_return(status: 200, body: html_content, headers: { "Content-Type" => "text/html" })
+    stub_guess_paths_not_found("https://example.com")
+    stub_request(:head, "https://example.com/feed")
+      .to_return(status: 200, headers: { "Content-Type" => "application/rss+xml" })
+
+    result = Feed.new.discover_from("https://example.com/blog")
+
+    assert_equal :html, result[:content_type]
+    assert_includes result[:feed_urls], "https://example.com/feed"
+  end
+
+  test "discover_from guesses /atom.xml with atom content type" do
+    html_content = "<!DOCTYPE html><html><head><title>Blog</title></head><body></body></html>"
+
+    stub_request(:get, "https://example.com/blog")
+      .to_return(status: 200, body: html_content, headers: { "Content-Type" => "text/html" })
+    stub_guess_paths_not_found("https://example.com")
+    stub_request(:head, "https://example.com/atom.xml")
+      .to_return(status: 200, headers: { "Content-Type" => "application/atom+xml" })
+
+    result = Feed.new.discover_from("https://example.com/blog")
+
+    assert_includes result[:feed_urls], "https://example.com/atom.xml"
+  end
+
+  test "discover_from skips guessing when link tags found" do
+    html_content = <<~HTML
+      <!DOCTYPE html>
+      <html><head>
+        <link rel="alternate" type="application/rss+xml" href="/feed.xml">
+      </head></html>
+    HTML
+
+    stub_request(:get, "https://example.com/blog")
+      .to_return(status: 200, body: html_content, headers: { "Content-Type" => "text/html" })
+    # No HEAD stubs — if guessing runs, webmock will raise
+
+    result = Feed.new.discover_from("https://example.com/blog")
+
+    assert_equal [ "https://example.com/feed.xml" ], result[:feed_urls]
+  end
+
+  test "discover_from returns empty when all guess paths return 404" do
+    html_content = "<!DOCTYPE html><html><head><title>Blog</title></head><body></body></html>"
+
+    stub_request(:get, "https://example.com/blog")
+      .to_return(status: 200, body: html_content, headers: { "Content-Type" => "text/html" })
+    stub_guess_paths_not_found("https://example.com")
+
+    result = Feed.new.discover_from("https://example.com/blog")
+
+    assert_equal [], result[:feed_urls]
+  end
+
+  test "discover_from handles guess timeout without raising" do
+    html_content = "<!DOCTYPE html><html><head><title>Blog</title></head><body></body></html>"
+
+    stub_request(:get, "https://example.com/blog")
+      .to_return(status: 200, body: html_content, headers: { "Content-Type" => "text/html" })
+
+    Feed::Autodiscovery::GUESS_PATHS.each do |path|
+      stub_request(:head, "https://example.com#{path}").to_timeout
+    end
+
+    result = Feed.new.discover_from("https://example.com/blog")
+
+    assert_equal :html, result[:content_type]
+    assert_equal [], result[:feed_urls]
+  end
+
+  test "discover_from collects multiple guessed feed URLs" do
+    html_content = "<!DOCTYPE html><html><head><title>Blog</title></head><body></body></html>"
+
+    stub_request(:get, "https://example.com/blog")
+      .to_return(status: 200, body: html_content, headers: { "Content-Type" => "text/html" })
+    stub_guess_paths_not_found("https://example.com")
+    stub_request(:head, "https://example.com/feed")
+      .to_return(status: 200, headers: { "Content-Type" => "application/rss+xml" })
+    stub_request(:head, "https://example.com/rss.xml")
+      .to_return(status: 200, headers: { "Content-Type" => "application/rss+xml" })
+
+    result = Feed.new.discover_from("https://example.com/blog")
+
+    assert_includes result[:feed_urls], "https://example.com/feed"
+    assert_includes result[:feed_urls], "https://example.com/rss.xml"
   end
 end
