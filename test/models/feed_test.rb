@@ -718,11 +718,11 @@ class FeedTest < ActiveSupport::TestCase
     assert IPAddr.new(resolved), "Expected a valid IP address, got: #{resolved}"
   end
 
-  test "validate_url_safety! raises for hostname resolving to private IP" do
+  test "validate_url_safety! raises Feed::SsrfError for hostname resolving to private IP" do
     feed = feeds(:ruby_blog)
     uri = URI.parse("http://localhost/feed.xml")
 
-    assert_raises(RuntimeError) do
+    assert_raises(Feed::SsrfError) do
       feed.send(:validate_url_safety!, uri)
     end
   end

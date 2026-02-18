@@ -32,8 +32,16 @@ class FeedsControllerTest < ActionDispatch::IntegrationTest
     assert_select "input[type=url]"
   end
 
-  test "create adds feed with valid URL" do
+  test "create adds feed with valid feed URL" do
     sign_in_as(@user)
+
+    # Stub direct feed URL (Content-Type: application/rss+xml)
+    stub_request(:get, "https://example.com/new/feed.xml")
+      .to_return(
+        status: 200,
+        body: '<?xml version="1.0"?><rss version="2.0"><channel><title>New Feed</title></channel></rss>',
+        headers: { "Content-Type" => "application/rss+xml" }
+      )
 
     assert_difference "Feed.count", 1 do
       post feeds_path, params: { feed: { url: "https://example.com/new/feed.xml" } }
@@ -45,6 +53,135 @@ class FeedsControllerTest < ActionDispatch::IntegrationTest
     feed = Feed.last
     assert_equal "https://example.com/new/feed.xml", feed.url
     assert_not_nil feed.next_fetch_at
+  end
+
+  test "create autodiscovers single feed from HTML and registers it" do
+    sign_in_as(@user)
+
+    html_content = <<~HTML
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>My Blog</title>
+          <link rel="alternate" type="application/rss+xml" href="/blog/feed.xml">
+        </head>
+        <body>Content</body>
+      </html>
+    HTML
+
+    stub_request(:get, "https://example.com/blog")
+      .to_return(
+        status: 200,
+        body: html_content,
+        headers: { "Content-Type" => "text/html; charset=utf-8" }
+      )
+
+    assert_difference "Feed.count", 1 do
+      post feeds_path, params: { feed: { url: "https://example.com/blog" } }
+    end
+
+    assert_redirected_to feeds_path
+    assert_equal "フィードを追加しました。", flash[:notice]
+
+    feed = Feed.last
+    assert_equal "https://example.com/blog/feed.xml", feed.url
+  end
+
+  test "create shows select_feed view when multiple feeds detected" do
+    sign_in_as(@user)
+
+    html_content = <<~HTML
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Multi Feed Blog</title>
+          <link rel="alternate" type="application/rss+xml" href="https://example.com/rss">
+          <link rel="alternate" type="application/atom+xml" href="https://example.com/atom">
+        </head>
+      </html>
+    HTML
+
+    stub_request(:get, "https://example.com/multi")
+      .to_return(
+        status: 200,
+        body: html_content,
+        headers: { "Content-Type" => "text/html; charset=utf-8" }
+      )
+
+    post feeds_path, params: { feed: { url: "https://example.com/multi" } }
+
+    assert_response :ok
+    assert_select "input[type=radio][value='https://example.com/rss']"
+    assert_select "input[type=radio][value='https://example.com/atom']"
+  end
+
+  test "create falls back to registering raw HTML URL when no feed links found" do
+    sign_in_as(@user)
+
+    html_content = <<~HTML
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>No Feed Blog</title>
+        </head>
+        <body>Content</body>
+      </html>
+    HTML
+
+    stub_request(:get, "https://example.com/nofeed")
+      .to_return(
+        status: 200,
+        body: html_content,
+        headers: { "Content-Type" => "text/html; charset=utf-8" }
+      )
+
+    assert_difference "Feed.count", 1 do
+      post feeds_path, params: { feed: { url: "https://example.com/nofeed" } }
+    end
+
+    assert_redirected_to feeds_path
+    feed = Feed.last
+    assert_equal "https://example.com/nofeed", feed.url
+  end
+
+  test "create falls back to registration when autodiscovery raises StandardError" do
+    sign_in_as(@user)
+
+    # Simulate a network error during autodiscovery
+    stub_request(:get, "https://example.com/unreliable")
+      .to_timeout
+
+    # The controller catches the error and tries to register the URL as-is
+    # The URL is still valid HTTP, so it will be registered
+    assert_difference "Feed.count", 1 do
+      post feeds_path, params: { feed: { url: "https://example.com/unreliable" } }
+    end
+
+    assert_redirected_to feeds_path
+    feed = Feed.last
+    assert_equal "https://example.com/unreliable", feed.url
+  end
+
+  test "create rejects SSRF URL during autodiscovery with error message" do
+    sign_in_as(@user)
+
+    assert_no_difference "Feed.count" do
+      post feeds_path, params: { feed: { url: "http://169.254.169.254/feed.xml" } }
+    end
+
+    assert_response :unprocessable_entity
+    assert_select "input[name='feed[url]']"
+  end
+
+  test "create rejects SSRF URL when submitted from select_feed form" do
+    sign_in_as(@user)
+
+    # SSRF attempt directly on the URL field
+    assert_no_difference "Feed.count" do
+      post feeds_path, params: { feed: { url: "http://192.168.1.1/feed.xml" } }
+    end
+
+    assert_response :unprocessable_entity
   end
 
   test "create rejects invalid URL" do
@@ -59,6 +196,14 @@ class FeedsControllerTest < ActionDispatch::IntegrationTest
 
   test "create rejects duplicate URL" do
     sign_in_as(@user)
+
+    # Stub the autodiscovery request for the existing feed URL
+    stub_request(:get, feeds(:ruby_blog).url)
+      .to_return(
+        status: 200,
+        body: '<?xml version="1.0"?><rss version="2.0"><channel><title>Test</title></channel></rss>',
+        headers: { "Content-Type" => "application/rss+xml" }
+      )
 
     assert_no_difference "Feed.count" do
       post feeds_path, params: { feed: { url: feeds(:ruby_blog).url } }

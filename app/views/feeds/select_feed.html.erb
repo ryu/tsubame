@@ -1,0 +1,22 @@
+<div class="manage-page">
+  <nav class="manage-nav">
+    <%= link_to "← フィード管理", feeds_path %>
+  </nav>
+
+  <h1>フィードを選択</h1>
+  <p>「<%= @original_url %>」から複数のフィードが見つかりました。登録するフィードを選択してください。</p>
+
+  <%= form_with url: feeds_path, method: :post, class: "manage-form" do |form| %>
+    <div class="manage-form-field">
+      <% @feed_candidates.each_with_index do |feed_url, i| %>
+        <label class="manage-radio-label">
+          <%= radio_button_tag "feed[url]", feed_url, i == 0 %>
+          <%= feed_url %>
+        </label>
+      <% end %>
+    </div>
+    <div>
+      <%= submit_tag "追加", class: "manage-submit" %>
+    </div>
+  <% end %>
+</div>

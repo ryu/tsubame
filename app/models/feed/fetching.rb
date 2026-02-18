@@ -3,6 +3,8 @@ require "resolv"
 require "rss"
 require "ipaddr"
 
+class Feed::SsrfError < StandardError; end
+
 module Feed::Fetching
   extend ActiveSupport::Concern
 
@@ -138,15 +140,15 @@ module Feed::Fetching
   end
 
   def validate_url_safety!(uri)
-    raise "URL must use HTTP or HTTPS" unless uri.is_a?(URI::HTTP) || uri.is_a?(URI::HTTPS)
+    raise Feed::SsrfError, "URL must use HTTP or HTTPS" unless uri.is_a?(URI::HTTP) || uri.is_a?(URI::HTTPS)
 
     ip = Resolv.getaddress(uri.host)
     ip_addr = IPAddr.new(ip)
-    raise "URL points to private network" if BLOCKED_IP_RANGES.any? { |range| range.include?(ip_addr) }
+    raise Feed::SsrfError, "URL points to private network" if BLOCKED_IP_RANGES.any? { |range| range.include?(ip_addr) }
 
     ip
   rescue Resolv::ResolvError, SocketError, IPAddr::InvalidAddressError
-    raise "Cannot resolve hostname"
+    raise Feed::SsrfError, "Cannot resolve hostname"
   end
 
   def normalize_encoding(response, body)
