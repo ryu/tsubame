@@ -193,6 +193,21 @@ body:has(.three-pane-layout) {
   text-decoration: underline;
 }
 
+.reload-button {
+  background: none;
+  border: none;
+  color: var(--color-accent);
+  cursor: pointer;
+  padding: 2px;
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+}
+
+.reload-button:hover {
+  color: var(--color-text);
+}
+
 .feed-list {
   overflow-y: auto;
   flex: 1;
