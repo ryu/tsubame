@@ -1008,4 +1008,78 @@ class FeedTest < ActiveSupport::TestCase
     feed = Feed.find(feeds(:ruby_blog).id)
     assert_equal 0, feed.unread_count
   end
+
+  # -- Rate validation and scope tests --
+
+  test "rate validates inclusion in 0..5" do
+    # Valid rates: 0, 1, 2, 3, 4, 5
+    (0..5).each do |rate|
+      feed = Feed.new(url: "https://example.com/feed#{rate}", rate: rate)
+      assert feed.valid?, "Expected rate #{rate} to be valid but got errors: #{feed.errors.full_messages}"
+    end
+  end
+
+  test "rate rejects negative values" do
+    feed = Feed.new(url: "https://example.com/feed", rate: -1)
+    assert_not feed.valid?
+    assert_includes feed.errors[:rate], "は一覧にありません"
+  end
+
+  test "rate rejects values greater than 5" do
+    feed = Feed.new(url: "https://example.com/feed", rate: 6)
+    assert_not feed.valid?
+    assert_includes feed.errors[:rate], "は一覧にありません"
+  end
+
+  test "rate defaults to 0" do
+    feed = Feed.create!(url: "https://example.com/feed-default-rate")
+    assert_equal 0, feed.rate
+  end
+
+  test "with_rate_at_least(0) returns all feeds" do
+    all_feeds = Feed.all.count
+    result = Feed.with_rate_at_least(0).count
+    assert_equal all_feeds, result
+  end
+
+  test "with_rate_at_least(1) returns only feeds with rate >= 1" do
+    result = Feed.with_rate_at_least(1)
+    rates = result.map(&:rate)
+
+    assert_includes rates, 1 # low_rate_feed
+    assert_includes rates, 3 # rails_news
+    assert_includes rates, 5 # ruby_blog
+    assert_not_includes rates, 0 # error_feed should not be included
+  end
+
+  test "with_rate_at_least(3) returns only feeds with rate >= 3" do
+    result = Feed.with_rate_at_least(3)
+    rates = result.map(&:rate)
+
+    assert_includes rates, 3 # rails_news
+    assert_includes rates, 5 # ruby_blog
+    assert_not_includes rates, 0 # error_feed
+    assert_not_includes rates, 1 # low_rate_feed
+  end
+
+  test "with_rate_at_least(5) returns only feeds with rate == 5" do
+    result = Feed.with_rate_at_least(5)
+
+    assert_equal 1, result.count
+    assert_equal 5, result.first.rate
+  end
+
+  test "with_rate_at_least coerces string parameter to integer" do
+    result = Feed.with_rate_at_least("3")
+    rates = result.map(&:rate)
+
+    assert_includes rates, 3
+    assert_includes rates, 5
+  end
+
+  test "with_rate_at_least('0') returns all feeds" do
+    all_feeds = Feed.all.count
+    result = Feed.with_rate_at_least("0").count
+    assert_equal all_feeds, result
+  end
 end

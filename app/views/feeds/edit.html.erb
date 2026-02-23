@@ -33,6 +33,18 @@
           {}, class: "manage-select" %>
     </div>
 
+    <div class="manage-form-field">
+      <%= form.label :rate, "レート" %>
+      <%= form.select :rate,
+          [[  "未設定", 0 ],
+           [  "★",     1 ],
+           [  "★★",   2 ],
+           [  "★★★",  3 ],
+           [ "★★★★",  4 ],
+           ["★★★★★",  5 ]],
+          {}, class: "manage-select" %>
+    </div>
+
     <div>
       <%= form.submit "保存", class: "manage-submit" %>
     </div>

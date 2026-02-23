@@ -311,4 +311,84 @@ class FeedsControllerTest < ActionDispatch::IntegrationTest
     assert_select "button", text: "↻"
     assert_select "a", text: "削除"
   end
+
+  # -- Rate tests --
+
+  test "edit form shows rate select field" do
+    sign_in_as(@user)
+    feed = feeds(:ruby_blog)
+    get edit_feed_path(feed)
+
+    assert_response :success
+    assert_select "select[name='feed[rate]']" do
+      # Verify rate options: 0-5
+      (0..5).each do |rate|
+        assert_select "option[value='#{rate}']"
+      end
+    end
+  end
+
+  test "update changes rate" do
+    sign_in_as(@user)
+    feed = feeds(:ruby_blog)
+
+    patch feed_path(feed), params: { feed: { rate: 3 } }
+
+    assert_redirected_to feeds_path
+    assert_equal "フィードを更新しました。", flash[:notice]
+    assert_equal 3, feed.reload.rate
+  end
+
+  test "update changes rate from 3 to 5" do
+    sign_in_as(@user)
+    feed = feeds(:rails_news)
+    assert_equal 3, feed.rate
+
+    patch feed_path(feed), params: { feed: { rate: 5 } }
+
+    assert_equal 5, feed.reload.rate
+  end
+
+  test "update changes rate to 0" do
+    sign_in_as(@user)
+    feed = feeds(:ruby_blog)
+
+    patch feed_path(feed), params: { feed: { rate: 0 } }
+
+    assert_equal 0, feed.reload.rate
+  end
+
+  test "update rejects invalid rate (negative)" do
+    sign_in_as(@user)
+    feed = feeds(:ruby_blog)
+    original_rate = feed.rate
+
+    patch feed_path(feed), params: { feed: { rate: -1 } }
+
+    assert_response :unprocessable_entity
+    assert_equal original_rate, feed.reload.rate
+  end
+
+  test "update rejects invalid rate (> 5)" do
+    sign_in_as(@user)
+    feed = feeds(:ruby_blog)
+    original_rate = feed.rate
+
+    patch feed_path(feed), params: { feed: { rate: 6 } }
+
+    assert_response :unprocessable_entity
+    assert_equal original_rate, feed.reload.rate
+  end
+
+  test "update accepts rate with title change" do
+    sign_in_as(@user)
+    feed = feeds(:ruby_blog)
+
+    patch feed_path(feed), params: { feed: { title: "Updated Title", rate: 4 } }
+
+    assert_redirected_to feeds_path
+    feed.reload
+    assert_equal "Updated Title", feed.title
+    assert_equal 4, feed.rate
+  end
 end

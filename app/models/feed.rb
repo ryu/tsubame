@@ -26,6 +26,7 @@ class Feed < ApplicationRecord
   ERROR_BACKOFF_MINUTES = 30
 
   validates :fetch_interval_minutes, inclusion: { in: FETCH_INTERVAL_OPTIONS.keys }
+  validates :rate, inclusion: { in: 0..5 }
 
   # record_successful_fetch! / record_fetch_error! set next_fetch_at explicitly;
   # this callback only fires when fetch_interval_minutes is changed (e.g. from settings).
@@ -50,6 +51,8 @@ class Feed < ApplicationRecord
     with_unread_count
       .having("COUNT(CASE WHEN entries.id IS NOT NULL AND entries.read_at IS NULL THEN 1 END) > 0")
   }
+
+  scope :with_rate_at_least, ->(rate) { rate.to_i > 0 ? where("rate >= ?", rate.to_i) : all }
 
   # Virtual attribute populated by with_unread_count / with_unreads scope
   def unread_count

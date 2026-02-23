@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_02_10_131830) do
+ActiveRecord::Schema[8.1].define(version: 2026_02_23_132045) do
   create_table "entries", force: :cascade do |t|
     t.string "author"
     t.text "body"
@@ -39,6 +39,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_10_131830) do
     t.datetime "last_fetched_at"
     t.string "last_modified"
     t.datetime "next_fetch_at"
+    t.integer "rate", default: 0, null: false
     t.string "site_url"
     t.integer "status", default: 0, null: false
     t.string "title"

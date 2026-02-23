@@ -65,7 +65,7 @@ class FeedsController < ApplicationController
   end
 
   def feed_params
-    params.require(:feed).permit(:title, :fetch_interval_minutes)
+    params.require(:feed).permit(:title, :fetch_interval_minutes, :rate)
   end
 
   def discover_feed(url)

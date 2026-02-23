@@ -40,6 +40,17 @@
       </div>
     </div>
 
+    <nav class="rate-filter" aria-label="レートフィルター">
+      <%= link_to "すべて", root_path,
+          class: "rate-filter-link #{"rate-filter-link--active" if @rate == 0}",
+          aria: { current: @rate == 0 || nil } %>
+      <% (1..5).each do |n| %>
+        <%= link_to "#{"★" * n}以上", root_path(rate: n),
+            class: "rate-filter-link #{"rate-filter-link--active" if @rate == n}",
+            aria: { current: @rate == n || nil } %>
+      <% end %>
+    </nav>
+
     <div class="feed-list" data-selection-target="feedList">
       <% if @feeds.any? %>
         <% @feeds.each do |feed| %>

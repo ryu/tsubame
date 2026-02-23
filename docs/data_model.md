@@ -16,6 +16,7 @@
 | next_fetch_at | datetime | 次回クロール予定日時 |
 | status | integer | enum: ok(0), error(1) (default: 0, not null) |
 | error_message | text | 直近のエラーメッセージ |
+| rate | integer | レート 0〜5 (default: 0, not null) |
 | etag | string | HTTP ETag ヘッダーの値 |
 | last_modified | string | HTTP Last-Modified ヘッダーの値 |
 | created_at | datetime | |

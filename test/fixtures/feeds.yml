@@ -8,6 +8,7 @@ ruby_blog:
   status: ok
   last_fetched_at: <%= 1.hour.ago %>
   next_fetch_at: <%= 1.hour.from_now %>
+  rate: 5
 
 rails_news:
   url: https://example.com/rails/feed.xml
@@ -17,6 +18,7 @@ rails_news:
   status: ok
   last_fetched_at: <%= 2.hours.ago %>
   next_fetch_at: <%= 30.minutes.from_now %>
+  rate: 3
 
 error_feed:
   url: https://example.com/error/feed.xml
@@ -26,3 +28,13 @@ error_feed:
   error_message: Connection timeout
   last_fetched_at: <%= 1.day.ago %>
   next_fetch_at: <%= 1.hour.from_now %>
+  rate: 0
+
+low_rate_feed:
+  url: https://example.com/low/feed.xml
+  title: Low Rate Feed
+  site_url: https://example.com/low
+  status: ok
+  last_fetched_at: <%= 30.minutes.ago %>
+  next_fetch_at: <%= 1.5.hours.from_now %>
+  rate: 1
