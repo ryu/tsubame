@@ -10,7 +10,7 @@ class PinnedEntryOpensControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to new_session_path
   end
 
-  test "create returns URLs and unpins entries" do
+  test "create returns URLs without unpinning entries" do
     sign_in_as(@user)
     entry1 = entries(:ruby_article_one)
     entry2 = entries(:ruby_article_two)
@@ -24,9 +24,9 @@ class PinnedEntryOpensControllerTest < ActionDispatch::IntegrationTest
     assert_equal 2, json["urls"].length
     assert_includes json["urls"], "https://example.com/1"
     assert_includes json["urls"], "https://example.com/2"
-    assert_equal 0, json["pinned_count"]
-    assert_not entry1.reload.pinned
-    assert_not entry2.reload.pinned
+    assert_equal 2, json["entry_ids"].length
+    assert entry1.reload.pinned, "entry should still be pinned"
+    assert entry2.reload.pinned, "entry should still be pinned"
   end
 
   test "create handles no pinned entries" do
@@ -38,7 +38,6 @@ class PinnedEntryOpensControllerTest < ActionDispatch::IntegrationTest
 
     json = JSON.parse(response.body)
     assert_equal 0, json["urls"].length
-    assert_equal 0, json["pinned_count"]
   end
 
   test "create limits to 5 entries" do
@@ -57,5 +56,42 @@ class PinnedEntryOpensControllerTest < ActionDispatch::IntegrationTest
     post pinned_entry_open_path
     json = JSON.parse(response.body)
     assert_equal 5, json["urls"].length
+  end
+
+  test "destroy requires authentication" do
+    delete pinned_entry_open_path
+    assert_redirected_to new_session_path
+  end
+
+  test "destroy unpins specified entries" do
+    sign_in_as(@user)
+    entry1 = entries(:ruby_article_one)
+    entry2 = entries(:ruby_article_two)
+    entry1.update!(pinned: true)
+    entry2.update!(pinned: true)
+
+    delete pinned_entry_open_path, params: { entry_ids: [ entry1.id, entry2.id ] }, as: :json
+    assert_response :success
+
+    json = JSON.parse(response.body)
+    assert_equal 0, json["pinned_count"]
+    assert_not entry1.reload.pinned
+    assert_not entry2.reload.pinned
+  end
+
+  test "destroy only unpins specified entries" do
+    sign_in_as(@user)
+    entry1 = entries(:ruby_article_one)
+    entry2 = entries(:ruby_article_two)
+    entry1.update!(pinned: true)
+    entry2.update!(pinned: true)
+
+    delete pinned_entry_open_path, params: { entry_ids: [ entry1.id ] }, as: :json
+    assert_response :success
+
+    json = JSON.parse(response.body)
+    assert_equal 1, json["pinned_count"]
+    assert_not entry1.reload.pinned
+    assert entry2.reload.pinned
   end
 end

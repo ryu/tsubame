@@ -47,9 +47,29 @@ export default class extends Controller {
     })
       .then(response => response.json())
       .then(data => {
-        data.urls.forEach(url => openInBackground(url))
-        data.entry_ids.forEach(id => this._removePinIcon(id))
-        this._updatePinBadge(data.pinned_count)
+        if (data.urls.length === 0) return
+
+        // window.open() returns null when blocked by popup blocker.
+        // If any tab was blocked, skip unpinning so the user can retry.
+        let anyBlocked = false
+        data.urls.forEach(url => {
+          const w = openInBackground(url)
+          if (!w) anyBlocked = true
+        })
+
+        if (anyBlocked) return
+
+        // All tabs opened successfully — now unpin
+        return fetchWithCsrf("/pinned_entry_open", {
+          method: "DELETE",
+          body: JSON.stringify({ entry_ids: data.entry_ids }),
+          signal: abortController.signal
+        })
+          .then(response => response.json())
+          .then(unpinData => {
+            data.entry_ids.forEach(id => this._removePinIcon(id))
+            this._updatePinBadge(unpinData.pinned_count)
+          })
       })
       .catch(error => {
         if (error.name !== "AbortError") {

@@ -20,7 +20,7 @@ Rails.application.routes.draw do
     end
   end
 
-  resource :pinned_entry_open, only: :create
+  resource :pinned_entry_open, only: [ :create, :destroy ]
 
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
 
