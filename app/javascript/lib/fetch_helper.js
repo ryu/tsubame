@@ -18,7 +18,7 @@ export function fetchWithCsrf(url, options = {}) {
 // Open a URL in a background tab (works in Chrome/Firefox; Safari requires
 // unchecking "When a new tab or window opens, make it active" in settings)
 export function openInBackground(url) {
-  const w = window.open(url, "_blank", "noopener,noreferrer")
+  const w = window.open(url, "_blank")
   window.focus()
   return w
 }
