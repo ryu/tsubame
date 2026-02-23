@@ -2,10 +2,10 @@
 
 ## Unreleased
 
+## [1.1.0] - 2026-02-23
+
 ### Added
 - Feed rating (★) feature: rate feeds 0-5 and filter by minimum rate on home screen
-
-## 2026-02-23
 
 ### Changed
 - Update architecture, feed crawling, and AGENT docs to match current codebase
