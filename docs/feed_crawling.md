@@ -65,7 +65,8 @@ Feed#record_successful_fetch! (ステータス更新):
 
 ## Entry.attributes_from_rss_item
 
-RSS/Atom/RDF アイテムから属性ハッシュを生成するクラスメソッド。
+`Entry::RssParser` concern で定義されるクラスメソッド。
+RSS/Atom/RDF アイテムから属性ハッシュを生成する。
 guid が空の場合は nil を返す。
 
 抽出項目: guid, title, url, author, body, published_at

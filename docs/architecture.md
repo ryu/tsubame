@@ -40,53 +40,76 @@ Hotwire (Turbo + Stimulus) + Vanilla CSS による SPA ライクな操作感。
 
 ### Stimulus コントローラー構成
 
-- `keyboard_controller` — グローバルキーボードショートカット（フィード/エントリナビゲーション、アクション）
-- `hatena_bookmark_controller` — はてなブックマーク数取得・表示（外部API連携）
-- `mobile_pane_controller` — モバイル向けペイン切り替え
+- `keyboard_controller` — グローバルキーボードショートカット。keydown ルーターとして各コマンドをイベントでディスパッチ
+- `selection_controller` — キーボードコマンドの実行先。フィード/エントリナビゲーション、スクロール、既読管理、はてブ操作等を担う中央ハブ
+- `pin_controller` — ピン追加/解除・ピン済みエントリを開く（selection outlet 経由）
+- `help_dialog_controller` — ヘルプダイアログの開閉
+- `hatena_bookmark_controller` — はてなブックマーク数取得・表示（外部API連携、バッチ取得）
+- `mobile_pane_controller` — モバイル向けペイン切り替え（feeds / entries / detail）
 
 ### JavaScript ライブラリ (`app/javascript/lib/`)
 
-- `hatena_bookmark.js` — はてなブックマークページURL生成・オープン（共通ユーティリティ）
+- `fetch_helper.js` — `fetchWithCsrf`（CSRF トークン自動付与）、`openInBackground`（背面タブで開く）
+- `hatena_bookmark.js` — はてなブックマークページURL生成・オープン
 
-## Feed モデル構成
+## モデル構成
+
+### Feed
 
 `Feed` モデルは責務ごとに concern に分離されている。
 
 ```
 app/models/
-├── feed.rb              # コア（associations, validations, enums, scopes, ステータス管理）
+├── feed.rb                # コア（associations, validations, enums, scopes, ステータス管理）
 └── feed/
-    ├── fetching.rb      # HTTP fetch, SSRF 防御, エンコーディング変換, パース
-    ├── entry_importer.rb # エントリインポート, フィードタイトル更新
-    └── opml.rb          # OPML インポート/エクスポート
+    ├── fetching.rb        # HTTP fetch, SSRF 防御, エンコーディング変換
+    ├── autodiscovery.rb   # HTML から feed URL を自動検出
+    ├── entry_importer.rb  # エントリインポート, フィードタイトル更新
+    └── opml.rb            # OPML インポート/エクスポート
 ```
 
 - **Feed** — `has_many :entries`, enum, バリデーション, `record_successful_fetch!` / `record_fetch_error!`
-- **Feed::Fetching** — `fetch`, HTTP リダイレクト追従, SSRF 防御, `private_ip?`, RSS/Atom パース
+- **Feed::Fetching** — `fetch`, HTTP リダイレクト追従, SSRF 防御, エンコーディング変換, `RSS::Parser.parse` によるフィードオブジェクト生成
+- **Feed::Autodiscovery** — `discover_from(url)`, HTML `<link rel="alternate">` 解析, フォールバックパス推測
 - **Feed::EntryImporter** — `import_entries`, `update_feed_title`
 - **Feed::Opml** — `import_from_opml`, `to_opml`
+
+### Entry
+
+```
+app/models/
+├── entry.rb             # コア（associations, validations, scopes, mark_as_read!, toggle_pin!）
+└── entry/
+    └── rss_parser.rb    # RSS/Atom/RDF アイテムから属性ハッシュを生成
+```
+
+- **Entry** — `belongs_to :feed`, `mark_as_read!`, `toggle_pin!`, `safe_url_for_link`
+- **Entry::RssParser** — `attributes_from_rss_item` クラスメソッド（guid, title, url, author, body, published_at を抽出）
 
 ## 認証
 
 Rails 8 の `bin/rails generate authentication` を使用。
 seed で 1 ユーザーのみ作成。
 
-## フェーズ計画
+## 実装状況
 
-### Phase 1: MVP
+### 完了済み
 
-1. プロジェクトセットアップ + Kamal デプロイ確認
-2. 認証
-3. OPML インポート
-4. フィードクロール (Solid Queue)
-5. 3ペインUI + キーボードショートカット
-6. 既読管理
-7. ピン
-
-### Phase 2
-
+- プロジェクトセットアップ + Kamal デプロイ
+- 認証（Rails 8 authentication generator）+ パスワード変更
+- OPML インポート / エクスポート
+- フィードクロール (Solid Queue)
 - フィード発見 (autodiscovery)
+- 3ペインUI + キーボードショートカット
+- 既読管理
+- ピン
+- はてなブックマーク連携
+- モバイル対応
+- エントリ自動削除（90日経過 & 既読 & 非ピン）
+- バックアップ（VPS + ローカル転送）
+
+### 未実装
+
 - レート（★）によるフィード分類
 - フォルダ管理
-- OPML エクスポート
 - 検索機能

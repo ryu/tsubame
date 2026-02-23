@@ -16,9 +16,10 @@ Fastladder互換のフィードリーダー。シングルユーザー向け。
   - CRUDベースのコントローラー
   - バニラRails（外部gem最小限）
   - Vanilla CSS（プリプロセッサなし）
-- **シングルユーザー**: User モデルは認証用のみ。Subscription中間テーブルなし
-- **フィードパース**: Ruby標準ライブラリ `rss` を使用（外部gem不使用）
-- **ファイルサイズ**: モデルのconcernが200行を超えたら責務分割を検討する
+- **シングルユーザー**: User モデルは認証用のみ。Subscription 中間テーブルなし
+- **フィードパース**: Ruby 標準ライブラリ `rss` を使用（外部gem不使用）
+- **concern 分割**: Feed は `Fetching`, `Autodiscovery`, `EntryImporter`, `Opml`、Entry は `RssParser` に分離
+- **ファイルサイズ**: モデルの concern が200行を超えたら責務分割を検討する
 
 ## ワークフロー
 
@@ -56,7 +57,7 @@ Fastladder互換のフィードリーダー。シングルユーザー向け。
 
 ```bash
 bin/dev          # 開発サーバー起動
-bin/ci           # CI（rubocop, security audit, テスト）
+bin/ci           # CI（rubocop, bundler-audit, importmap audit, brakeman, テスト, seed）
 bin/rails test   # テストのみ
 bin/rubocop      # Lintのみ
 ```
