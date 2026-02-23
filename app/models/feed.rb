@@ -31,6 +31,11 @@ class Feed < ApplicationRecord
   # this callback only fires when fetch_interval_minutes is changed (e.g. from settings).
   before_save :set_next_fetch_at, if: :fetch_interval_minutes_changed?
 
+  # Returns an unsaved Feed ready for immediate scheduling.
+  def self.subscribe(url)
+    new(url: url, next_fetch_at: Time.current)
+  end
+
   scope :due_for_fetch, -> { where("next_fetch_at <= ?", Time.current).where.not(next_fetch_at: nil) }
 
   scope :with_unread_count, -> {
