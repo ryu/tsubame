@@ -10,7 +10,7 @@
 set -euo pipefail
 
 REMOTE_USER=ubuntu
-REMOTE_HOST=153.120.7.202
+REMOTE_HOST=${TSUBAME_REMOTE_HOST:?Error: set TSUBAME_REMOTE_HOST}
 REMOTE_DIR=/home/ubuntu/backups/tsubame
 LOCAL_DIR=~/backups/tsubame
 RETENTION_DAYS=30

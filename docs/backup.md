@@ -21,15 +21,15 @@ cache/queue/cable の各DBは一時データのため対象外。
 
 ```bash
 # スクリプトを配置
-ssh ubuntu@153.120.7.202 "mkdir -p ~/bin ~/backups/tsubame"
-scp scripts/backup-db.sh ubuntu@153.120.7.202:~/bin/
-ssh ubuntu@153.120.7.202 "chmod +x ~/bin/backup-db.sh"
+ssh ubuntu@YOUR_SERVER_IP "mkdir -p ~/bin ~/backups/tsubame"
+scp scripts/backup-db.sh ubuntu@YOUR_SERVER_IP:~/bin/
+ssh ubuntu@YOUR_SERVER_IP "chmod +x ~/bin/backup-db.sh"
 
 # 動作テスト
-ssh ubuntu@153.120.7.202 ~/bin/backup-db.sh
+ssh ubuntu@YOUR_SERVER_IP ~/bin/backup-db.sh
 
 # cronに登録（毎日3:00 JST）
-ssh ubuntu@153.120.7.202 'crontab -l 2>/dev/null; echo "0 3 * * * /home/ubuntu/bin/backup-db.sh >> /home/ubuntu/backups/tsubame/backup.log 2>&1"' | ssh ubuntu@153.120.7.202 crontab -
+ssh ubuntu@YOUR_SERVER_IP 'crontab -l 2>/dev/null; echo "0 3 * * * /home/ubuntu/bin/backup-db.sh >> /home/ubuntu/backups/tsubame/backup.log 2>&1"' | ssh ubuntu@YOUR_SERVER_IP crontab -
 ```
 
 ### 仕組み
@@ -53,18 +53,18 @@ chmod +x ~/bin/fetch-tsubame-backup.sh
 
 # cronに登録（毎日8:00）
 crontab -e
-0 8 * * * /Users/ryu/bin/fetch-tsubame-backup.sh >> /Users/ryu/backups/tsubame/fetch.log 2>&1
+0 8 * * * $HOME/bin/fetch-tsubame-backup.sh >> $HOME/backups/tsubame/fetch.log 2>&1
 ```
 
 ## リストア
 
 ```bash
 # バックアップファイルをVPSに転送
-scp ~/backups/tsubame/tsubame-YYYYMMDD_HHMMSS.sqlite3 ubuntu@153.120.7.202:/tmp/restore.sqlite3
+scp ~/backups/tsubame/tsubame-YYYYMMDD_HHMMSS.sqlite3 ubuntu@YOUR_SERVER_IP:/tmp/restore.sqlite3
 
 # コンテナにコピーしてリストア
-CONTAINER=$(ssh ubuntu@153.120.7.202 'docker ps --filter "name=tsubame-web" --format "{{.Names}}" | head -1')
-ssh ubuntu@153.120.7.202 "docker cp /tmp/restore.sqlite3 $CONTAINER:/rails/storage/production.sqlite3"
+CONTAINER=$(ssh ubuntu@YOUR_SERVER_IP 'docker ps --filter "name=tsubame-web" --format "{{.Names}}" | head -1')
+ssh ubuntu@YOUR_SERVER_IP "docker cp /tmp/restore.sqlite3 $CONTAINER:/rails/storage/production.sqlite3"
 
 # アプリを再起動
 bin/kamal app boot
@@ -74,10 +74,10 @@ bin/kamal app boot
 
 ```bash
 # VPS側のバックアップ一覧
-ssh ubuntu@153.120.7.202 "ls -lh ~/backups/tsubame/"
+ssh ubuntu@YOUR_SERVER_IP "ls -lh ~/backups/tsubame/"
 
 # VPS側のログ確認
-ssh ubuntu@153.120.7.202 "cat ~/backups/tsubame/backup.log"
+ssh ubuntu@YOUR_SERVER_IP "cat ~/backups/tsubame/backup.log"
 
 # Mac側のバックアップ一覧
 ls -lh ~/backups/tsubame/

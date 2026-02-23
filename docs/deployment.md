@@ -3,10 +3,9 @@
 ## 構成
 
 - デプロイツール: Kamal 2
-- デプロイ先: さくらのVPS (153.120.7.202)
+- デプロイ先: お使いのVPS
 - コンテナレジストリ: GitHub Container Registry (ghcr.io)
 - SSL: Let's Encrypt (kamal-proxy 経由)
-- ホスト: tsubame.ryu-yamamoto.org
 
 ## 初回セットアップ
 

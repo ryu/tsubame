@@ -2,12 +2,12 @@
 service: tsubame
 
 # Name of the container image (use your-user/app-name on external registries).
-image: ryu/tsubame
+image: your-username/tsubame
 
 # Deploy to these servers.
 servers:
   web:
-    - 153.120.7.202
+    - YOUR_SERVER_IP
   # job:
   #   hosts:
   #     - 192.168.0.1
@@ -22,7 +22,7 @@ servers:
 #
 proxy:
   ssl: true
-  host: tsubame.ryu-yamamoto.org
+  host: your-domain.example.com
 
 deploy_timeout: 60
 
@@ -30,7 +30,7 @@ deploy_timeout: 60
 registry:
   # GitHub Container Registry
   server: ghcr.io
-  username: ryu
+  username: your-username
 
   # Always use an access token rather than real password when possible.
   # Generate a Personal Access Token with `write:packages` scope at:
