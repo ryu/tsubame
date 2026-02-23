@@ -1,0 +1,38 @@
+<div class="manage-page">
+  <nav class="manage-nav">
+    <%= link_to "← ホーム", root_path %>
+  </nav>
+
+  <h1>パスワード変更</h1>
+
+  <% if Current.user.errors.any? %>
+    <div class="form-errors">
+      <ul>
+        <% Current.user.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <%= form_with model: Current.user, url: password_path, method: :patch, class: "manage-form" do |form| %>
+    <div class="manage-form-field">
+      <%= form.label :password_challenge, "現在のパスワード" %>
+      <%= form.password_field :password_challenge, class: "manage-input", autocomplete: "current-password", required: true %>
+    </div>
+
+    <div class="manage-form-field">
+      <%= form.label :password, "新しいパスワード" %>
+      <%= form.password_field :password, class: "manage-input", autocomplete: "new-password", required: true %>
+    </div>
+
+    <div class="manage-form-field">
+      <%= form.label :password_confirmation, "新しいパスワード（確認）" %>
+      <%= form.password_field :password_confirmation, class: "manage-input", autocomplete: "new-password", required: true %>
+    </div>
+
+    <div>
+      <%= form.submit "変更する", class: "manage-submit" %>
+    </div>
+  <% end %>
+</div>

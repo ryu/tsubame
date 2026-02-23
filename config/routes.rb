@@ -2,6 +2,7 @@ Rails.application.routes.draw do
   mount MissionControl::Jobs::Engine, at: "/jobs"
 
   resource :session
+  resource :password, only: [ :edit, :update ]
 
   resources :feeds, only: [ :index, :new, :create, :edit, :update, :destroy ] do
     resource :mark_as_read, only: :create, controller: "feed_mark_as_reads"
