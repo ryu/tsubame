@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## [1.2.0] - 2026-02-25
+
+### Added
+- Folder feature: organize feeds into folders with grouped display on home screen
+- Full CRUD for folders with feed assignment on create/edit
+
 ## [1.1.0] - 2026-02-23
 
 ### Added
