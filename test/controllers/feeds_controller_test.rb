@@ -391,4 +391,71 @@ class FeedsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "Updated Title", feed.title
     assert_equal 4, feed.rate
   end
+
+  # -- Folder-related tests --
+
+  test "new shows folder select when authenticated" do
+    sign_in_as(@user)
+    get new_feed_path
+
+    assert_response :success
+    assert_select "select"  # Folder select should be present
+  end
+
+  test "edit shows folder select when authenticated" do
+    sign_in_as(@user)
+    feed = feeds(:ruby_blog)
+
+    get edit_feed_path(feed)
+
+    assert_response :success
+    assert_select "select"  # Folder select should be present
+  end
+
+  test "update assigns feed to folder" do
+    sign_in_as(@user)
+    feed = feeds(:error_feed)  # Use a feed without folder initially
+    folder = folders(:news)
+
+    patch feed_path(feed), params: { feed: { folder_id: folder.id } }
+
+    assert_redirected_to feeds_path
+    assert_equal folder.id, feed.reload.folder_id
+  end
+
+  test "update removes feed from folder" do
+    sign_in_as(@user)
+    feed = feeds(:ruby_blog)  # ruby_blog is in tech folder
+
+    assert_not_nil feed.folder_id
+
+    patch feed_path(feed), params: { feed: { folder_id: "" } }
+
+    assert_redirected_to feeds_path
+    assert_nil feed.reload.folder_id
+  end
+
+  test "update changes feed folder" do
+    sign_in_as(@user)
+    feed = feeds(:ruby_blog)  # Currently in tech folder
+    new_folder = folders(:news)
+
+    patch feed_path(feed), params: { feed: { folder_id: new_folder.id } }
+
+    assert_redirected_to feeds_path
+    assert_equal new_folder.id, feed.reload.folder_id
+  end
+
+  test "update keeps folder when only title changes" do
+    sign_in_as(@user)
+    feed = feeds(:ruby_blog)
+    original_folder_id = feed.folder_id
+
+    patch feed_path(feed), params: { feed: { title: "New Title" } }
+
+    assert_redirected_to feeds_path
+    feed.reload
+    assert_equal "New Title", feed.title
+    assert_equal original_folder_id, feed.folder_id
+  end
 end

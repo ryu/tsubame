@@ -45,6 +45,14 @@
           {}, class: "manage-select" %>
     </div>
 
+    <div class="manage-form-field">
+      <%= form.label :folder_id, "フォルダ" %>
+      <%= form.select :folder_id,
+          @folders.map { |f| [f.name, f.id] },
+          { include_blank: "（未分類）" },
+          class: "manage-select" %>
+    </div>
+
     <div>
       <%= form.submit "保存", class: "manage-submit" %>
     </div>

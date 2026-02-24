@@ -9,6 +9,7 @@ ruby_blog:
   last_fetched_at: <%= 1.hour.ago %>
   next_fetch_at: <%= 1.hour.from_now %>
   rate: 5
+  folder: tech
 
 rails_news:
   url: https://example.com/rails/feed.xml
@@ -19,6 +20,7 @@ rails_news:
   last_fetched_at: <%= 2.hours.ago %>
   next_fetch_at: <%= 30.minutes.from_now %>
   rate: 3
+  folder: tech
 
 error_feed:
   url: https://example.com/error/feed.xml

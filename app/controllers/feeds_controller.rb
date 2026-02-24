@@ -5,43 +5,49 @@ class FeedsController < ApplicationController
 
   def new
     @feed = Feed.new
+    @folders = Folder.order(:name)
   end
 
   def create
     raw_url = feed_url
+    folder_id = params.dig(:feed, :folder_id).to_i.nonzero?
 
     if raw_url.blank?
       @feed = Feed.new
       @feed.errors.add(:url, :blank)
+      @folders = Folder.order(:name)
       return render :new, status: :unprocessable_entity
     end
 
     result  = discover_feed(raw_url)
 
     if result[:content_type] == :feed
-      return create_and_redirect(raw_url)
+      return create_and_redirect(raw_url, folder_id)
     end
 
     feed_urls = Array(result[:feed_urls])
 
     case feed_urls.length
     when 0
-      create_and_redirect(raw_url)
+      create_and_redirect(raw_url, folder_id)
     when 1
-      create_and_redirect(feed_urls.first)
+      create_and_redirect(feed_urls.first, folder_id)
     when (2..)
       @feed_candidates = feed_urls
       @original_url = raw_url
+      @folder_id = folder_id
       render :select_feed, status: :ok
     end
   rescue Feed::SsrfError
     @feed = Feed.new(url: raw_url)
     @feed.errors.add(:url, "cannot point to private network")
+    @folders = Folder.order(:name)
     render :new, status: :unprocessable_entity
   end
 
   def edit
     @feed = Feed.find(params[:id])
+    @folders = Folder.order(:name)
   end
 
   def update
@@ -49,6 +55,7 @@ class FeedsController < ApplicationController
     if @feed.update(feed_params)
       redirect_to feeds_path, notice: "フィードを更新しました。"
     else
+      @folders = Folder.order(:name)
       render :edit, status: :unprocessable_entity
     end
   end
@@ -65,7 +72,7 @@ class FeedsController < ApplicationController
   end
 
   def feed_params
-    params.require(:feed).permit(:title, :fetch_interval_minutes, :rate)
+    params.require(:feed).permit(:title, :fetch_interval_minutes, :rate, :folder_id)
   end
 
   def discover_feed(url)
@@ -77,12 +84,14 @@ class FeedsController < ApplicationController
     { feed_urls: [], content_type: :unknown }
   end
 
-  def create_and_redirect(url)
+  def create_and_redirect(url, folder_id = nil)
     @feed = Feed.subscribe(url)
+    @feed.folder_id = folder_id
 
     if @feed.save
       redirect_to feeds_path, notice: "フィードを追加しました。"
     else
+      @folders = Folder.order(:name)
       render :new, status: :unprocessable_entity
     end
   end

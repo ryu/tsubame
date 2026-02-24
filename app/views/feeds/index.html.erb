@@ -11,6 +11,8 @@
     <%= link_to "OPMLをインポート", new_feed_import_path, class: "manage-action-link" %>
     |
     <%= link_to "OPMLをエクスポート", feed_export_path, class: "manage-action-link" %>
+    |
+    <%= link_to "フォルダ管理", folders_path, class: "manage-action-link" %>
   </p>
 
   <% if @feeds.any? %>

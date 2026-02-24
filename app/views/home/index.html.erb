@@ -30,6 +30,7 @@
           </span>
         <% end %>
         <%= link_to "フィード管理", feeds_path, class: "feed-manage-link" %>
+        <%= link_to "フォルダ管理", folders_path, class: "feed-manage-link" %>
         <%= link_to "パスワード変更", edit_password_path, class: "feed-manage-link" %>
         <button type="button" class="reload-button" aria-label="ページ再読み込み" title="ページ再読み込み (r)" data-action="click->selection#reloadPage">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -53,11 +54,14 @@
 
     <div class="feed-list" data-selection-target="feedList">
       <% if @feeds.any? %>
-        <% @feeds.each do |feed| %>
-          <%= link_to feed_entries_path(feed), data: { turbo_frame: "entry_list", feed_id: feed.id }, class: "feed-item", tabindex: "-1" do %>
-            <span class="feed-title"><%= feed.title || feed.url %></span>
-            <% if feed.unread_count > 0 %>
-              <span class="unread-badge"><%= feed.unread_count %></span>
+        <% @grouped_feeds.each do |folder, feeds| %>
+          <div class="feed-folder-header"><%= folder&.name || "未分類" %></div>
+          <% feeds.each do |feed| %>
+            <%= link_to feed_entries_path(feed), data: { turbo_frame: "entry_list", feed_id: feed.id }, class: "feed-item", tabindex: "-1" do %>
+              <span class="feed-title"><%= feed.title || feed.url %></span>
+              <% if feed.unread_count > 0 %>
+                <span class="unread-badge"><%= feed.unread_count %></span>
+              <% end %>
             <% end %>
           <% end %>
         <% end %>

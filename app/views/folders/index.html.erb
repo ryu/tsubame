@@ -1,0 +1,41 @@
+<div class="manage-page">
+  <nav class="manage-nav">
+    <%= link_to "← ホーム", root_path %>
+  </nav>
+
+  <h1>フォルダ管理</h1>
+
+  <p>
+    <%= link_to "フォルダを追加", new_folder_path, class: "manage-action-link" %>
+    |
+    <%= link_to "フィード管理", feeds_path, class: "manage-action-link" %>
+  </p>
+
+  <% if @folders.any? %>
+    <table class="manage-table">
+      <thead>
+        <tr>
+          <th>フォルダ名</th>
+          <th>フィード数</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @folders.each do |folder| %>
+          <tr>
+            <td><%= folder.name %></td>
+            <td><%= folder.feeds.size %></td>
+            <td>
+              <div class="manage-actions">
+                <%= link_to "編集", edit_folder_path(folder), class: "manage-btn-small" %>
+                <%= link_to "削除", folder_path(folder), data: { turbo_method: :delete, turbo_confirm: "「#{folder.name}」を削除しますか？\nフォルダ内のフィードは未分類に移動されます。" }, class: "manage-btn-small manage-btn-danger" %>
+              </div>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  <% else %>
+    <p class="empty-message">フォルダがありません。<%= link_to "フォルダを追加", new_folder_path %>してください。</p>
+  <% end %>
+</div>

@@ -7,6 +7,7 @@
   <p>「<%= @original_url %>」から複数のフィードが見つかりました。登録するフィードを選択してください。</p>
 
   <%= form_with url: feeds_path, method: :post, class: "manage-form" do |form| %>
+    <%= hidden_field_tag "feed[folder_id]", @folder_id if @folder_id %>
     <div class="manage-form-field">
       <% @feed_candidates.each_with_index do |feed_url, i| %>
         <label class="manage-radio-label">

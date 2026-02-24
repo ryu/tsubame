@@ -5,6 +5,7 @@ class Feed < ApplicationRecord
   include Feed::Opml
 
   has_many :entries, dependent: :destroy
+  belongs_to :folder, optional: true
 
   enum :status, { ok: 0, error: 1 }, default: :ok
 
@@ -31,6 +32,14 @@ class Feed < ApplicationRecord
   # record_successful_fetch! / record_fetch_error! set next_fetch_at explicitly;
   # this callback only fires when fetch_interval_minutes is changed (e.g. from settings).
   before_save :set_next_fetch_at, if: :fetch_interval_minutes_changed?
+
+  # Returns feeds grouped by folder for the home screen.
+  # Format: [[folder_or_nil, [feed, ...]], ...] — folders sorted by name, nil (unclassified) last.
+  def self.grouped_by_folder_for_home(rate:)
+    feeds = with_unreads.with_rate_at_least(rate).includes(:folder).order(:title)
+    groups = feeds.group_by(&:folder)
+    groups.sort_by { |folder, _| folder ? [ 0, folder.name ] : [ 1, "" ] }
+  end
 
   # Returns an unsaved Feed ready for immediate scheduling.
   def self.subscribe(url)

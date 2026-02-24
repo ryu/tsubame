@@ -10,6 +10,8 @@ Rails.application.routes.draw do
     resources :entries, only: [ :index ]
   end
 
+  resources :folders, except: [ :show ]
+
   resources :feed_imports, only: [ :new, :create ]
   resource :feed_export, only: :show
 

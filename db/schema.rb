@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_02_23_132045) do
+ActiveRecord::Schema[8.1].define(version: 2026_02_24_000002) do
   create_table "entries", force: :cascade do |t|
     t.string "author"
     t.text "body"
@@ -36,6 +36,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_23_132045) do
     t.text "error_message"
     t.string "etag"
     t.integer "fetch_interval_minutes", default: 10, null: false
+    t.integer "folder_id"
     t.datetime "last_fetched_at"
     t.string "last_modified"
     t.datetime "next_fetch_at"
@@ -45,8 +46,16 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_23_132045) do
     t.string "title"
     t.datetime "updated_at", null: false
     t.string "url", null: false
+    t.index ["folder_id"], name: "index_feeds_on_folder_id"
     t.index ["next_fetch_at"], name: "index_feeds_on_next_fetch_at"
     t.index ["url"], name: "index_feeds_on_url", unique: true
+  end
+
+  create_table "folders", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "name", null: false
+    t.datetime "updated_at", null: false
+    t.index ["name"], name: "index_folders_on_name", unique: true
   end
 
   create_table "sessions", force: :cascade do |t|
@@ -67,5 +76,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_23_132045) do
   end
 
   add_foreign_key "entries", "feeds"
+  add_foreign_key "feeds", "folders"
   add_foreign_key "sessions", "users"
 end

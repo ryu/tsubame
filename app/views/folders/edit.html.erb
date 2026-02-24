@@ -1,0 +1,28 @@
+<div class="manage-page">
+  <nav class="manage-nav">
+    <%= link_to "← フォルダ管理", folders_path %>
+  </nav>
+
+  <h1>フォルダを編集</h1>
+
+  <% if @folder.errors.any? %>
+    <div class="form-errors">
+      <ul>
+        <% @folder.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <%= form_with model: @folder, class: "manage-form" do |form| %>
+    <div class="manage-form-field">
+      <%= form.label :name, "フォルダ名" %>
+      <%= form.text_field :name, class: "manage-input", autofocus: true %>
+    </div>
+
+    <div>
+      <%= form.submit "保存", class: "manage-submit" %>
+    </div>
+  <% end %>
+</div>

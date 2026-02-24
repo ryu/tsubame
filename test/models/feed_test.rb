@@ -1082,4 +1082,131 @@ class FeedTest < ActiveSupport::TestCase
     result = Feed.with_rate_at_least("0").count
     assert_equal all_feeds, result
   end
+
+  # -- grouped_by_folder_for_home tests --
+
+  test "grouped_by_folder_for_home groups feeds by folder" do
+    grouped = Feed.grouped_by_folder_for_home(rate: 0)
+
+    # Should be an array of [folder, feeds] pairs
+    assert_instance_of Array, grouped
+    assert_not_empty grouped
+
+    grouped.each do |folder, feeds_in_group|
+      assert_instance_of Array, feeds_in_group
+      assert feeds_in_group.all? { |f| f.is_a?(Feed) }
+
+      if folder.present?
+        assert_instance_of Folder, folder
+        assert feeds_in_group.all? { |f| f.folder_id == folder.id }
+      else
+        assert feeds_in_group.all? { |f| f.folder_id.nil? }
+      end
+    end
+  end
+
+  test "grouped_by_folder_for_home sorts folders by name" do
+    grouped = Feed.grouped_by_folder_for_home(rate: 0)
+    folder_names = grouped.map { |folder, _| folder&.name }.compact
+
+    # Verify folders are in alphabetical order
+    assert_equal folder_names.sort, folder_names
+  end
+
+  test "grouped_by_folder_for_home places unclassified feeds last" do
+    # Create an unclassified feed with unread entry for this test
+    unclassified_feed = Feed.create!(
+      url: "https://example.com/unclass-for-order",
+      title: "ZUnclassified Order Test",
+      rate: 3
+    )
+    Entry.create!(
+      feed_id: unclassified_feed.id,
+      guid: "https://example.com/entry/#{SecureRandom.uuid}",
+      url: "https://example.com/entry"
+    )
+
+    grouped = Feed.grouped_by_folder_for_home(rate: 0)
+
+    # Get the last group (should have folder_id = nil)
+    last_folder, last_feeds = grouped.last
+
+    # Verify last group is unclassified (nil folder)
+    assert_nil last_folder
+    assert last_feeds.all? { |f| f.folder_id.nil? }
+  ensure
+    unclassified_feed&.destroy
+  end
+
+  test "grouped_by_folder_for_home respects rate filter" do
+    grouped = Feed.grouped_by_folder_for_home(rate: 3)
+
+    # Flatten all feeds in groups
+    all_feeds = grouped.flat_map { |_, feeds| feeds }
+
+    # Verify all feeds have rate >= 3
+    assert all_feeds.all? { |f| f.rate >= 3 }
+  end
+
+  test "grouped_by_folder_for_home with rate=0 includes all feeds" do
+    grouped = Feed.grouped_by_folder_for_home(rate: 0)
+    all_feeds = grouped.flat_map { |_, feeds| feeds }
+
+    # with_unreads: only feeds with unread entries
+    # Current fixtures: ruby_blog, rails_news have unread entries
+    expected_count = Feed.with_unreads.to_a.count
+    assert_equal expected_count, all_feeds.count
+  end
+
+  test "grouped_by_folder_for_home includes feeds without folder" do
+    # Create an unclassified feed with unread entry
+    unclassified_feed = Feed.create!(
+      url: "https://example.com/unclass-verify",
+      title: "Unclassified Verify",
+      rate: 3
+    )
+    Entry.create!(
+      feed_id: unclassified_feed.id,
+      guid: "https://example.com/entry/#{SecureRandom.uuid}",
+      url: "https://example.com/entry"
+    )
+
+    grouped = Feed.grouped_by_folder_for_home(rate: 0)
+
+    # Verify at least the unclassified (nil) group exists
+    has_unclassified = grouped.any? { |folder, _| folder.nil? }
+    assert has_unclassified
+  ensure
+    unclassified_feed&.destroy
+  end
+
+  test "grouped_by_folder_for_home includes feeds with folder" do
+    grouped = Feed.grouped_by_folder_for_home(rate: 0)
+
+    # Verify at least one folder group exists
+    has_folders = grouped.any? { |folder, _| folder.present? }
+    assert has_folders
+  end
+
+  test "grouped_by_folder_for_home with rate filter excludes low-rate feeds" do
+    # Create a low-rate feed with unread entry for testing
+    low_feed = Feed.create!(
+      url: "https://example.com/test-low-rate",
+      title: "Low Rate",
+      rate: 2
+    )
+    Entry.create!(
+      feed_id: low_feed.id,
+      guid: "https://example.com/entry/#{SecureRandom.uuid}",
+      url: "https://example.com/entry1"
+    )
+
+    grouped_rate_3 = Feed.grouped_by_folder_for_home(rate: 3)
+    all_feeds = grouped_rate_3.flat_map { |_, feeds| feeds }
+
+    # Should not include the rate-2 feed
+    assert_not_includes all_feeds.map(&:id), low_feed.id
+  ensure
+    low_feed&.destroy
+  end
 end

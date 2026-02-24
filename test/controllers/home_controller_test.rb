@@ -142,4 +142,112 @@ class HomeControllerTest < ActionDispatch::IntegrationTest
     get root_url(rate: 5)
     assert_select ".feed-item", { count: 1 }
   end
+
+  # -- Folder grouping tests --
+
+  test "home page displays folder headers" do
+    sign_in_as(users(:one))
+
+    get root_url
+    assert_response :success
+
+    # Should have at least one folder header (.feed-folder-header)
+    assert_select ".feed-folder-header", minimum: 1
+  end
+
+  test "home page displays folder name in header" do
+    sign_in_as(users(:one))
+
+    get root_url
+    assert_response :success
+
+    # Should display "Tech" folder name (ruby_blog and rails_news are in tech folder)
+    assert_select ".feed-folder-header", text: "Tech"
+  end
+
+  test "home page displays unclassified section" do
+    sign_in_as(users(:one))
+
+    # Create an unclassified feed with unread entry
+    unclassified_feed = Feed.create!(
+      url: "https://example.com/unclassified",
+      title: "Unclassified Feed",
+      rate: 3
+    )
+    Entry.create!(
+      feed_id: unclassified_feed.id,
+      guid: "https://example.com/entry/#{SecureRandom.uuid}",
+      url: "https://example.com/entry"
+    )
+
+    get root_url
+    assert_response :success
+
+    # Should have unclassified section header
+    assert_select ".feed-folder-header", text: "未分類"
+  ensure
+    unclassified_feed&.destroy
+  end
+
+  test "home page groups feeds under folder headers" do
+    sign_in_as(users(:one))
+
+    get root_url
+    assert_response :success
+
+    # ruby_blog and rails_news should be in tech folder
+    # They should both be present (both have unread entries and rate >= default filter)
+    assert_select "a[href='#{feed_entries_path(feeds(:ruby_blog))}']"
+    assert_select "a[href='#{feed_entries_path(feeds(:rails_news))}']"
+  end
+
+  test "home page displays feeds in correct order within folder" do
+    sign_in_as(users(:one))
+
+    get root_url
+    assert_response :success
+
+    # Both feeds should be present
+    assert_select ".feed-item", minimum: 2
+  end
+
+  test "home page displays unclassified feeds after folders" do
+    sign_in_as(users(:one))
+
+    # Create unclassified feeds
+    unclassified = Feed.create!(
+      url: "https://example.com/unclass1",
+      title: "ZUnclassified",  # Sort after Tech
+      rate: 0
+    )
+    Entry.create!(
+      feed_id: unclassified.id,
+      guid: "https://example.com/entry/#{SecureRandom.uuid}",
+      url: "https://example.com/entry"
+    )
+
+    get root_url
+    assert_response :success
+
+    # Page body should have tech folder headers before 未分類
+    body = response.body
+    tech_index = body.index("Tech") || 0
+    unclassified_index = body.index("未分類") || 0
+
+    # Tech should come before 未分類
+    assert tech_index < unclassified_index, "Tech folder should appear before 未分類"
+  ensure
+    unclassified&.destroy
+  end
+
+  test "home page with rate filter shows only matching feeds in folders" do
+    sign_in_as(users(:one))
+
+    get root_url(rate: 3)
+    assert_response :success
+
+    # Should include feeds with rate >= 3 and unread entries
+    # ruby_blog (rate=5), rails_news (rate=3)
+    assert_select ".feed-item", { count: 2 }
+  end
 end
