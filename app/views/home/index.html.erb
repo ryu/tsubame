@@ -29,15 +29,28 @@
             <% end %>
           </span>
         <% end %>
-        <%= link_to "フィード管理", feeds_path, class: "feed-manage-link" %>
-        <%= link_to "フォルダ管理", folders_path, class: "feed-manage-link" %>
-        <%= link_to "パスワード変更", edit_password_path, class: "feed-manage-link" %>
         <button type="button" class="reload-button" aria-label="ページ再読み込み" title="ページ再読み込み (r)" data-action="click->selection#reloadPage">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="23 4 23 10 17 10"></polyline>
             <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
           </svg>
         </button>
+        <div class="settings-dropdown" data-controller="dropdown">
+          <button type="button" class="settings-dropdown-toggle"
+                  data-action="click->dropdown#toggle"
+                  data-dropdown-target="toggle"
+                  aria-expanded="false"
+                  aria-haspopup="menu"
+                  aria-controls="settings-dropdown-menu">
+            ⚙ 設定 ▾
+          </button>
+          <div id="settings-dropdown-menu" class="settings-dropdown-menu"
+               data-dropdown-target="menu" role="menu" hidden>
+            <%= link_to "フィード管理", feeds_path, class: "settings-dropdown-item", role: "menuitem" %>
+            <%= link_to "フォルダ管理", folders_path, class: "settings-dropdown-item", role: "menuitem" %>
+            <%= link_to "パスワード変更", edit_password_path, class: "settings-dropdown-item", role: "menuitem" %>
+          </div>
+        </div>
       </div>
     </div>
 
