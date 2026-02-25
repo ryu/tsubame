@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## [1.2.1] - 2026-02-25
+
+### Changed
+- Move feed/folder management and password change links into a settings dropdown menu
+
 ## [1.2.0] - 2026-02-25
 
 ### Added
