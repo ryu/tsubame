@@ -105,11 +105,7 @@ module Feed::Fetching
   end
 
   def perform_request(uri, resolved_ip, headers)
-    http = Net::HTTP.new(uri.host, uri.port)
-    http.ipaddr = resolved_ip
-    http.use_ssl = (uri.scheme == "https")
-    http.open_timeout = OPEN_TIMEOUT
-    http.read_timeout = READ_TIMEOUT
+    http = build_http(uri, resolved_ip)
 
     request = Net::HTTP::Get.new(uri)
     request["User-Agent"] = USER_AGENT
@@ -153,6 +149,15 @@ module Feed::Fetching
     ip
   rescue Resolv::ResolvError, SocketError, IPAddr::InvalidAddressError
     raise Feed::SsrfError, "Cannot resolve hostname"
+  end
+
+  def build_http(uri, resolved_ip, open_timeout: OPEN_TIMEOUT, read_timeout: READ_TIMEOUT)
+    http = Net::HTTP.new(uri.host, uri.port)
+    http.ipaddr = resolved_ip
+    http.use_ssl = (uri.scheme == "https")
+    http.open_timeout = open_timeout
+    http.read_timeout = read_timeout
+    http
   end
 
   def normalize_encoding(response, body)

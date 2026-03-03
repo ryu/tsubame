@@ -57,12 +57,9 @@ module Feed::Autodiscovery
   private
 
   # HTML 専用リクエスト: MAX_HTML_PROBE_SIZE で打ち切り、</head> で早期終了
+  # build_http is provided by Feed::Fetching (included in the same model)
   def perform_html_request(uri, resolved_ip)
-    http = Net::HTTP.new(uri.host, uri.port)
-    http.ipaddr = resolved_ip
-    http.use_ssl = (uri.scheme == "https")
-    http.open_timeout = Feed::Fetching::OPEN_TIMEOUT
-    http.read_timeout = Feed::Fetching::READ_TIMEOUT
+    http = build_http(uri, resolved_ip)
 
     request = Net::HTTP::Get.new(uri)
     request["User-Agent"] = Feed::Fetching::USER_AGENT
@@ -118,11 +115,7 @@ module Feed::Autodiscovery
       guess_uri = URI.parse("#{base}#{path}")
       resolved_ip = validate_url_safety!(guess_uri)
 
-      http = Net::HTTP.new(guess_uri.host, guess_uri.port)
-      http.ipaddr = resolved_ip
-      http.use_ssl = (guess_uri.scheme == "https")
-      http.open_timeout = GUESS_TIMEOUT
-      http.read_timeout = GUESS_TIMEOUT
+      http = build_http(guess_uri, resolved_ip, open_timeout: GUESS_TIMEOUT, read_timeout: GUESS_TIMEOUT)
 
       response = http.head(guess_uri.request_uri)
       next unless response.is_a?(Net::HTTPSuccess)
