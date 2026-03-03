@@ -88,8 +88,11 @@ module Entry::RssParser
     end
 
     def strip_html(html)
-      return html unless html&.include?("<")
-      Rails::Html::FullSanitizer.new.sanitize(html).squish
+      if html&.include?("<")
+        Rails::Html::FullSanitizer.new.sanitize(html).squish
+      else
+        html
+      end
     end
   end
 end
