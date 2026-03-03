@@ -89,10 +89,10 @@ class Feed < ApplicationRecord
   end
 
   def conditional_get_headers
-    headers = {}
-    headers["If-None-Match"] = etag if etag.present?
-    headers["If-Modified-Since"] = last_modified if last_modified.present?
-    headers
+    {
+      "If-None-Match" => etag.presence,
+      "If-Modified-Since" => last_modified.presence
+    }.compact
   end
 
   def mark_all_entries_as_read!
