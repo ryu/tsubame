@@ -50,9 +50,13 @@ export default class extends Controller {
     const entryItems = this._getEntryItems()
     if (entryItems.length === 0) return
 
-    const newIndex = Math.min(this.activeEntryIndexValue + 1, entryItems.length - 1)
-    this.activeEntryIndexValue = newIndex
-    this._activateEntry(newIndex)
+    const newIndex = this.activeEntryIndexValue + 1
+    if (newIndex < entryItems.length) {
+      this.activeEntryIndexValue = newIndex
+      this._activateEntry(newIndex)
+    } else {
+      this._advanceToNextFeed()
+    }
   }
 
   previousEntry() {
@@ -278,7 +282,35 @@ export default class extends Controller {
     }
 
     this.prevButtonTarget.disabled = (this.activeEntryIndexValue <= 0)
-    this.nextButtonTarget.disabled = (this.activeEntryIndexValue >= entryItems.length - 1)
+
+    const isLastEntry = this.activeEntryIndexValue >= entryItems.length - 1
+    const hasNextFeed = isLastEntry && this._hasNextUnreadFeed()
+    this.nextButtonTarget.disabled = isLastEntry && !hasNextFeed
+
+    this.nextButtonTarget.textContent = hasNextFeed
+      ? "次のフィードへ \u203a"
+      : "次のエントリ \u203a"
+    this.nextButtonTarget.setAttribute("aria-label",
+      hasNextFeed ? "次のフィードに移動" : "次のエントリに移動")
+  }
+
+  _advanceToNextFeed() {
+    const feedItems = this._getFeedItems()
+    for (let i = this.activeFeedIndexValue + 1; i < feedItems.length; i++) {
+      if (feedItems[i].querySelector(".unread-badge")) {
+        this.activeFeedIndexValue = i
+        this._activateFeed(i)
+        return
+      }
+    }
+  }
+
+  _hasNextUnreadFeed() {
+    const feedItems = this._getFeedItems()
+    for (let i = this.activeFeedIndexValue + 1; i < feedItems.length; i++) {
+      if (feedItems[i].querySelector(".unread-badge")) return true
+    }
+    return false
   }
 
   _scrollEntryDetail(direction) {
