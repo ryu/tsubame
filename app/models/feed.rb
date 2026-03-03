@@ -117,7 +117,7 @@ class Feed < ApplicationRecord
     # Hostname-based SSRF (DNS rebinding etc.) is caught at fetch time by validate_url_safety!
     if url_changed? && ip_literal?(uri.host)
       ip = IPAddr.new(uri.host)
-      if Feed::Fetching::BLOCKED_IP_RANGES.any? { |range| range.include?(ip) }
+      if Feed.blocked_ip_address?(ip)
         errors.add(:url, "cannot point to private network")
       end
     end

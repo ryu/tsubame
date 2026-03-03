@@ -30,10 +30,14 @@ module Feed::Fetching
   ].freeze
 
   class_methods do
+    def blocked_ip_address?(ip_addr)
+      BLOCKED_IP_RANGES.any? { |range| range.include?(ip_addr) }
+    end
+
     def private_ip?(host)
       ip = Resolv.getaddress(host)
       ip_addr = IPAddr.new(ip)
-      BLOCKED_IP_RANGES.any? { |range| range.include?(ip_addr) }
+      blocked_ip_address?(ip_addr)
     rescue Resolv::ResolvError, SocketError, IPAddr::InvalidAddressError
       true
     end
@@ -144,7 +148,7 @@ module Feed::Fetching
 
     ip = Resolv.getaddress(uri.host)
     ip_addr = IPAddr.new(ip)
-    raise Feed::SsrfError, "URL points to private network" if BLOCKED_IP_RANGES.any? { |range| range.include?(ip_addr) }
+    raise Feed::SsrfError, "URL points to private network" if Feed.blocked_ip_address?(ip_addr)
 
     ip
   rescue Resolv::ResolvError, SocketError, IPAddr::InvalidAddressError
