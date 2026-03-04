@@ -42,6 +42,16 @@ export default class extends Controller {
   // Private methods
 
   _handleKeydown(event) {
+    // DEBUG: Safari user activation test — remove after diagnosis
+    if (event.key === "o") {
+      console.log("[test1] start:", !!window.open("", "_blank"))
+      event.preventDefault()
+      console.log("[test2] after preventDefault:", !!window.open("", "_blank"))
+      const controller = this.application.getControllerForElementAndIdentifier(this.element, "pin")
+      console.log("[test3] after getController:", !!window.open("", "_blank"))
+      return
+    }
+
     // Skip keyboard shortcuts on mobile
     if (window.matchMedia("(max-width: 767px)").matches) return
 
