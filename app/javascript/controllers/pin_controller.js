@@ -38,28 +38,8 @@ export default class extends Controller {
       })
   }
 
-  // Open all pinned entries in new tabs.
-  // Pre-opens blank tabs immediately to preserve user activation (Safari 26+
-  // requires window.open() in the trusted keydown handler's call stack).
+  // Open all pinned entries in new tabs
   openPinned() {
-    const pinCount = this._getPinCount()
-    console.log("[pin] openPinned called, pinCount:", pinCount)
-    if (pinCount === 0) return
-
-    // Pre-open blank tabs while user activation is still valid
-    const preOpenedTabs = []
-    for (let i = 0; i < pinCount; i++) {
-      const tab = window.open("about:blank", "_blank")
-      console.log("[pin] window.open result:", tab)
-      if (!tab) {
-        // Popup blocker fired — close any already-opened tabs and abort
-        preOpenedTabs.forEach(t => t.close())
-        return
-      }
-      preOpenedTabs.push(tab)
-    }
-    window.focus()
-
     const abortController = new AbortController()
     fetchWithCsrf("/pinned_entry_open", {
       method: "POST",
@@ -67,24 +47,11 @@ export default class extends Controller {
     })
       .then(response => response.json())
       .then(data => {
-        if (data.urls.length === 0) {
-          preOpenedTabs.forEach(tab => tab.close())
-          return
-        }
+        if (data.urls.length === 0) return
 
-        // Navigate pre-opened tabs to actual URLs
-        data.urls.forEach((url, i) => {
-          if (preOpenedTabs[i]) {
-            preOpenedTabs[i].location.href = url
-          }
-        })
+        data.urls.forEach(url => openInBackground(url))
 
-        // Close extra tabs if fewer URLs than pre-opened
-        for (let i = data.urls.length; i < preOpenedTabs.length; i++) {
-          preOpenedTabs[i].close()
-        }
-
-        // All tabs navigated — now unpin
+        // All tabs opened — now unpin
         return fetchWithCsrf("/pinned_entry_open", {
           method: "DELETE",
           body: JSON.stringify({ entry_ids: data.entry_ids }),
@@ -99,7 +66,6 @@ export default class extends Controller {
       .catch(error => {
         if (error.name !== "AbortError") {
           console.warn("Failed to open pinned entries:", error)
-          preOpenedTabs.forEach(tab => tab.close())
         }
       })
   }
@@ -141,11 +107,6 @@ export default class extends Controller {
       span.textContent = count
       badge.appendChild(span)
     }
-  }
-
-  _getPinCount() {
-    const badge = document.querySelector("#pin_badge .pin-badge")
-    return badge ? Math.min(parseInt(badge.textContent, 10) || 0, 5) : 0
   }
 
   _extractEntryId(entryItem) {
