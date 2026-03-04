@@ -7,12 +7,15 @@ export default class extends Controller {
 
   // Toggle pin for currently active entry
   togglePin() {
+    console.log("[pin] togglePin called, hasOutlet:", this.hasSelectionOutlet)
     if (!this.hasSelectionOutlet) return
 
     const entryItem = this.selectionOutlet.getActiveEntry()
+    console.log("[pin] activeEntry:", entryItem?.id)
     if (!entryItem) return
 
     const entryId = this._extractEntryId(entryItem)
+    console.log("[pin] entryId:", entryId)
     if (!entryId) return
 
     const abortController = new AbortController()
