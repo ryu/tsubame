@@ -91,6 +91,7 @@ export default class extends Controller {
 
     const [controllerName, method] = target
     const controller = this.application.getControllerForElementAndIdentifier(this.element, controllerName)
+    console.log("[keyboard] directInvoke:", command, "controller:", controllerName, "found:", !!controller, "method exists:", !!(controller && typeof controller[method] === "function"))
     if (controller && typeof controller[method] === "function") {
       controller[method]()
       return true

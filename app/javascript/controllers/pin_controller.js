@@ -43,12 +43,14 @@ export default class extends Controller {
   // requires window.open() in the trusted keydown handler's call stack).
   openPinned() {
     const pinCount = this._getPinCount()
+    console.log("[pin] openPinned called, pinCount:", pinCount)
     if (pinCount === 0) return
 
     // Pre-open blank tabs while user activation is still valid
     const preOpenedTabs = []
     for (let i = 0; i < pinCount; i++) {
       const tab = window.open("about:blank", "_blank")
+      console.log("[pin] window.open result:", tab)
       if (!tab) {
         // Popup blocker fired — close any already-opened tabs and abort
         preOpenedTabs.forEach(t => t.close())
