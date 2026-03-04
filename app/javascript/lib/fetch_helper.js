@@ -15,16 +15,10 @@ export function fetchWithCsrf(url, options = {}) {
   return fetch(url, { ...options, headers })
 }
 
-// Open a URL in a background tab using anchor click.
-// Uses <a target="_blank"> navigation instead of window.open() to avoid
-// popup blocker restrictions in Safari 26+.
+// Open a URL in a background tab (works in Chrome/Firefox; Safari requires
+// unchecking "When a new tab or window opens, make it active" in settings)
 export function openInBackground(url) {
-  const a = document.createElement("a")
-  a.href = url
-  a.target = "_blank"
-  a.rel = "noopener"
-  document.body.appendChild(a)
-  a.click()
-  a.remove()
+  const w = window.open(url, "_blank")
   window.focus()
+  return w
 }

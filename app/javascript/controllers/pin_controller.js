@@ -38,8 +38,25 @@ export default class extends Controller {
       })
   }
 
-  // Open all pinned entries in new tabs
+  // Open all pinned entries in new tabs.
+  // Pre-opens blank tabs synchronously to preserve user activation, then
+  // navigates them to actual URLs after the fetch completes.
   openPinned() {
+    const pinCount = this._getPinCount()
+    if (pinCount === 0) return
+
+    // Pre-open blank tabs while user activation is still valid
+    const preOpenedTabs = []
+    for (let i = 0; i < pinCount; i++) {
+      const tab = window.open("", "_blank")
+      if (!tab) {
+        preOpenedTabs.forEach(t => t.close())
+        return
+      }
+      preOpenedTabs.push(tab)
+    }
+    window.focus()
+
     const abortController = new AbortController()
     fetchWithCsrf("/pinned_entry_open", {
       method: "POST",
@@ -47,11 +64,24 @@ export default class extends Controller {
     })
       .then(response => response.json())
       .then(data => {
-        if (data.urls.length === 0) return
+        if (data.urls.length === 0) {
+          preOpenedTabs.forEach(tab => tab.close())
+          return
+        }
 
-        data.urls.forEach(url => openInBackground(url))
+        // Navigate pre-opened tabs to actual URLs
+        data.urls.forEach((url, i) => {
+          if (preOpenedTabs[i]) {
+            preOpenedTabs[i].location.href = url
+          }
+        })
 
-        // All tabs opened — now unpin
+        // Close extra tabs if fewer URLs than pre-opened
+        for (let i = data.urls.length; i < preOpenedTabs.length; i++) {
+          preOpenedTabs[i].close()
+        }
+
+        // All tabs navigated — now unpin
         return fetchWithCsrf("/pinned_entry_open", {
           method: "DELETE",
           body: JSON.stringify({ entry_ids: data.entry_ids }),
@@ -66,6 +96,7 @@ export default class extends Controller {
       .catch(error => {
         if (error.name !== "AbortError") {
           console.warn("Failed to open pinned entries:", error)
+          preOpenedTabs.forEach(tab => tab.close())
         }
       })
   }
@@ -107,6 +138,11 @@ export default class extends Controller {
       span.textContent = count
       badge.appendChild(span)
     }
+  }
+
+  _getPinCount() {
+    const badge = document.querySelector("#pin_badge .pin-badge")
+    return badge ? Math.min(parseInt(badge.textContent, 10) || 0, 5) : 0
   }
 
   _extractEntryId(entryItem) {
