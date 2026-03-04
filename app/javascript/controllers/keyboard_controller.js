@@ -20,6 +20,16 @@ export default class extends Controller {
     "?": "toggle-help"
   }
 
+  // Commands that open new tabs need user activation from the trusted keydown event.
+  // Stimulus dispatch() creates a CustomEvent (isTrusted=false) which does not carry
+  // user activation in Safari 26+. These commands call the target controller directly.
+  static userActivationCommands = {
+    "open-entry-in-new-tab": ["selection", "openEntryInNewTab"],
+    "open-pinned": ["pin", "openPinned"],
+    "open-hatena-bookmark": ["selection", "openHatenaBookmark"],
+    "open-hatena-bookmark-add": ["selection", "openHatenaBookmarkAdd"]
+  }
+
   connect() {
     this.boundHandleKeydown = this._handleKeydown.bind(this)
     document.addEventListener("keydown", this.boundHandleKeydown)
@@ -48,10 +58,13 @@ export default class extends Controller {
     )) return
 
     const command = this._lookupCommand(event)
-    if (command) {
-      event.preventDefault()
-      this.dispatch(command, { prefix: "keyboard" })
-    }
+    if (!command) return
+
+    event.preventDefault()
+
+    if (this._directInvoke(command)) return
+
+    this.dispatch(command, { prefix: "keyboard" })
   }
 
   _lookupCommand(event) {
@@ -70,5 +83,18 @@ export default class extends Controller {
 
     // Regular keys
     return this.constructor.commandMap[key] || null
+  }
+
+  _directInvoke(command) {
+    const target = this.constructor.userActivationCommands[command]
+    if (!target) return false
+
+    const [controllerName, method] = target
+    const controller = this.application.getControllerForElementAndIdentifier(this.element, controllerName)
+    if (controller && typeof controller[method] === "function") {
+      controller[method]()
+      return true
+    }
+    return false
   }
 }
