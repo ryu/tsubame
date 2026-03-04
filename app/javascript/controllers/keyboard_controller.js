@@ -62,12 +62,8 @@ export default class extends Controller {
 
     event.preventDefault()
 
-    if (this._directInvoke(command)) {
-      console.log("[kb] directInvoke:", command)
-      return
-    }
+    if (this._directInvoke(command)) return
 
-    console.log("[kb] dispatch:", command)
     this.dispatch(command, { prefix: "keyboard" })
   }
 

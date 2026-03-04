@@ -92,17 +92,14 @@ export default class extends Controller {
 
   openHatenaBookmark() {
     const entryItems = this._getEntryItems()
-    console.log("[sel] openHatenaBookmark, entries:", entryItems.length, "activeIndex:", this.activeEntryIndexValue)
     if (this.activeEntryIndexValue < 0 || this.activeEntryIndexValue >= entryItems.length) return
 
     const entryItem = entryItems[this.activeEntryIndexValue]
     const countSpan = entryItem.querySelector(".hatena-count-clickable")
     const url = (countSpan && countSpan.dataset.url) || entryItem.dataset.entryUrl
-    console.log("[sel] url:", url)
     if (!url) return
 
     const bookmarkUrl = hatenaBookmarkUrl(url)
-    console.log("[sel] bookmarkUrl:", bookmarkUrl)
     if (bookmarkUrl) openInBackground(bookmarkUrl)
   }
 
