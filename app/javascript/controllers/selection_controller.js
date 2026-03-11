@@ -54,8 +54,6 @@ export default class extends Controller {
     if (newIndex < entryItems.length) {
       this.activeEntryIndexValue = newIndex
       this._activateEntry(newIndex)
-    } else {
-      this._advanceToNextFeed()
     }
   }
 
@@ -292,17 +290,6 @@ export default class extends Controller {
       : "次のエントリ \u203a"
     this.nextButtonTarget.setAttribute("aria-label",
       hasNextFeed ? "次のフィードに移動" : "次のエントリに移動")
-  }
-
-  _advanceToNextFeed() {
-    const feedItems = this._getFeedItems()
-    for (let i = this.activeFeedIndexValue + 1; i < feedItems.length; i++) {
-      if (feedItems[i].querySelector(".unread-badge")) {
-        this.activeFeedIndexValue = i
-        this._activateFeed(i)
-        return
-      }
-    }
   }
 
   _hasNextUnreadFeed() {
