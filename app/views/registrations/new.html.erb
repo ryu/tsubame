@@ -1,0 +1,31 @@
+<div class="login-page">
+  <div class="login-card">
+    <h1 class="login-title">Tsubame</h1>
+    <h2 class="login-subtitle">新規登録</h2>
+
+    <% if @user.errors.any? %>
+      <div class="form-errors">
+        <ul>
+          <% @user.errors.full_messages.each do |message| %>
+            <li><%= message %></li>
+          <% end %>
+        </ul>
+      </div>
+    <% end %>
+
+    <%= form_with model: @user, url: registration_path, class: "login-form" do |form| %>
+      <div class="login-field">
+        <%= form.email_field :email_address, required: true, autofocus: true, autocomplete: "username", placeholder: "メールアドレス", class: "login-input" %>
+      </div>
+      <div class="login-field">
+        <%= form.password_field :password, required: true, autocomplete: "new-password", placeholder: "パスワード", maxlength: 72, class: "login-input" %>
+      </div>
+      <div class="login-field">
+        <%= form.password_field :password_confirmation, required: true, autocomplete: "new-password", placeholder: "パスワード（確認）", maxlength: 72, class: "login-input" %>
+      </div>
+      <%= form.submit "登録", class: "login-submit" %>
+    <% end %>
+
+    <p class="login-link"><%= link_to "ログインはこちら", new_session_path %></p>
+  </div>
+</div>
