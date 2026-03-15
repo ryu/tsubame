@@ -10,6 +10,7 @@ class User < ApplicationRecord
   normalizes :email_address, with: ->(e) { e.strip.downcase }
 
   validates :email_address, presence: true, uniqueness: true
+  validates :password, length: { minimum: 8 }, if: -> { password.present? }
 
   def invalidate_other_sessions!(except:)
     sessions.where.not(id: except).destroy_all

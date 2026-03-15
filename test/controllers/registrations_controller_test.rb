@@ -79,4 +79,32 @@ class RegistrationsControllerTest < ActionDispatch::IntegrationTest
     get new_registration_path
     assert_select "a[href='#{new_session_path}']"
   end
+
+  test "create rejects short password" do
+    assert_no_difference "User.count" do
+      post registration_path, params: {
+        user: {
+          email_address: "new@example.com",
+          password: "short",
+          password_confirmation: "short"
+        }
+      }
+    end
+
+    assert_response :unprocessable_entity
+  end
+
+  test "authenticated user is redirected from new" do
+    sign_in_as(users(:one))
+    get new_registration_path
+    assert_redirected_to root_path
+  end
+
+  test "authenticated user is redirected from create" do
+    sign_in_as(users(:one))
+    post registration_path, params: {
+      user: { email_address: "x@example.com", password: "password123", password_confirmation: "password123" }
+    }
+    assert_redirected_to root_path
+  end
 end

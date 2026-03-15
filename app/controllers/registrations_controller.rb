@@ -1,5 +1,6 @@
 class RegistrationsController < ApplicationController
   allow_unauthenticated_access
+  before_action :redirect_if_authenticated
   rate_limit to: 10, within: 3.minutes, only: :create, with: -> { redirect_to new_registration_path, alert: "しばらくしてからお試しください。" }
 
   def new
@@ -20,5 +21,9 @@ class RegistrationsController < ApplicationController
 
   def user_params
     params.require(:user).permit(:email_address, :password, :password_confirmation)
+  end
+
+  def redirect_if_authenticated
+    redirect_to root_path if authenticated?
   end
 end
