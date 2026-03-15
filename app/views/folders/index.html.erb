@@ -24,7 +24,7 @@
         <% @folders.each do |folder| %>
           <tr>
             <td><%= folder.name %></td>
-            <td><%= folder.feeds.size %></td>
+            <td><%= folder.subscriptions.size %></td>
             <td>
               <div class="manage-actions">
                 <%= link_to "編集", edit_folder_path(folder), class: "manage-btn-small" %>

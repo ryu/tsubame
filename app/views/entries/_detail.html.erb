@@ -15,7 +15,7 @@
       </div>
       <div class="entry-actions">
         <%= button_to entry_pin_path(entry), class: "pin-button" do %>
-          <%= entry.pinned ? "📌 ピン解除" : "📌 ピン留め" %>
+          <%= pinned ? "📌 ピン解除" : "📌 ピン留め" %>
         <% end %>
         <% if entry.safe_url_for_link.present? %>
           <%= link_to "元記事を開く", entry.safe_url_for_link, target: "_blank", rel: "noopener noreferrer", class: "external-link" %>

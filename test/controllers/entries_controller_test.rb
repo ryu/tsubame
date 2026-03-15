@@ -41,10 +41,13 @@ class EntriesControllerTest < ActionDispatch::IntegrationTest
 
   test "show marks entry as read" do
     sign_in_as(@user)
-    assert_nil @entry.read_at
+    # ruby_article_two has a UserEntryState with pinned:true but no read_at
+    state = @user.user_entry_states.find_by(entry: @entry)
+    assert_nil state&.read_at
 
     get entry_path(@entry)
-    assert_not_nil @entry.reload.read_at
+    state = @user.user_entry_states.find_by(entry: @entry)
+    assert_not_nil state&.read_at
   end
 
   test "show renders mobile navigation buttons" do
@@ -71,9 +74,11 @@ class EntriesControllerTest < ActionDispatch::IntegrationTest
 
   test "pinned shows pinned entries" do
     sign_in_as(@user)
-    # まずエントリをピン留め
+    # ruby_article_two is already pinned via user_entry_states fixture
+    # Also pin ruby_article_one
     entry = entries(:ruby_article_one)
-    entry.update!(pinned: true)
+    state = @user.entry_state_for(entry)
+    state.update!(pinned: true)
 
     get pinned_entries_path
     assert_response :success
@@ -82,10 +87,32 @@ class EntriesControllerTest < ActionDispatch::IntegrationTest
 
   test "pinned shows empty message when no pinned entries" do
     sign_in_as(@user)
-    Entry.update_all(pinned: false)
+    @user.user_entry_states.update_all(pinned: false)
 
     get pinned_entries_path
     assert_response :success
     assert_select ".empty-message"
+  end
+
+  # -- Cross-user data isolation tests --
+
+  test "show returns not found for entry from unsubscribed feed" do
+    sign_in_as(users(:two))
+    get entry_path(@entry)
+    assert_response :not_found
+  end
+
+  test "index returns not found for unsubscribed feed" do
+    sign_in_as(users(:two))
+    get feed_entries_path(@feed)
+    assert_response :not_found
+  end
+
+  test "pinned entries are isolated per user" do
+    sign_in_as(users(:two))
+    # user :two has no pinned entries
+    get pinned_entries_path
+    assert_response :success
+    assert_select ".entry-item", count: 0
   end
 end

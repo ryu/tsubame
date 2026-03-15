@@ -40,28 +40,6 @@ class EntryTest < ActiveSupport::TestCase
     assert entry.valid?
   end
 
-  test "should have pinned false by default" do
-    entry = Entry.create!(
-      feed: feeds(:ruby_blog),
-      guid: "https://example.com/new"
-    )
-    assert_equal false, entry.pinned
-  end
-
-  test "unread scope should return entries without read_at" do
-    unread = Entry.unread
-    assert_includes unread, entries(:ruby_article_two)
-    assert_includes unread, entries(:rails_article_one)
-    assert_not_includes unread, entries(:ruby_article_one)
-  end
-
-  test "pinned scope should return pinned entries" do
-    pinned = Entry.pinned
-    assert_includes pinned, entries(:ruby_article_two)
-    assert_not_includes pinned, entries(:ruby_article_one)
-    assert_not_includes pinned, entries(:rails_article_one)
-  end
-
   test "recently_published scope should order by published_at desc" do
     recent = Entry.recently_published.to_a
     assert_equal entries(:rails_article_one), recent.first
@@ -71,36 +49,6 @@ class EntryTest < ActiveSupport::TestCase
   test "should belong to feed" do
     entry = entries(:ruby_article_one)
     assert_equal feeds(:ruby_blog), entry.feed
-  end
-
-  test "mark_as_read! should mark entry as read" do
-    entry = entries(:ruby_article_two)
-    assert_nil entry.read_at
-
-    result = entry.mark_as_read!
-    assert_equal true, result
-    assert_not_nil entry.reload.read_at
-  end
-
-  test "mark_as_read! should be idempotent" do
-    entry = entries(:ruby_article_one)
-    assert_not_nil entry.read_at
-    original_read_at = entry.read_at
-
-    result = entry.mark_as_read!
-    assert_equal false, result
-    assert_equal original_read_at, entry.reload.read_at
-  end
-
-  test "toggle_pin! should toggle pinned status" do
-    entry = entries(:ruby_article_one)
-    assert_equal false, entry.pinned
-
-    entry.toggle_pin!
-    assert_equal true, entry.reload.pinned
-
-    entry.toggle_pin!
-    assert_equal false, entry.reload.pinned
   end
 
   test "safe_url_for_link returns url for valid http url" do

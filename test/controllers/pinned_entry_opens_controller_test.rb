@@ -14,8 +14,15 @@ class PinnedEntryOpensControllerTest < ActionDispatch::IntegrationTest
     sign_in_as(@user)
     entry1 = entries(:ruby_article_one)
     entry2 = entries(:ruby_article_two)
-    entry1.update!(pinned: true, url: "https://example.com/1")
-    entry2.update!(pinned: true, url: "https://example.com/2")
+
+    # Set up pinned states via UserEntryState
+    state1 = @user.entry_state_for(entry1)
+    state1.update!(pinned: true)
+    entry1.update!(url: "https://example.com/1")
+
+    state2 = @user.entry_state_for(entry2)
+    state2.update!(pinned: true)
+    entry2.update!(url: "https://example.com/2")
 
     post pinned_entry_open_path
     assert_response :success
@@ -25,13 +32,15 @@ class PinnedEntryOpensControllerTest < ActionDispatch::IntegrationTest
     assert_includes json["urls"], "https://example.com/1"
     assert_includes json["urls"], "https://example.com/2"
     assert_equal 2, json["entry_ids"].length
-    assert entry1.reload.pinned, "entry should still be pinned"
-    assert entry2.reload.pinned, "entry should still be pinned"
+
+    # Entries should still be pinned
+    assert @user.entry_pinned?(entry1), "entry should still be pinned"
+    assert @user.entry_pinned?(entry2), "entry should still be pinned"
   end
 
   test "create handles no pinned entries" do
     sign_in_as(@user)
-    Entry.update_all(pinned: false)
+    @user.user_entry_states.update_all(pinned: false)
 
     post pinned_entry_open_path
     assert_response :success
@@ -43,14 +52,17 @@ class PinnedEntryOpensControllerTest < ActionDispatch::IntegrationTest
   test "create limits to 5 entries" do
     sign_in_as(@user)
     feed = feeds(:ruby_blog)
+    # Clear existing pinned states
+    @user.user_entry_states.update_all(pinned: false)
+
     6.times do |i|
-      feed.entries.create!(
+      entry = feed.entries.create!(
         guid: "pin-test-#{i}",
         title: "Pinned #{i}",
         url: "https://example.com/#{i}",
-        pinned: true,
         published_at: i.hours.ago
       )
+      @user.user_entry_states.create!(entry: entry, pinned: true)
     end
 
     post pinned_entry_open_path
@@ -67,31 +79,39 @@ class PinnedEntryOpensControllerTest < ActionDispatch::IntegrationTest
     sign_in_as(@user)
     entry1 = entries(:ruby_article_one)
     entry2 = entries(:ruby_article_two)
-    entry1.update!(pinned: true)
-    entry2.update!(pinned: true)
+
+    # Set up pinned states
+    state1 = @user.entry_state_for(entry1)
+    state1.update!(pinned: true)
+    state2 = @user.entry_state_for(entry2)
+    state2.update!(pinned: true)
 
     delete pinned_entry_open_path, params: { entry_ids: [ entry1.id, entry2.id ] }, as: :json
     assert_response :success
 
     json = JSON.parse(response.body)
     assert_equal 0, json["pinned_count"]
-    assert_not entry1.reload.pinned
-    assert_not entry2.reload.pinned
+    assert_not @user.entry_pinned?(entry1)
+    assert_not @user.entry_pinned?(entry2)
   end
 
   test "destroy only unpins specified entries" do
     sign_in_as(@user)
     entry1 = entries(:ruby_article_one)
     entry2 = entries(:ruby_article_two)
-    entry1.update!(pinned: true)
-    entry2.update!(pinned: true)
+
+    # Set up pinned states
+    state1 = @user.entry_state_for(entry1)
+    state1.update!(pinned: true)
+    state2 = @user.entry_state_for(entry2)
+    state2.update!(pinned: true)
 
     delete pinned_entry_open_path, params: { entry_ids: [ entry1.id ] }, as: :json
     assert_response :success
 
     json = JSON.parse(response.body)
     assert_equal 1, json["pinned_count"]
-    assert_not entry1.reload.pinned
-    assert entry2.reload.pinned
+    assert_not @user.entry_pinned?(entry1)
+    assert @user.entry_pinned?(entry2)
   end
 end

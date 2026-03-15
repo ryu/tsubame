@@ -1,11 +1,11 @@
 class FeedsController < ApplicationController
   def index
-    @feeds = Feed.order(:title)
+    @subscriptions = Current.user.subscriptions.includes(:feed).joins(:feed).merge(Feed.order(:title))
   end
 
   def new
     @feed = Feed.new
-    @folders = Folder.order(:name)
+    @folders = Current.user.folders.order(:name)
   end
 
   def create
@@ -15,7 +15,7 @@ class FeedsController < ApplicationController
     if raw_url.blank?
       @feed = Feed.new
       @feed.errors.add(:url, :blank)
-      @folders = Folder.order(:name)
+      @folders = Current.user.folders.order(:name)
       return render :new, status: :unprocessable_entity
     end
 
@@ -41,27 +41,44 @@ class FeedsController < ApplicationController
   rescue Feed::SsrfError
     @feed = Feed.new(url: raw_url)
     @feed.errors.add(:url, "cannot point to private network")
-    @folders = Folder.order(:name)
+    @folders = Current.user.folders.order(:name)
     render :new, status: :unprocessable_entity
   end
 
   def edit
-    @feed = Feed.find(params[:id])
-    @folders = Folder.order(:name)
+    @subscription = Current.user.subscriptions.includes(:feed).find_by!(feed_id: params[:id])
+    @feed = @subscription.feed
+    @folders = Current.user.folders.order(:name)
   end
 
   def update
-    @feed = Feed.find(params[:id])
-    if @feed.update(feed_params)
-      redirect_to feeds_path, notice: "フィードを更新しました。"
-    else
-      @folders = Folder.order(:name)
-      render :edit, status: :unprocessable_entity
+    @subscription = Current.user.subscriptions.find_by!(feed_id: params[:id])
+    @feed = @subscription.feed
+
+    Feed.transaction do
+      # fetch_interval_minutes はフィードのグローバル設定（全購読者に影響）
+      if params[:feed].present?
+        @feed.update!(params.require(:feed).permit(:fetch_interval_minutes))
+      end
+
+      if params[:subscription].present?
+        @subscription.update!(params.require(:subscription).permit(:title, :rate, :folder_id))
+      end
     end
+
+    redirect_to feeds_path, notice: "フィードを更新しました。"
+  rescue ActiveRecord::RecordInvalid
+    @folders = Current.user.folders.order(:name)
+    render :edit, status: :unprocessable_entity
   end
 
   def destroy
-    Feed.find(params[:id]).destroy
+    subscription = Current.user.subscriptions.find_by!(feed_id: params[:id])
+    feed = subscription.feed
+    Feed.transaction do
+      subscription.destroy!
+      feed.destroy if feed.subscriptions.reload.none?
+    end
     redirect_to feeds_path, notice: "フィードを削除しました。"
   end
 
@@ -69,10 +86,6 @@ class FeedsController < ApplicationController
 
   def feed_url
     params.require(:feed).permit(:url)[:url].to_s.strip
-  end
-
-  def feed_params
-    params.require(:feed).permit(:title, :fetch_interval_minutes, :rate, :folder_id)
   end
 
   def discover_feed(url)
@@ -85,14 +98,17 @@ class FeedsController < ApplicationController
   end
 
   def create_and_redirect(url, folder_id = nil)
-    @feed = Feed.subscribe(url)
-    @feed.folder_id = folder_id
+    @feed = Feed.find_by(url: url) || Feed.subscribe(url)
 
-    if @feed.save
-      redirect_to feeds_path, notice: "フィードを追加しました。"
-    else
-      @folders = Folder.order(:name)
-      render :new, status: :unprocessable_entity
+    unless @feed.persisted?
+      unless @feed.save
+        @folders = Current.user.folders.order(:name)
+        return render :new, status: :unprocessable_entity
+      end
     end
+
+    folder = folder_id ? Current.user.folders.find_by(id: folder_id) : nil
+    Current.user.subscribe_to(@feed, folder: folder)
+    redirect_to feeds_path, notice: "フィードを追加しました。"
   end
 end

@@ -13,7 +13,9 @@ class EntryMarkAsReadsControllerTest < ActionDispatch::IntegrationTest
 
   test "create marks entry as read" do
     sign_in_as(@user)
-    assert_nil @entry.read_at
+    # ruby_article_two has a UserEntryState with pinned:true but no read_at
+    state = @user.user_entry_states.find_by(entry: @entry)
+    assert_nil state&.read_at
 
     post entry_mark_as_read_path(@entry)
     assert_response :success
@@ -21,7 +23,8 @@ class EntryMarkAsReadsControllerTest < ActionDispatch::IntegrationTest
     json = JSON.parse(response.body)
     assert json["success"]
     assert json["was_unread"]
-    assert_not_nil @entry.reload.read_at
+    state = @user.user_entry_states.find_by(entry: @entry)
+    assert_not_nil state.read_at
   end
 
   test "create returns not found for missing entry" do
@@ -32,7 +35,7 @@ class EntryMarkAsReadsControllerTest < ActionDispatch::IntegrationTest
 
   test "create is idempotent" do
     sign_in_as(@user)
-    @entry.mark_as_read!
+    @user.mark_entry_as_read!(@entry)
 
     post entry_mark_as_read_path(@entry)
     assert_response :success

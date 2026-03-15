@@ -12,7 +12,7 @@ class FeedImportsController < ApplicationController
     stripped = content.sub(/\A\xEF\xBB\xBF/n, "").lstrip
     return redirect_with_alert("XMLファイルを選択してください。") unless stripped.match?(/\A(<\?xml|<opml[\s>])/i)
 
-    result = Feed.import_from_opml(content)
+    result = Feed.import_from_opml(content, user: Current.user)
     redirect_to feeds_path, notice: "#{result[:added]}件のフィードを追加しました。（#{result[:skipped]}件スキップ）"
   rescue Feed::Opml::ImportError => e
     Rails.logger.error("OPML import failed: #{e.message}")

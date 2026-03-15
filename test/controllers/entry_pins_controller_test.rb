@@ -19,11 +19,15 @@ class EntryPinsControllerTest < ActionDispatch::IntegrationTest
 
   test "create toggles pinned status" do
     sign_in_as(@user)
-    original_pinned = @entry.pinned
+    # ruby_article_two has a UserEntryState with pinned:true from fixtures
+    state = @user.user_entry_states.find_by(entry: @entry)
+    original_pinned = state&.pinned || false
 
     post entry_pin_path(@entry), as: :turbo_stream
     assert_response :success
-    assert_equal !original_pinned, @entry.reload.pinned
+
+    state = @user.user_entry_states.find_by(entry: @entry)
+    assert_equal !original_pinned, state.pinned
   end
 
   test "create returns turbo stream" do

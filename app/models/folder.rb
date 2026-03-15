@@ -1,5 +1,6 @@
 class Folder < ApplicationRecord
-  has_many :feeds, dependent: :nullify
+  belongs_to :user
+  has_many :subscriptions, dependent: :nullify
 
-  validates :name, presence: true, uniqueness: true, length: { maximum: 50 }
+  validates :name, presence: true, uniqueness: { scope: :user_id }, length: { maximum: 50 }
 end

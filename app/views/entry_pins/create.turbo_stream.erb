@@ -1,5 +1,5 @@
 <%= turbo_stream.replace "entry_detail" do %>
-  <%= render partial: "entries/detail", locals: { entry: @entry } %>
+  <%= render partial: "entries/detail", locals: { entry: @entry, pinned: Current.user.entry_pinned?(@entry) } %>
 <% end %>
 
 <%= turbo_stream.replace "pin_badge" do %>

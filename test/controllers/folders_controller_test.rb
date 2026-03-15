@@ -185,32 +185,46 @@ class FoldersControllerTest < ActionDispatch::IntegrationTest
     assert_not Folder.exists?(folder_id)
   end
 
-  test "destroy nullifies feed folder_id" do
+  test "destroy nullifies subscription folder_id" do
     sign_in_as(@user)
     folder = folders(:tech)
-    feed = folder.feeds.first
+    subscription = folder.subscriptions.first
 
-    assert_not_nil feed
-    assert_equal folder.id, feed.folder_id
+    assert_not_nil subscription
+    assert_equal folder.id, subscription.folder_id
 
     delete folder_path(folder)
 
-    # Verify feed's folder_id is now nil
-    assert_nil feed.reload.folder_id
+    # Verify subscription's folder_id is now nil
+    assert_nil subscription.reload.folder_id
   end
 
-  test "destroy all feeds in folder have nullified folder_id" do
+  test "destroy all subscriptions in folder have nullified folder_id" do
     sign_in_as(@user)
     folder = folders(:tech)
-    feed_ids = folder.feeds.pluck(:id)
+    subscription_ids = folder.subscriptions.pluck(:id)
 
-    assert_not feed_ids.empty?
+    assert_not subscription_ids.empty?
 
     delete folder_path(folder)
 
-    # All feeds should have folder_id = nil
-    Feed.where(id: feed_ids).each do |feed|
-      assert_nil feed.folder_id
+    # All subscriptions should have folder_id = nil
+    Subscription.where(id: subscription_ids).each do |subscription|
+      assert_nil subscription.folder_id
     end
+  end
+
+  # -- Cross-user data isolation tests --
+
+  test "other user cannot access another user's folder" do
+    sign_in_as(users(:two))
+    get edit_folder_path(folders(:tech))
+    assert_response :not_found
+  end
+
+  test "other user cannot delete another user's folder" do
+    sign_in_as(users(:two))
+    delete folder_path(folders(:tech))
+    assert_response :not_found
   end
 end

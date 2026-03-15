@@ -10,24 +10,20 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_02_24_000002) do
+ActiveRecord::Schema[8.1].define(version: 2026_03_15_011637) do
   create_table "entries", force: :cascade do |t|
     t.string "author"
     t.text "body"
     t.datetime "created_at", null: false
     t.integer "feed_id", null: false
     t.string "guid", null: false
-    t.boolean "pinned", default: false, null: false
     t.datetime "published_at"
-    t.datetime "read_at"
     t.string "title"
     t.datetime "updated_at", null: false
     t.string "url"
     t.index ["feed_id", "guid"], name: "index_entries_on_feed_id_and_guid", unique: true
     t.index ["feed_id"], name: "index_entries_on_feed_id"
-    t.index ["pinned"], name: "index_entries_on_pinned"
     t.index ["published_at"], name: "index_entries_on_published_at"
-    t.index ["read_at"], name: "index_entries_on_read_at"
   end
 
   create_table "feeds", force: :cascade do |t|
@@ -36,17 +32,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_24_000002) do
     t.text "error_message"
     t.string "etag"
     t.integer "fetch_interval_minutes", default: 10, null: false
-    t.integer "folder_id"
     t.datetime "last_fetched_at"
     t.string "last_modified"
     t.datetime "next_fetch_at"
-    t.integer "rate", default: 0, null: false
     t.string "site_url"
     t.integer "status", default: 0, null: false
     t.string "title"
     t.datetime "updated_at", null: false
     t.string "url", null: false
-    t.index ["folder_id"], name: "index_feeds_on_folder_id"
     t.index ["next_fetch_at"], name: "index_feeds_on_next_fetch_at"
     t.index ["url"], name: "index_feeds_on_url", unique: true
   end
@@ -55,7 +48,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_24_000002) do
     t.datetime "created_at", null: false
     t.string "name", null: false
     t.datetime "updated_at", null: false
-    t.index ["name"], name: "index_folders_on_name", unique: true
+    t.integer "user_id", null: false
+    t.index ["user_id", "name"], name: "index_folders_on_user_id_and_name", unique: true
+    t.index ["user_id"], name: "index_folders_on_user_id"
   end
 
   create_table "sessions", force: :cascade do |t|
@@ -67,6 +62,34 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_24_000002) do
     t.index ["user_id"], name: "index_sessions_on_user_id"
   end
 
+  create_table "subscriptions", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.integer "feed_id", null: false
+    t.integer "folder_id"
+    t.integer "rate", default: 0, null: false
+    t.string "title"
+    t.datetime "updated_at", null: false
+    t.integer "user_id", null: false
+    t.index ["feed_id"], name: "index_subscriptions_on_feed_id"
+    t.index ["folder_id"], name: "index_subscriptions_on_folder_id"
+    t.index ["user_id", "feed_id"], name: "index_subscriptions_on_user_id_and_feed_id", unique: true
+    t.index ["user_id"], name: "index_subscriptions_on_user_id"
+  end
+
+  create_table "user_entry_states", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.integer "entry_id", null: false
+    t.boolean "pinned", default: false, null: false
+    t.datetime "read_at"
+    t.datetime "updated_at", null: false
+    t.integer "user_id", null: false
+    t.index ["entry_id"], name: "index_user_entry_states_on_entry_id"
+    t.index ["user_id", "entry_id"], name: "index_user_entry_states_on_user_id_and_entry_id", unique: true
+    t.index ["user_id", "pinned"], name: "index_user_entry_states_on_user_id_and_pinned"
+    t.index ["user_id", "read_at"], name: "index_user_entry_states_on_user_id_and_read_at"
+    t.index ["user_id"], name: "index_user_entry_states_on_user_id"
+  end
+
   create_table "users", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "email_address", null: false
@@ -76,6 +99,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_24_000002) do
   end
 
   add_foreign_key "entries", "feeds"
-  add_foreign_key "feeds", "folders"
+  add_foreign_key "folders", "users"
   add_foreign_key "sessions", "users"
+  add_foreign_key "subscriptions", "feeds"
+  add_foreign_key "subscriptions", "folders"
+  add_foreign_key "subscriptions", "users"
+  add_foreign_key "user_entry_states", "entries"
+  add_foreign_key "user_entry_states", "users"
 end

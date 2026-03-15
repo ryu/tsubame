@@ -1,6 +1,6 @@
 # Tsubame - Feed Reader
 
-Fastladder互換のフィードリーダー。シングルユーザー向け。
+Fastladder互換のフィードリーダー。複数ユーザー対応。
 
 ## 技術スタック
 
@@ -13,10 +13,12 @@ Fastladder互換のフィードリーダー。シングルユーザー向け。
 
 ### モデル
 
-- `Feed` — フィード管理。concern: `Fetching`, `Autodiscovery`, `EntryImporter`, `Opml`
-- `Entry` — エントリー管理。concern: `RssParser`
-- `Folder` — フォルダによるフィード分類
-- `User` — 認証用のみ（シングルユーザーのため Subscription 中間テーブルなし）
+- `Feed` — フィード管理（グローバル共有）。concern: `Fetching`, `Autodiscovery`, `EntryImporter`, `Opml`
+- `Entry` — エントリー管理（グローバル共有）。concern: `RssParser`
+- `Subscription` — ユーザーとフィードの中間テーブル（フォルダ・レート・カスタムタイトル管理）
+- `UserEntryState` — ユーザーごとの既読/ピン状態（行なし＝未読・未ピン）
+- `Folder` — フォルダによるフィード分類（ユーザーごと）
+- `User` — 認証・購読管理・既読/ピン状態管理
 
 ### コントローラー
 

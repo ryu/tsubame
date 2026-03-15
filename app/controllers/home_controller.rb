@@ -1,8 +1,8 @@
 class HomeController < ApplicationController
   def index
     @rate = params[:rate].to_i
-    @grouped_feeds = Feed.grouped_by_folder_for_home(rate: @rate)
-    @feeds = @grouped_feeds.flat_map { |_, feeds| feeds }
-    @pinned_count = Entry.pinned.count
+    @grouped_subscriptions = Current.user.grouped_subscriptions_for_home(rate: @rate)
+    @subscriptions = @grouped_subscriptions.flat_map { |_, subs| subs }
+    @pinned_count = Current.user.pinned_entry_count
   end
 end

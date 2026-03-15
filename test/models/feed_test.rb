@@ -123,10 +123,11 @@ class FeedTest < ActiveSupport::TestCase
   end
 
   test "import_from_opml should import feeds from valid OPML" do
+    user = users(:one)
     opml_content = file_fixture("sample.opml").read
 
     assert_difference "Feed.count", 3 do
-      result = Feed.import_from_opml(opml_content)
+      result = Feed.import_from_opml(opml_content, user: user)
       assert_equal 3, result[:added]
       assert_equal 0, result[:skipped]
     end
@@ -140,23 +141,25 @@ class FeedTest < ActiveSupport::TestCase
   end
 
   test "import_from_opml should skip duplicate feeds" do
+    user = users(:one)
     opml_content = file_fixture("sample.opml").read
 
     # First import
-    Feed.import_from_opml(opml_content)
+    Feed.import_from_opml(opml_content, user: user)
 
-    # Second import should skip all
+    # Second import should skip all (user already subscribed)
     assert_no_difference "Feed.count" do
-      result = Feed.import_from_opml(opml_content)
+      result = Feed.import_from_opml(opml_content, user: user)
       assert_equal 0, result[:added]
       assert_equal 3, result[:skipped]
     end
   end
 
   test "import_from_opml should handle nested outlines" do
+    user = users(:one)
     opml_content = file_fixture("sample.opml").read
 
-    result = Feed.import_from_opml(opml_content)
+    Feed.import_from_opml(opml_content, user: user)
 
     # Should import both nested feeds from "Tech News" folder
     assert Feed.exists?(url: "https://techcrunch.com/feed/")
@@ -166,6 +169,7 @@ class FeedTest < ActiveSupport::TestCase
   end
 
   test "import_from_opml should skip invalid feeds and continue" do
+    user = users(:one)
     opml_content = <<~OPML
       <?xml version="1.0"?>
       <opml version="1.0">
@@ -176,7 +180,7 @@ class FeedTest < ActiveSupport::TestCase
       </opml>
     OPML
 
-    result = Feed.import_from_opml(opml_content)
+    result = Feed.import_from_opml(opml_content, user: user)
     assert_equal 1, result[:added]
     assert_equal 1, result[:skipped]
     assert Feed.exists?(url: "https://example.com/good-feed.xml")
@@ -184,10 +188,11 @@ class FeedTest < ActiveSupport::TestCase
   end
 
   test "import_from_opml should raise error for invalid XML" do
+    user = users(:one)
     invalid_xml = "<invalid>not closed"
 
     assert_raises(Feed::Opml::ImportError) do
-      Feed.import_from_opml(invalid_xml)
+      Feed.import_from_opml(invalid_xml, user: user)
     end
   end
 
@@ -345,26 +350,9 @@ class FeedTest < ActiveSupport::TestCase
     assert_equal "Mon, 01 Jan 2024 00:00:00 GMT", headers["If-Modified-Since"]
   end
 
-  test "mark_all_entries_as_read! marks all unread entries as read" do
-    feed = feeds(:ruby_blog)
-    # ruby_article_two は未読（read_at: nil）
-    assert feed.entries.unread.exists?
-
-    count = feed.mark_all_entries_as_read!
-    assert count > 0
-    assert_not feed.entries.reload.unread.exists?
-  end
-
-  test "mark_all_entries_as_read! is idempotent" do
-    feed = feeds(:ruby_blog)
-    feed.mark_all_entries_as_read!
-
-    count = feed.mark_all_entries_as_read!
-    assert_equal 0, count
-  end
-
   test "to_opml generates valid OPML 1.0 XML" do
-    xml = Feed.to_opml
+    user = users(:one)
+    xml = Feed.to_opml(user: user)
     doc = REXML::Document.new(xml)
 
     # Verify root element
@@ -378,14 +366,16 @@ class FeedTest < ActiveSupport::TestCase
   end
 
   test "to_opml includes feed attributes" do
+    user = users(:two)
     Feed.destroy_all
     feed = Feed.create!(
       url: "https://example.com/feed.xml",
       title: "Example Feed",
       site_url: "https://example.com/"
     )
+    user.subscribe_to(feed)
 
-    xml = Feed.to_opml
+    xml = Feed.to_opml(user: user)
     doc = REXML::Document.new(xml)
 
     outline = REXML::XPath.first(doc, "//outline")
@@ -397,9 +387,9 @@ class FeedTest < ActiveSupport::TestCase
   end
 
   test "to_opml returns empty OPML when no feeds" do
-    Feed.destroy_all
+    user = users(:two)
 
-    xml = Feed.to_opml
+    xml = Feed.to_opml(user: user)
     doc = REXML::Document.new(xml)
 
     outlines = REXML::XPath.match(doc, "//outline")
@@ -407,12 +397,16 @@ class FeedTest < ActiveSupport::TestCase
   end
 
   test "to_opml orders feeds by title" do
+    user = users(:two)
     Feed.destroy_all
-    Feed.create!(url: "https://z.com/feed", title: "Z Feed")
-    Feed.create!(url: "https://a.com/feed", title: "A Feed")
-    Feed.create!(url: "https://m.com/feed", title: "M Feed")
+    feed_z = Feed.create!(url: "https://z.com/feed", title: "Z Feed")
+    feed_a = Feed.create!(url: "https://a.com/feed", title: "A Feed")
+    feed_m = Feed.create!(url: "https://m.com/feed", title: "M Feed")
+    user.subscribe_to(feed_z)
+    user.subscribe_to(feed_a)
+    user.subscribe_to(feed_m)
 
-    xml = Feed.to_opml
+    xml = Feed.to_opml(user: user)
     doc = REXML::Document.new(xml)
 
     titles = REXML::XPath.match(doc, "//outline").map { |o| o.attributes["title"] }
@@ -420,14 +414,16 @@ class FeedTest < ActiveSupport::TestCase
   end
 
   test "to_opml omits htmlUrl when site_url is blank" do
+    user = users(:two)
     Feed.destroy_all
     feed = Feed.create!(
       url: "https://example.com/feed.xml",
       title: "Example Feed",
       site_url: nil
     )
+    user.subscribe_to(feed)
 
-    xml = Feed.to_opml
+    xml = Feed.to_opml(user: user)
     doc = REXML::Document.new(xml)
 
     outline = REXML::XPath.first(doc, "//outline")
@@ -936,19 +932,21 @@ class FeedTest < ActiveSupport::TestCase
   end
 
   test "exported OPML can be re-imported" do
+    user = users(:two)
     Feed.destroy_all
     original_feeds = [
       Feed.create!(url: "https://a.com/feed", title: "Feed A", site_url: "https://a.com/"),
       Feed.create!(url: "https://b.com/feed", title: "Feed B", site_url: "https://b.com/"),
       Feed.create!(url: "https://c.com/feed", title: "Feed C")
     ]
+    original_feeds.each { |f| user.subscribe_to(f) }
 
     # Export
-    xml = Feed.to_opml
+    xml = Feed.to_opml(user: user)
 
     # Clear and re-import
     Feed.destroy_all
-    result = Feed.import_from_opml(xml)
+    result = Feed.import_from_opml(xml, user: user)
 
     assert_equal 3, result[:added]
     assert_equal 0, result[:skipped]
@@ -974,239 +972,5 @@ class FeedTest < ActiveSupport::TestCase
         </channel>
       </rss>
     RSS
-  end
-
-  # -- Scope tests: with_unread_count / with_unreads --
-
-  test "with_unread_count calculates unread count for each feed" do
-    feeds = Feed.with_unread_count.order(:title)
-
-    error_feed = feeds.find { |f| f.id == feeds(:error_feed).id }
-    rails_news = feeds.find { |f| f.id == feeds(:rails_news).id }
-    ruby_blog = feeds.find { |f| f.id == feeds(:ruby_blog).id }
-
-    assert_equal 0, error_feed.unread_count
-    assert_equal 1, rails_news.unread_count
-    assert_equal 1, ruby_blog.unread_count
-  end
-
-  test "with_unreads returns only feeds with unread entries" do
-    feed_ids = Feed.with_unreads.pluck(:id)
-
-    assert_includes feed_ids, feeds(:ruby_blog).id
-    assert_includes feed_ids, feeds(:rails_news).id
-    assert_not_includes feed_ids, feeds(:error_feed).id
-  end
-
-  test "with_unreads returns empty when all entries are read" do
-    Entry.update_all(read_at: Time.current)
-
-    assert_empty Feed.with_unreads.to_a
-  end
-
-  test "unread_count returns 0 when scope not used" do
-    feed = Feed.find(feeds(:ruby_blog).id)
-    assert_equal 0, feed.unread_count
-  end
-
-  # -- Rate validation and scope tests --
-
-  test "rate validates inclusion in 0..5" do
-    # Valid rates: 0, 1, 2, 3, 4, 5
-    (0..5).each do |rate|
-      feed = Feed.new(url: "https://example.com/feed#{rate}", rate: rate)
-      assert feed.valid?, "Expected rate #{rate} to be valid but got errors: #{feed.errors.full_messages}"
-    end
-  end
-
-  test "rate rejects negative values" do
-    feed = Feed.new(url: "https://example.com/feed", rate: -1)
-    assert_not feed.valid?
-    assert_includes feed.errors[:rate], "は一覧にありません"
-  end
-
-  test "rate rejects values greater than 5" do
-    feed = Feed.new(url: "https://example.com/feed", rate: 6)
-    assert_not feed.valid?
-    assert_includes feed.errors[:rate], "は一覧にありません"
-  end
-
-  test "rate defaults to 0" do
-    feed = Feed.create!(url: "https://example.com/feed-default-rate")
-    assert_equal 0, feed.rate
-  end
-
-  test "with_rate_at_least(0) returns all feeds" do
-    all_feeds = Feed.all.count
-    result = Feed.with_rate_at_least(0).count
-    assert_equal all_feeds, result
-  end
-
-  test "with_rate_at_least(1) returns only feeds with rate >= 1" do
-    result = Feed.with_rate_at_least(1)
-    rates = result.map(&:rate)
-
-    assert_includes rates, 1 # low_rate_feed
-    assert_includes rates, 3 # rails_news
-    assert_includes rates, 5 # ruby_blog
-    assert_not_includes rates, 0 # error_feed should not be included
-  end
-
-  test "with_rate_at_least(3) returns only feeds with rate >= 3" do
-    result = Feed.with_rate_at_least(3)
-    rates = result.map(&:rate)
-
-    assert_includes rates, 3 # rails_news
-    assert_includes rates, 5 # ruby_blog
-    assert_not_includes rates, 0 # error_feed
-    assert_not_includes rates, 1 # low_rate_feed
-  end
-
-  test "with_rate_at_least(5) returns only feeds with rate == 5" do
-    result = Feed.with_rate_at_least(5)
-
-    assert_equal 1, result.count
-    assert_equal 5, result.first.rate
-  end
-
-  test "with_rate_at_least coerces string parameter to integer" do
-    result = Feed.with_rate_at_least("3")
-    rates = result.map(&:rate)
-
-    assert_includes rates, 3
-    assert_includes rates, 5
-  end
-
-  test "with_rate_at_least('0') returns all feeds" do
-    all_feeds = Feed.all.count
-    result = Feed.with_rate_at_least("0").count
-    assert_equal all_feeds, result
-  end
-
-  # -- grouped_by_folder_for_home tests --
-
-  test "grouped_by_folder_for_home groups feeds by folder" do
-    grouped = Feed.grouped_by_folder_for_home(rate: 0)
-
-    # Should be an array of [folder, feeds] pairs
-    assert_instance_of Array, grouped
-    assert_not_empty grouped
-
-    grouped.each do |folder, feeds_in_group|
-      assert_instance_of Array, feeds_in_group
-      assert feeds_in_group.all? { |f| f.is_a?(Feed) }
-
-      if folder.present?
-        assert_instance_of Folder, folder
-        assert feeds_in_group.all? { |f| f.folder_id == folder.id }
-      else
-        assert feeds_in_group.all? { |f| f.folder_id.nil? }
-      end
-    end
-  end
-
-  test "grouped_by_folder_for_home sorts folders by name" do
-    grouped = Feed.grouped_by_folder_for_home(rate: 0)
-    folder_names = grouped.map { |folder, _| folder&.name }.compact
-
-    # Verify folders are in alphabetical order
-    assert_equal folder_names.sort, folder_names
-  end
-
-  test "grouped_by_folder_for_home places unclassified feeds last" do
-    # Create an unclassified feed with unread entry for this test
-    unclassified_feed = Feed.create!(
-      url: "https://example.com/unclass-for-order",
-      title: "ZUnclassified Order Test",
-      rate: 3
-    )
-    Entry.create!(
-      feed_id: unclassified_feed.id,
-      guid: "https://example.com/entry/#{SecureRandom.uuid}",
-      url: "https://example.com/entry"
-    )
-
-    grouped = Feed.grouped_by_folder_for_home(rate: 0)
-
-    # Get the last group (should have folder_id = nil)
-    last_folder, last_feeds = grouped.last
-
-    # Verify last group is unclassified (nil folder)
-    assert_nil last_folder
-    assert last_feeds.all? { |f| f.folder_id.nil? }
-  ensure
-    unclassified_feed&.destroy
-  end
-
-  test "grouped_by_folder_for_home respects rate filter" do
-    grouped = Feed.grouped_by_folder_for_home(rate: 3)
-
-    # Flatten all feeds in groups
-    all_feeds = grouped.flat_map { |_, feeds| feeds }
-
-    # Verify all feeds have rate >= 3
-    assert all_feeds.all? { |f| f.rate >= 3 }
-  end
-
-  test "grouped_by_folder_for_home with rate=0 includes all feeds" do
-    grouped = Feed.grouped_by_folder_for_home(rate: 0)
-    all_feeds = grouped.flat_map { |_, feeds| feeds }
-
-    # with_unreads: only feeds with unread entries
-    # Current fixtures: ruby_blog, rails_news have unread entries
-    expected_count = Feed.with_unreads.to_a.count
-    assert_equal expected_count, all_feeds.count
-  end
-
-  test "grouped_by_folder_for_home includes feeds without folder" do
-    # Create an unclassified feed with unread entry
-    unclassified_feed = Feed.create!(
-      url: "https://example.com/unclass-verify",
-      title: "Unclassified Verify",
-      rate: 3
-    )
-    Entry.create!(
-      feed_id: unclassified_feed.id,
-      guid: "https://example.com/entry/#{SecureRandom.uuid}",
-      url: "https://example.com/entry"
-    )
-
-    grouped = Feed.grouped_by_folder_for_home(rate: 0)
-
-    # Verify at least the unclassified (nil) group exists
-    has_unclassified = grouped.any? { |folder, _| folder.nil? }
-    assert has_unclassified
-  ensure
-    unclassified_feed&.destroy
-  end
-
-  test "grouped_by_folder_for_home includes feeds with folder" do
-    grouped = Feed.grouped_by_folder_for_home(rate: 0)
-
-    # Verify at least one folder group exists
-    has_folders = grouped.any? { |folder, _| folder.present? }
-    assert has_folders
-  end
-
-  test "grouped_by_folder_for_home with rate filter excludes low-rate feeds" do
-    # Create a low-rate feed with unread entry for testing
-    low_feed = Feed.create!(
-      url: "https://example.com/test-low-rate",
-      title: "Low Rate",
-      rate: 2
-    )
-    Entry.create!(
-      feed_id: low_feed.id,
-      guid: "https://example.com/entry/#{SecureRandom.uuid}",
-      url: "https://example.com/entry1"
-    )
-
-    grouped_rate_3 = Feed.grouped_by_folder_for_home(rate: 3)
-    all_feeds = grouped_rate_3.flat_map { |_, feeds| feeds }
-
-    # Should not include the rate-2 feed
-    assert_not_includes all_feeds.map(&:id), low_feed.id
-  ensure
-    low_feed&.destroy
   end
 end

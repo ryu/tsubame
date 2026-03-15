@@ -2,24 +2,11 @@ class Entry < ApplicationRecord
   include Entry::RssParser
 
   belongs_to :feed
+  has_many :user_entry_states, dependent: :destroy
 
   validates :guid, presence: true, uniqueness: { scope: :feed_id }
 
-  scope :unread, -> { where(read_at: nil) }
-  scope :pinned, -> { where(pinned: true) }
   scope :recently_published, -> { order(published_at: :desc) }
-
-  # Mark entry as read (idempotent)
-  # Returns true if marked as read for the first time, false if already read
-  def mark_as_read!
-    return false if read_at.present?
-    update!(read_at: Time.current)
-    true
-  end
-
-  def toggle_pin!
-    update!(pinned: !pinned)
-  end
 
   # Returns sanitized URL safe for use in link hrefs.
   # Returns nil if URL is blank or not HTTP(S).

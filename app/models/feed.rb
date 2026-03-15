@@ -5,7 +5,8 @@ class Feed < ApplicationRecord
   include Feed::Opml
 
   has_many :entries, dependent: :destroy
-  belongs_to :folder, optional: true
+  has_many :subscriptions, dependent: :destroy
+  has_many :subscribers, through: :subscriptions, source: :user
 
   enum :status, { ok: 0, error: 1 }, default: :ok
 
@@ -27,19 +28,10 @@ class Feed < ApplicationRecord
   ERROR_BACKOFF_MINUTES = 30
 
   validates :fetch_interval_minutes, inclusion: { in: FETCH_INTERVAL_OPTIONS.keys }
-  validates :rate, inclusion: { in: 0..5 }
 
   # record_successful_fetch! / record_fetch_error! set next_fetch_at explicitly;
   # this callback only fires when fetch_interval_minutes is changed (e.g. from settings).
   before_save :set_next_fetch_at, if: :fetch_interval_minutes_changed?
-
-  # Returns feeds grouped by folder for the home screen.
-  # Format: [[folder_or_nil, [feed, ...]], ...] — folders sorted by name, nil (unclassified) last.
-  def self.grouped_by_folder_for_home(rate:)
-    feeds = with_unreads.with_rate_at_least(rate).includes(:folder).order(:title)
-    groups = feeds.group_by(&:folder)
-    groups.sort_by { |folder, _| folder ? [ 0, folder.name ] : [ 1, "" ] }
-  end
 
   # Returns an unsaved Feed ready for immediate scheduling.
   def self.subscribe(url)
@@ -47,26 +39,6 @@ class Feed < ApplicationRecord
   end
 
   scope :due_for_fetch, -> { where("next_fetch_at <= ?", Time.current).where.not(next_fetch_at: nil) }
-
-  scope :with_unread_count, -> {
-    left_joins(:entries)
-      .select("feeds.*, COUNT(CASE WHEN entries.id IS NOT NULL AND entries.read_at IS NULL THEN 1 END) as unread_count")
-      .group("feeds.id")
-  }
-
-  # Only feeds that have at least one unread entry
-  # SQLite does not support column aliases in HAVING, so we repeat the full expression
-  scope :with_unreads, -> {
-    with_unread_count
-      .having("COUNT(CASE WHEN entries.id IS NOT NULL AND entries.read_at IS NULL THEN 1 END) > 0")
-  }
-
-  scope :with_rate_at_least, ->(rate) { rate.to_i > 0 ? where("rate >= ?", rate.to_i) : all }
-
-  # Virtual attribute populated by with_unread_count / with_unreads scope
-  def unread_count
-    self[:unread_count] || 0
-  end
 
   def record_successful_fetch!(new_etag: nil, new_last_modified: nil)
     update!(
@@ -93,10 +65,6 @@ class Feed < ApplicationRecord
       "If-None-Match" => etag.presence,
       "If-Modified-Since" => last_modified.presence
     }.compact
-  end
-
-  def mark_all_entries_as_read!
-    entries.unread.update_all(read_at: Time.current)
   end
 
   private

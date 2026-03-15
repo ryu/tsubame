@@ -7,11 +7,12 @@ module Feed::Opml
   extend ActiveSupport::Concern
 
   class_methods do
-    # Import feeds from OPML XML content
+    # Import feeds from OPML XML content for a specific user
     # Returns { added: N, skipped: N }
-    def import_from_opml(xml_content)
+    def import_from_opml(xml_content, user:)
       doc = REXML::Document.new(xml_content, entity_expansion_text_limit: 0)
-      state = { added: 0, skipped: 0, existing_urls: pluck(:url).to_set }
+      existing_feed_urls = user.subscriptions.joins(:feed).pluck("feeds.url").to_set
+      state = { added: 0, skipped: 0, existing_urls: existing_feed_urls, user: user }
 
       doc.each_element("//body") do |body|
         import_outlines(body, state)
@@ -22,9 +23,9 @@ module Feed::Opml
       raise ImportError, "OPMLファイルの形式が正しくありません。"
     end
 
-    # Export feeds to OPML 1.0 XML format
+    # Export subscribed feeds to OPML 1.0 XML format for a specific user
     # Returns XML string
-    def to_opml
+    def to_opml(user:)
       doc = REXML::Document.new
       doc << REXML::XMLDecl.new("1.0", "UTF-8")
 
@@ -34,11 +35,12 @@ module Feed::Opml
 
       body = opml.add_element("body")
 
-      all.order(:title).each do |feed|
+      user.subscriptions.includes(:feed).joins(:feed).merge(Feed.order(:title)).each do |sub|
+        feed = sub.feed
         attrs = {
           "type" => "rss",
-          "text" => feed.title || feed.url,
-          "title" => feed.title || feed.url,
+          "text" => sub.display_title,
+          "title" => sub.display_title,
           "xmlUrl" => feed.url
         }
         attrs["htmlUrl"] = feed.site_url if feed.site_url.present?
@@ -71,13 +73,13 @@ module Feed::Opml
       end
 
       raw_title = outline.attributes["title"] || outline.attributes["text"]
-      create!(
-        url: url,
-        title: raw_title ? CGI.unescapeHTML(raw_title) : nil,
-        site_url: outline.attributes["htmlUrl"],
-        status: :ok,
-        next_fetch_at: Time.current
-      )
+      feed = Feed.find_or_create_by!(url: url) do |f|
+        f.title = raw_title ? CGI.unescapeHTML(raw_title) : nil
+        f.site_url = outline.attributes["htmlUrl"]
+        f.status = :ok
+        f.next_fetch_at = Time.current
+      end
+      state[:user].subscribe_to(feed)
       state[:existing_urls] << url
       state[:added] += 1
     rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotUnique => e

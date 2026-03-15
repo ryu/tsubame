@@ -1,7 +1,7 @@
 class EntryPinsController < ApplicationController
   def create
-    @entry = Entry.find(params[:entry_id])
-    @entry.toggle_pin!
-    @pinned_count = Entry.pinned.count
+    @entry = Current.user.entries.find(params[:entry_id])
+    Current.user.toggle_entry_pin!(@entry)
+    @pinned_count = Current.user.pinned_entry_count
   end
 end

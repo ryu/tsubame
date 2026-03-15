@@ -44,7 +44,9 @@ class FeedsControllerTest < ActionDispatch::IntegrationTest
       )
 
     assert_difference "Feed.count", 1 do
-      post feeds_path, params: { feed: { url: "https://example.com/new/feed.xml" } }
+      assert_difference "Subscription.count", 1 do
+        post feeds_path, params: { feed: { url: "https://example.com/new/feed.xml" } }
+      end
     end
 
     assert_redirected_to feeds_path
@@ -212,7 +214,8 @@ class FeedsControllerTest < ActionDispatch::IntegrationTest
       post feeds_path, params: { feed: { url: feeds(:ruby_blog).url } }
     end
 
-    assert_response :unprocessable_entity
+    # User already has a subscription, so it should redirect (find_or_create_by)
+    assert_redirected_to feeds_path
   end
 
   test "create rejects blank URL" do
@@ -238,18 +241,18 @@ class FeedsControllerTest < ActionDispatch::IntegrationTest
     get edit_feed_path(feed)
     assert_response :success
     assert_select "h1", "フィードを編集"
-    assert_select "input[value=?]", feed.title
   end
 
   test "update changes title" do
     sign_in_as(@user)
     feed = feeds(:ruby_blog)
+    subscription = @user.subscriptions.find_by!(feed: feed)
 
-    patch feed_path(feed), params: { feed: { title: "New Title" } }
+    patch feed_path(feed), params: { subscription: { title: "New Title" } }
 
     assert_redirected_to feeds_path
     assert_equal "フィードを更新しました。", flash[:notice]
-    assert_equal "New Title", feed.reload.title
+    assert_equal "New Title", subscription.reload.title
   end
 
   test "update changes fetch_interval_minutes" do
@@ -291,9 +294,11 @@ class FeedsControllerTest < ActionDispatch::IntegrationTest
     feed = feeds(:ruby_blog)
     entry_count = feed.entries.count
 
-    assert_difference "Feed.count", -1 do
-      assert_difference "Entry.count", -entry_count do
-        delete feed_path(feed)
+    assert_difference "Subscription.count", -1 do
+      assert_difference "Feed.count", -1 do
+        assert_difference "Entry.count", -entry_count do
+          delete feed_path(feed)
+        end
       end
     end
 
@@ -320,7 +325,7 @@ class FeedsControllerTest < ActionDispatch::IntegrationTest
     get edit_feed_path(feed)
 
     assert_response :success
-    assert_select "select[name='feed[rate]']" do
+    assert_select "select[name='subscription[rate]']" do
       # Verify rate options: 0-5
       (0..5).each do |rate|
         assert_select "option[value='#{rate}']"
@@ -331,65 +336,71 @@ class FeedsControllerTest < ActionDispatch::IntegrationTest
   test "update changes rate" do
     sign_in_as(@user)
     feed = feeds(:ruby_blog)
+    subscription = @user.subscriptions.find_by!(feed: feed)
 
-    patch feed_path(feed), params: { feed: { rate: 3 } }
+    patch feed_path(feed), params: { subscription: { rate: 3 } }
 
     assert_redirected_to feeds_path
     assert_equal "フィードを更新しました。", flash[:notice]
-    assert_equal 3, feed.reload.rate
+    assert_equal 3, subscription.reload.rate
   end
 
   test "update changes rate from 3 to 5" do
     sign_in_as(@user)
     feed = feeds(:rails_news)
-    assert_equal 3, feed.rate
+    subscription = @user.subscriptions.find_by!(feed: feed)
+    assert_equal 3, subscription.rate
 
-    patch feed_path(feed), params: { feed: { rate: 5 } }
+    patch feed_path(feed), params: { subscription: { rate: 5 } }
 
-    assert_equal 5, feed.reload.rate
+    assert_equal 5, subscription.reload.rate
   end
 
   test "update changes rate to 0" do
     sign_in_as(@user)
     feed = feeds(:ruby_blog)
+    subscription = @user.subscriptions.find_by!(feed: feed)
 
-    patch feed_path(feed), params: { feed: { rate: 0 } }
+    patch feed_path(feed), params: { subscription: { rate: 0 } }
 
-    assert_equal 0, feed.reload.rate
+    assert_equal 0, subscription.reload.rate
   end
 
   test "update rejects invalid rate (negative)" do
     sign_in_as(@user)
     feed = feeds(:ruby_blog)
-    original_rate = feed.rate
+    subscription = @user.subscriptions.find_by!(feed: feed)
+    original_rate = subscription.rate
 
-    patch feed_path(feed), params: { feed: { rate: -1 } }
+    patch feed_path(feed), params: { subscription: { rate: -1 } }
 
     assert_response :unprocessable_entity
-    assert_equal original_rate, feed.reload.rate
+    assert_equal original_rate, subscription.reload.rate
   end
 
   test "update rejects invalid rate (> 5)" do
     sign_in_as(@user)
     feed = feeds(:ruby_blog)
-    original_rate = feed.rate
+    subscription = @user.subscriptions.find_by!(feed: feed)
+    original_rate = subscription.rate
 
-    patch feed_path(feed), params: { feed: { rate: 6 } }
+    patch feed_path(feed), params: { subscription: { rate: 6 } }
 
     assert_response :unprocessable_entity
-    assert_equal original_rate, feed.reload.rate
+    assert_equal original_rate, subscription.reload.rate
   end
 
   test "update accepts rate with title change" do
     sign_in_as(@user)
     feed = feeds(:ruby_blog)
+    subscription = @user.subscriptions.find_by!(feed: feed)
 
-    patch feed_path(feed), params: { feed: { title: "Updated Title", rate: 4 } }
+    patch feed_path(feed), params: { subscription: { title: "Updated Title", rate: 4 } }
 
     assert_redirected_to feeds_path
-    feed.reload
-    assert_equal "Updated Title", feed.title
-    assert_equal 4, feed.rate
+    subscription.reload
+    assert_equal "Updated Title", subscription.title
+    assert_equal 4, subscription.rate
   end
 
   # -- Folder-related tests --
@@ -415,47 +426,71 @@ class FeedsControllerTest < ActionDispatch::IntegrationTest
   test "update assigns feed to folder" do
     sign_in_as(@user)
     feed = feeds(:error_feed)  # Use a feed without folder initially
+    subscription = @user.subscriptions.find_by!(feed: feed)
     folder = folders(:news)
 
-    patch feed_path(feed), params: { feed: { folder_id: folder.id } }
+    patch feed_path(feed), params: { subscription: { folder_id: folder.id } }
 
     assert_redirected_to feeds_path
-    assert_equal folder.id, feed.reload.folder_id
+    assert_equal folder.id, subscription.reload.folder_id
   end
 
   test "update removes feed from folder" do
     sign_in_as(@user)
-    feed = feeds(:ruby_blog)  # ruby_blog is in tech folder
+    feed = feeds(:ruby_blog)  # ruby_blog subscription is in tech folder
+    subscription = @user.subscriptions.find_by!(feed: feed)
 
-    assert_not_nil feed.folder_id
+    assert_not_nil subscription.folder_id
 
-    patch feed_path(feed), params: { feed: { folder_id: "" } }
+    patch feed_path(feed), params: { subscription: { folder_id: "" } }
 
     assert_redirected_to feeds_path
-    assert_nil feed.reload.folder_id
+    assert_nil subscription.reload.folder_id
   end
 
   test "update changes feed folder" do
     sign_in_as(@user)
     feed = feeds(:ruby_blog)  # Currently in tech folder
+    subscription = @user.subscriptions.find_by!(feed: feed)
     new_folder = folders(:news)
 
-    patch feed_path(feed), params: { feed: { folder_id: new_folder.id } }
+    patch feed_path(feed), params: { subscription: { folder_id: new_folder.id } }
 
     assert_redirected_to feeds_path
-    assert_equal new_folder.id, feed.reload.folder_id
+    assert_equal new_folder.id, subscription.reload.folder_id
   end
 
   test "update keeps folder when only title changes" do
     sign_in_as(@user)
     feed = feeds(:ruby_blog)
-    original_folder_id = feed.folder_id
+    subscription = @user.subscriptions.find_by!(feed: feed)
+    original_folder_id = subscription.folder_id
 
-    patch feed_path(feed), params: { feed: { title: "New Title" } }
+    patch feed_path(feed), params: { subscription: { title: "New Title" } }
 
     assert_redirected_to feeds_path
-    feed.reload
-    assert_equal "New Title", feed.title
-    assert_equal original_folder_id, feed.folder_id
+    subscription.reload
+    assert_equal "New Title", subscription.title
+    assert_equal original_folder_id, subscription.folder_id
+  end
+
+  # -- Cross-user data isolation tests --
+
+  test "edit returns not found for unsubscribed feed" do
+    sign_in_as(users(:two))
+    get edit_feed_path(feeds(:ruby_blog))
+    assert_response :not_found
+  end
+
+  test "update returns not found for unsubscribed feed" do
+    sign_in_as(users(:two))
+    patch feed_path(feeds(:ruby_blog)), params: { subscription: { title: "Hacked" } }
+    assert_response :not_found
+  end
+
+  test "destroy returns not found for unsubscribed feed" do
+    sign_in_as(users(:two))
+    delete feed_path(feeds(:ruby_blog))
+    assert_response :not_found
   end
 end

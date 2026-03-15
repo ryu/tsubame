@@ -15,7 +15,7 @@
     <%= link_to "フォルダ管理", folders_path, class: "manage-action-link" %>
   </p>
 
-  <% if @feeds.any? %>
+  <% if @subscriptions.any? %>
     <table class="manage-table">
       <thead>
         <tr>
@@ -27,7 +27,8 @@
         </tr>
       </thead>
       <tbody>
-        <% @feeds.each do |feed| %>
+        <% @subscriptions.each do |subscription| %>
+          <% feed = subscription.feed %>
           <tr>
             <td>
               <% if feed.ok? %>
@@ -37,7 +38,7 @@
               <% end %>
             </td>
             <td>
-              <%= feed.title || "（未取得）" %>
+              <%= subscription.display_title %>
               <% if feed.error? && feed.error_message.present? %>
                 <div class="feed-error-message"><%= feed.error_message %></div>
               <% end %>
@@ -54,7 +55,7 @@
               <div class="manage-actions">
                 <%= link_to "編集", edit_feed_path(feed), class: "manage-btn-small" %>
                 <%= button_to "↻", feed_fetch_path(feed), method: :post, class: "manage-btn-small", title: "フェッチ" %>
-                <%= link_to "削除", feed_path(feed), data: { turbo_method: :delete, turbo_confirm: "「#{feed.title || feed.url}」を削除しますか？" }, class: "manage-btn-small manage-btn-danger" %>
+                <%= link_to "削除", feed_path(feed), data: { turbo_method: :delete, turbo_confirm: "「#{subscription.display_title}」を削除しますか？" }, class: "manage-btn-small manage-btn-danger" %>
               </div>
             </td>
           </tr>

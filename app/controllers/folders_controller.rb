@@ -2,15 +2,15 @@ class FoldersController < ApplicationController
   before_action :set_folder, only: [ :edit, :update, :destroy ]
 
   def index
-    @folders = Folder.order(:name).includes(:feeds)
+    @folders = Current.user.folders.order(:name).includes(:subscriptions)
   end
 
   def new
-    @folder = Folder.new
+    @folder = Current.user.folders.new
   end
 
   def create
-    @folder = Folder.new(folder_params)
+    @folder = Current.user.folders.new(folder_params)
     if @folder.save
       redirect_to folders_path, notice: "フォルダを作成しました。"
     else
@@ -37,7 +37,7 @@ class FoldersController < ApplicationController
   private
 
   def set_folder
-    @folder = Folder.find(params[:id])
+    @folder = Current.user.folders.find(params[:id])
   end
 
   def folder_params

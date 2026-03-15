@@ -1,35 +1,36 @@
 require "test_helper"
 
 class CleanupEntriesJobTest < ActiveJob::TestCase
-  test "should delete entries read more than 90 days ago and not pinned" do
+  test "should delete entries older than 90 days that are not pinned" do
+    user = users(:one)
     feed = feeds(:ruby_blog)
 
-    # Create entry read 91 days ago, not pinned
-    old_read_entry = feed.entries.create!(
-      guid: "old-read",
-      title: "Old Read Entry",
-      url: "https://example.com/old-read",
-      read_at: 91.days.ago
+    # Create entry created 91 days ago, not pinned
+    old_entry = feed.entries.create!(
+      guid: "old-entry",
+      title: "Old Entry",
+      url: "https://example.com/old-entry",
+      created_at: 91.days.ago
     )
 
-    # Create entry read 89 days ago, not pinned
-    recent_read_entry = feed.entries.create!(
-      guid: "recent-read",
-      title: "Recent Read Entry",
-      url: "https://example.com/recent-read",
-      read_at: 89.days.ago
+    # Create entry created 89 days ago, not pinned
+    recent_entry = feed.entries.create!(
+      guid: "recent-entry",
+      title: "Recent Entry",
+      url: "https://example.com/recent-entry",
+      created_at: 89.days.ago
     )
 
-    # Create entry read 91 days ago, but pinned
+    # Create entry created 91 days ago, but pinned by a user
     old_pinned_entry = feed.entries.create!(
       guid: "old-pinned",
       title: "Old Pinned Entry",
       url: "https://example.com/old-pinned",
-      read_at: 91.days.ago,
-      pinned: true
+      created_at: 91.days.ago
     )
+    UserEntryState.create!(user: user, entry: old_pinned_entry, pinned: true)
 
-    # Create unread entry
+    # Create unread entry (recent)
     unread_entry = feed.entries.create!(
       guid: "unread",
       title: "Unread Entry",
@@ -40,11 +41,11 @@ class CleanupEntriesJobTest < ActiveJob::TestCase
       CleanupEntriesJob.perform_now
     end
 
-    # Old read entry should be deleted
-    assert_not Entry.exists?(old_read_entry.id)
+    # Old entry should be deleted
+    assert_not Entry.exists?(old_entry.id)
 
-    # Recent read entry should still exist
-    assert Entry.exists?(recent_read_entry.id)
+    # Recent entry should still exist
+    assert Entry.exists?(recent_entry.id)
 
     # Old pinned entry should still exist
     assert Entry.exists?(old_pinned_entry.id)
@@ -53,14 +54,13 @@ class CleanupEntriesJobTest < ActiveJob::TestCase
     assert Entry.exists?(unread_entry.id)
   end
 
-  test "should not delete entries with nil read_at" do
+  test "should not delete recent entries" do
     feed = feeds(:ruby_blog)
 
     entry = feed.entries.create!(
-      guid: "never-read",
-      title: "Never Read",
-      url: "https://example.com/never-read",
-      read_at: nil
+      guid: "recent",
+      title: "Recent",
+      url: "https://example.com/recent"
     )
 
     assert_no_difference "Entry.count" do
@@ -77,7 +77,7 @@ class CleanupEntriesJobTest < ActiveJob::TestCase
     end
   end
 
-  test "should delete multiple old read entries" do
+  test "should delete multiple old entries" do
     feed = feeds(:ruby_blog)
 
     5.times do |i|
@@ -85,7 +85,7 @@ class CleanupEntriesJobTest < ActiveJob::TestCase
         guid: "old-entry-#{i}",
         title: "Old Entry #{i}",
         url: "https://example.com/old-#{i}",
-        read_at: 100.days.ago
+        created_at: 100.days.ago
       )
     end
 

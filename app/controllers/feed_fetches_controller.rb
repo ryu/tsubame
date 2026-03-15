@@ -1,6 +1,6 @@
 class FeedFetchesController < ApplicationController
   def create
-    @feed = Feed.find(params[:feed_id])
+    @feed = Current.user.feeds.find(params[:feed_id])
     @feed.fetch
     @feed.reload
     redirect_to feeds_path, notice: "「#{@feed.title || @feed.url}」をフェッチしました。"

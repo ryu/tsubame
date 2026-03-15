@@ -123,22 +123,22 @@ class HomeControllerTest < ActionDispatch::IntegrationTest
   test "home page displays correct feed count for rate filter" do
     sign_in_as(users(:one))
 
-    # HomeController uses with_unreads, so only feeds with unread entries are shown
+    # HomeController uses grouped_subscriptions_for_home, so only subscriptions with unread entries are shown
     # Current fixtures:
-    #   ruby_blog (rate=5): has unread entry
-    #   rails_news (rate=3): has unread entry
-    #   error_feed (rate=0): no unread entries
-    #   low_rate_feed (rate=1): no unread entries
+    #   user_one_ruby_blog (rate=5): has unread entry
+    #   user_one_rails_news (rate=3): has unread entry
+    #   user_one_error_feed (rate=0): no unread entries
+    #   user_one_low_rate_feed (rate=1): no unread entries
 
-    # rate=1: only feeds with rate >= 1 AND unread entries = rails_news, ruby_blog (2 feeds)
+    # rate=1: only subscriptions with rate >= 1 AND unread entries = rails_news, ruby_blog (2 feeds)
     get root_url(rate: 1)
     assert_select ".feed-item", { count: 2 }
 
-    # rate=3: only feeds with rate >= 3 AND unread entries = rails_news, ruby_blog (2 feeds)
+    # rate=3: only subscriptions with rate >= 3 AND unread entries = rails_news, ruby_blog (2 feeds)
     get root_url(rate: 3)
     assert_select ".feed-item", { count: 2 }
 
-    # rate=5: only feeds with rate >= 5 AND unread entries = ruby_blog (1 feed)
+    # rate=5: only subscriptions with rate >= 5 AND unread entries = ruby_blog (1 feed)
     get root_url(rate: 5)
     assert_select ".feed-item", { count: 1 }
   end
@@ -166,14 +166,15 @@ class HomeControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "home page displays unclassified section" do
-    sign_in_as(users(:one))
+    user = users(:one)
+    sign_in_as(user)
 
-    # Create an unclassified feed with unread entry
+    # Create an unclassified feed with unread entry and subscribe
     unclassified_feed = Feed.create!(
       url: "https://example.com/unclassified",
-      title: "Unclassified Feed",
-      rate: 3
+      title: "Unclassified Feed"
     )
+    user.subscribe_to(unclassified_feed)
     Entry.create!(
       feed_id: unclassified_feed.id,
       guid: "https://example.com/entry/#{SecureRandom.uuid}",
@@ -212,14 +213,15 @@ class HomeControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "home page displays unclassified feeds after folders" do
-    sign_in_as(users(:one))
+    user = users(:one)
+    sign_in_as(user)
 
-    # Create unclassified feeds
+    # Create unclassified feed and subscribe
     unclassified = Feed.create!(
       url: "https://example.com/unclass1",
-      title: "ZUnclassified",  # Sort after Tech
-      rate: 0
+      title: "ZUnclassified"
     )
+    user.subscribe_to(unclassified)
     Entry.create!(
       feed_id: unclassified.id,
       guid: "https://example.com/entry/#{SecureRandom.uuid}",

@@ -8,8 +8,6 @@ ruby_article_one:
   author: Alice
   body: <p>Ruby 4.0 introduces many new features...</p>
   published_at: <%= 2.days.ago %>
-  read_at: <%= 1.day.ago %>
-  pinned: false
 
 ruby_article_two:
   feed: ruby_blog
@@ -19,8 +17,6 @@ ruby_article_two:
   author: Bob
   body: <p>This article explores advanced patterns...</p>
   published_at: <%= 1.day.ago %>
-  read_at: nil
-  pinned: true
 
 rails_article_one:
   feed: rails_news
@@ -30,5 +26,3 @@ rails_article_one:
   author: Charlie
   body: <p>Rails 8.1 is now available with...</p>
   published_at: <%= 3.hours.ago %>
-  read_at: nil
-  pinned: false

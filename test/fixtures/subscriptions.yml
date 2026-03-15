@@ -1,0 +1,23 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+user_one_ruby_blog:
+  user: one
+  feed: ruby_blog
+  folder: tech
+  rate: 5
+
+user_one_rails_news:
+  user: one
+  feed: rails_news
+  folder: tech
+  rate: 3
+
+user_one_error_feed:
+  user: one
+  feed: error_feed
+  rate: 0
+
+user_one_low_rate_feed:
+  user: one
+  feed: low_rate_feed
+  rate: 1

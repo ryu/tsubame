@@ -2,6 +2,8 @@
 
 tech:
   name: Tech
+  user: one
 
 news:
   name: News
+  user: one

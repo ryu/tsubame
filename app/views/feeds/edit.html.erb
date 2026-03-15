@@ -5,17 +5,20 @@
 
   <h1>フィードを編集</h1>
 
-  <% if @feed.errors.any? %>
+  <% if @feed.errors.any? || @subscription.errors.any? %>
     <div class="form-errors">
       <ul>
         <% @feed.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+        <% @subscription.errors.full_messages.each do |message| %>
           <li><%= message %></li>
         <% end %>
       </ul>
     </div>
   <% end %>
 
-  <%= form_with model: @feed, class: "manage-form" do |form| %>
+  <%= form_with url: feed_path(@feed), method: :patch, class: "manage-form" do |form| %>
     <div class="manage-form-field">
       <label>フィードURL</label>
       <p class="manage-table-url"><%= @feed.url %></p>
@@ -23,14 +26,15 @@
 
     <div class="manage-form-field">
       <%= form.label :title, "タイトル" %>
-      <%= form.text_field :title, class: "manage-input", autofocus: true %>
+      <%= form.text_field :title, value: @subscription.title, name: "subscription[title]", class: "manage-input", autofocus: true %>
     </div>
 
     <div class="manage-form-field">
       <%= form.label :fetch_interval_minutes, "巡回間隔" %>
       <%= form.select :fetch_interval_minutes,
           Feed::FETCH_INTERVAL_OPTIONS.map { |k, v| [v, k] },
-          {}, class: "manage-select" %>
+          { selected: @feed.fetch_interval_minutes },
+          name: "feed[fetch_interval_minutes]", class: "manage-select" %>
     </div>
 
     <div class="manage-form-field">
@@ -42,15 +46,16 @@
            [  "★★★",  3 ],
            [ "★★★★",  4 ],
            ["★★★★★",  5 ]],
-          {}, class: "manage-select" %>
+          { selected: @subscription.rate },
+          name: "subscription[rate]", class: "manage-select" %>
     </div>
 
     <div class="manage-form-field">
       <%= form.label :folder_id, "フォルダ" %>
       <%= form.select :folder_id,
           @folders.map { |f| [f.name, f.id] },
-          { include_blank: "（未分類）" },
-          class: "manage-select" %>
+          { include_blank: "（未分類）", selected: @subscription.folder_id },
+          name: "subscription[folder_id]", class: "manage-select" %>
     </div>
 
     <div>
