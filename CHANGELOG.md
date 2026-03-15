@@ -2,6 +2,31 @@
 
 ## Unreleased
 
+## [2.0.0] - 2026-03-15
+
+### Added
+- Multi-user support: Subscription/UserEntryState models for per-user feed management
+- User registration with email/password (minimum 8 characters)
+- Logout link in settings dropdown
+
+### Changed
+- Feeds and entries are now globally shared; subscriptions link users to feeds (Fastladder-compatible pattern)
+- Read/pin state moved from Entry to UserEntryState (per-user)
+- Folder, rate, and custom title moved from Feed to Subscription (per-user)
+- All controllers scoped through Current.user for data isolation
+- OPML import/export scoped to current user's subscriptions
+- CleanupEntriesJob uses created_at age and per-user pin state
+
+### Security
+- Fix IDOR: entry access restricted to subscribed feeds only
+- Fix SQL interpolation in Subscription scope (use sanitize_sql_array)
+- Add folder ownership validation on Subscription
+- Add cross-user data isolation tests
+
+### Fixed
+- Fix j-key advancing past last entry into next feed
+- Fix Safari 26+ keyboard shortcuts for opening tabs
+
 ## [1.2.1] - 2026-02-25
 
 ### Changed
