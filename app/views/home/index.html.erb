@@ -45,6 +45,7 @@
             <%= link_to "フィード管理", feeds_path, class: "settings-dropdown-item", role: "menuitem" %>
             <%= link_to "フォルダ管理", folders_path, class: "settings-dropdown-item", role: "menuitem" %>
             <%= link_to "パスワード変更", edit_password_path, class: "settings-dropdown-item", role: "menuitem" %>
+            <%= link_to "ログアウト", session_path, data: { turbo_method: :delete }, class: "settings-dropdown-item", role: "menuitem" %>
           </div>
         </div>
       </div>
