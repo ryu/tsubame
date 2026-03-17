@@ -59,9 +59,9 @@ export default class extends Controller {
 
   previousEntry() {
     const entryItems = this._getEntryItems()
-    if (entryItems.length === 0) return
+    if (entryItems.length === 0 || this.activeEntryIndexValue <= 0) return
 
-    const newIndex = Math.max(this.activeEntryIndexValue - 1, 0)
+    const newIndex = this.activeEntryIndexValue - 1
     this.activeEntryIndexValue = newIndex
     this._activateEntry(newIndex)
   }
@@ -170,15 +170,7 @@ export default class extends Controller {
 
   _handleFrameLoad() {
     this.activeEntryIndexValue = -1
-    // Auto-select first entry if available
-    const entryItems = this._getEntryItems()
-    if (entryItems.length > 0) {
-      this.activeEntryIndexValue = 0
-      this._activateEntry(0)
-      // _updateNavButtons() will be called by prevButtonTargetConnected()
-    } else {
-      this._updateNavButtons()
-    }
+    this._updateNavButtons()
   }
 
   _activateFeed(index) {
