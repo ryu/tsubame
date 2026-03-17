@@ -1,6 +1,9 @@
 # Changelog
 
-## Unreleased
+## [2.0.1] - 2026-03-18
+
+### Fixed
+- Fix unread entries disappearing when navigating between feeds with keyboard shortcuts
 
 ## [2.0.0] - 2026-03-15
 
