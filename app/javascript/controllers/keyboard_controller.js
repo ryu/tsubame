@@ -62,7 +62,14 @@ export default class extends Controller {
 
     event.preventDefault()
 
-    if (this._directInvoke(command)) return
+    // User-activation commands must be invoked directly (not via dispatch)
+    // to preserve trusted event context for window.open() in Safari.
+    // If the controller isn't found (e.g. after page freeze/thaw), skip
+    // rather than falling through to dispatch which would get blocked.
+    if (this.constructor.userActivationCommands[command]) {
+      this._directInvoke(command)
+      return
+    }
 
     this.dispatch(command, { prefix: "keyboard" })
   }
