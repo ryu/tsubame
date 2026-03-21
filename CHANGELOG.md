@@ -1,5 +1,15 @@
 # Changelog
 
+## [2.1.0] - 2026-03-21
+
+### Added
+- Display unread count badge on folder headers
+- FolderGroup value object for cleaner folder/subscription grouping
+
+### Fixed
+- README: correct single-user description to multi-user
+- Add docs/backup.md to README documentation list
+
 ## [2.0.1] - 2026-03-18
 
 ### Fixed
