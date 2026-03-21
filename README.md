@@ -1,6 +1,6 @@
 # Tsubame
 
-Fastladder 互換のパーソナルフィードリーダー。シングルユーザー向けのセルフホスト型アプリケーション。
+Fastladder 互換のパーソナルフィードリーダー。複数ユーザー対応のセルフホスト型アプリケーション。
 
 ## 主な機能
 
@@ -69,6 +69,7 @@ kamal deploy
 - [docs/keyboard_shortcuts.md](docs/keyboard_shortcuts.md) — キーボードショートカット一覧
 - [docs/feed_crawling.md](docs/feed_crawling.md) — フィードクロール設計
 - [docs/deployment.md](docs/deployment.md) — デプロイ手順
+- [docs/backup.md](docs/backup.md) — バックアップ手順
 
 ## ライセンス
 
