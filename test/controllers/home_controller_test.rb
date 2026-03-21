@@ -162,7 +162,20 @@ class HomeControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
 
     # Should display "Tech" folder name (ruby_blog and rails_news are in tech folder)
-    assert_select ".feed-folder-header", text: "Tech"
+    assert_select ".feed-folder-header", text: /Tech/
+  end
+
+  test "home page displays folder unread count" do
+    sign_in_as(users(:one))
+
+    get root_url
+    assert_response :success
+
+    assert_select ".feed-folder-header" do |headers|
+      tech_header = headers.find { |h| h.text.include?("Tech") }
+      assert tech_header, "Tech folder header should exist"
+      assert_select tech_header, ".unread-badge", text: "2"
+    end
   end
 
   test "home page displays unclassified section" do
@@ -185,7 +198,7 @@ class HomeControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
 
     # Should have unclassified section header
-    assert_select ".feed-folder-header", text: "未分類"
+    assert_select ".feed-folder-header", text: /未分類/
   ensure
     unclassified_feed&.destroy
   end

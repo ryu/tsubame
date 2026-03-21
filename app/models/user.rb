@@ -24,7 +24,7 @@ class User < ApplicationRecord
   end
 
   # Subscribed feeds grouped by folder with unread counts for the home screen.
-  # Format: [[folder_or_nil, [subscription, ...]], ...] — folders sorted by name, nil (unclassified) last.
+  # Returns FolderGroup objects sorted by folder name, with nil (unclassified) last.
   def grouped_subscriptions_for_home(rate:)
     subs = subscriptions
       .with_rate_at_least(rate)
@@ -34,8 +34,9 @@ class User < ApplicationRecord
       .having("unread_count > 0")
       .order("feeds.title")
 
-    groups = subs.group_by(&:folder)
-    groups.sort_by { |folder, _| folder ? [ 0, folder.name ] : [ 1, "" ] }
+    subs.group_by(&:folder)
+      .sort_by { |folder, _| folder ? [ 0, folder.name ] : [ 1, "" ] }
+      .map { |folder, subscriptions| FolderGroup.new(folder:, subscriptions:) }
   end
 
   # Find or initialize a UserEntryState for an entry

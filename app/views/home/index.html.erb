@@ -64,9 +64,14 @@
 
     <div class="feed-list" data-selection-target="feedList">
       <% if @subscriptions.any? %>
-        <% @grouped_subscriptions.each do |folder, subscriptions| %>
-          <div class="feed-folder-header"><%= folder&.name || "未分類" %></div>
-          <% subscriptions.each do |subscription| %>
+        <% @grouped_subscriptions.each do |group| %>
+          <div class="feed-folder-header">
+            <%= group.name %>
+            <% if group.unread_count > 0 %>
+              <span class="unread-badge"><%= group.unread_count %></span>
+            <% end %>
+          </div>
+          <% group.subscriptions.each do |subscription| %>
             <%= link_to feed_entries_path(subscription.feed), data: { turbo_frame: "entry_list", feed_id: subscription.feed.id }, class: "feed-item", tabindex: "-1" do %>
               <span class="feed-title"><%= subscription.display_title %></span>
               <% if subscription.unread_count > 0 %>
