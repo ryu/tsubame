@@ -225,6 +225,7 @@ export default class extends Controller {
     if (link) link.click()
 
     this._scrollIntoViewIfNeeded(entryItem, this.entryListTarget)
+    this.entryDetailTarget.scrollTo(0, 0)
   }
 
   _updateEntryActiveState() {
