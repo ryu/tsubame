@@ -21,3 +21,8 @@ user_one_low_rate_feed:
   user: one
   feed: low_rate_feed
   rate: 1
+
+user_one_aggregator:
+  user: one
+  feed: aggregator
+  rate: 0

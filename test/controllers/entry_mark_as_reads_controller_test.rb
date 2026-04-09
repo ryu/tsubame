@@ -33,6 +33,21 @@ class EntryMarkAsReadsControllerTest < ActionDispatch::IntegrationTest
     assert_response :not_found
   end
 
+  test "create syncs read state to duplicate entries" do
+    sign_in_as(@user)
+    original = entries(:ruby_article_two)
+    duplicate = entries(:aggregator_ruby_one)
+
+    original.update_column(:content_url, "https://example.com/ruby/2")
+    duplicate.update_column(:content_url, "https://example.com/ruby/2")
+
+    post entry_mark_as_read_path(original)
+    assert_response :success
+
+    dup_state = @user.user_entry_states.find_by(entry: duplicate)
+    assert_not_nil dup_state&.read_at, "Duplicate entry should be marked as read"
+  end
+
   test "create is idempotent" do
     sign_in_as(@user)
     @user.mark_entry_as_read!(@entry)

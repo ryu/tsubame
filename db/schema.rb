@@ -10,10 +10,11 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_03_15_011637) do
+ActiveRecord::Schema[8.1].define(version: 2026_04_09_004502) do
   create_table "entries", force: :cascade do |t|
     t.string "author"
     t.text "body"
+    t.string "content_url"
     t.datetime "created_at", null: false
     t.integer "feed_id", null: false
     t.string "guid", null: false
@@ -21,6 +22,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_15_011637) do
     t.string "title"
     t.datetime "updated_at", null: false
     t.string "url"
+    t.index ["content_url"], name: "index_entries_on_content_url"
     t.index ["feed_id", "guid"], name: "index_entries_on_feed_id_and_guid", unique: true
     t.index ["feed_id"], name: "index_entries_on_feed_id"
     t.index ["published_at"], name: "index_entries_on_published_at"

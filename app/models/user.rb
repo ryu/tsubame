@@ -48,7 +48,10 @@ class User < ApplicationRecord
   def mark_entry_as_read!(entry)
     state = entry_state_for(entry)
     return false if state.read_at.present?
-    state.update!(read_at: Time.current)
+
+    now = Time.current
+    state.update!(read_at: now)
+    sync_read_state_to_duplicates!(entry, now)
     true
   end
 
@@ -71,7 +74,23 @@ class User < ApplicationRecord
     records = unread_entry_ids.map do |entry_id|
       { user_id: id, entry_id: entry_id, read_at: now, created_at: now, updated_at: now }
     end
-    UserEntryState.upsert_all(records, unique_by: [ :user_id, :entry_id ])
+    UserEntryState.upsert_all(records, unique_by: [ :user_id, :entry_id ], update_only: [ :read_at, :updated_at ])
+
+    content_urls = Entry.where(id: unread_entry_ids).where.not(content_url: nil).pluck(:content_url).uniq
+    if content_urls.any?
+      duplicate_entry_ids = Entry.where(content_url: content_urls)
+        .where.not(id: unread_entry_ids)
+        .where.not(id: user_entry_states.where.not(read_at: nil).select(:entry_id))
+        .pluck(:id)
+
+      if duplicate_entry_ids.any?
+        dup_records = duplicate_entry_ids.map do |entry_id|
+          { user_id: id, entry_id: entry_id, read_at: now, created_at: now, updated_at: now }
+        end
+        UserEntryState.upsert_all(dup_records, unique_by: [ :user_id, :entry_id ], update_only: [ :read_at, :updated_at ])
+      end
+    end
+
     unread_entry_ids.size
   end
 
@@ -104,5 +123,22 @@ class User < ApplicationRecord
   # Check if an entry is pinned
   def entry_pinned?(entry)
     user_entry_states.exists?(entry: entry, pinned: true)
+  end
+
+  private
+
+  def sync_read_state_to_duplicates!(entry, read_at)
+    return if entry.content_url.blank?
+
+    duplicate_ids = Entry.duplicates_of(entry)
+      .where.not(id: user_entry_states.where.not(read_at: nil).select(:entry_id))
+      .pluck(:id)
+
+    return if duplicate_ids.empty?
+
+    records = duplicate_ids.map do |entry_id|
+      { user_id: id, entry_id: entry_id, read_at: read_at, created_at: read_at, updated_at: read_at }
+    end
+    UserEntryState.upsert_all(records, unique_by: [ :user_id, :entry_id ], update_only: [ :read_at, :updated_at ])
   end
 end

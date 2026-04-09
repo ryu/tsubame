@@ -10,6 +10,21 @@ class FeedMarkAsReadsControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to new_session_path
   end
 
+  test "create syncs read state to duplicates in other feeds" do
+    sign_in_as(@user)
+    ruby_entry = entries(:ruby_article_two)
+    aggregator_entry = entries(:aggregator_ruby_one)
+
+    ruby_entry.update_column(:content_url, "https://example.com/ruby/2")
+    aggregator_entry.update_column(:content_url, "https://example.com/ruby/2")
+
+    post feed_mark_as_read_path(feeds(:ruby_blog))
+    assert_response :success
+
+    dup_state = @user.user_entry_states.find_by(entry: aggregator_entry)
+    assert_not_nil dup_state&.read_at, "Duplicate in aggregator feed should be marked as read"
+  end
+
   test "create marks all entries as read" do
     sign_in_as(@user)
     feed = feeds(:ruby_blog)

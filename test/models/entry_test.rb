@@ -193,6 +193,96 @@ class EntryTest < ActiveSupport::TestCase
     assert_nil attrs
   end
 
+  # -- normalize_url tests --
+
+  test "normalize_url removes utm parameters" do
+    assert_equal "https://example.com/post?id=1",
+      Entry.normalize_url("https://example.com/post?utm_source=twitter&id=1")
+  end
+
+  test "normalize_url removes fbclid and gclid" do
+    assert_equal "https://example.com/post",
+      Entry.normalize_url("https://example.com/post?fbclid=abc&gclid=def")
+  end
+
+  test "normalize_url removes fragment" do
+    assert_equal "https://example.com/post",
+      Entry.normalize_url("https://example.com/post#section1")
+  end
+
+  test "normalize_url removes trailing slash" do
+    assert_equal "https://example.com/post",
+      Entry.normalize_url("https://example.com/post/")
+  end
+
+  test "normalize_url preserves root path slash" do
+    assert_equal "https://example.com/",
+      Entry.normalize_url("https://example.com/")
+  end
+
+  test "normalize_url preserves scheme difference" do
+    assert_not_equal Entry.normalize_url("http://example.com/post"),
+      Entry.normalize_url("https://example.com/post")
+  end
+
+  test "normalize_url returns nil for blank" do
+    assert_nil Entry.normalize_url(nil)
+    assert_nil Entry.normalize_url("")
+  end
+
+  test "normalize_url returns nil for non-HTTP" do
+    assert_nil Entry.normalize_url("ftp://example.com/file")
+  end
+
+  test "normalize_url returns nil for invalid URI" do
+    assert_nil Entry.normalize_url("ht tp://bad url")
+  end
+
+  # -- before_save callback tests --
+
+  test "sets content_url on create" do
+    entry = Entry.create!(
+      feed: feeds(:ruby_blog),
+      guid: "new-entry-1",
+      url: "https://example.com/new?utm_source=rss"
+    )
+    assert_equal "https://example.com/new", entry.content_url
+  end
+
+  test "updates content_url when url changes" do
+    entry = entries(:ruby_article_one)
+    entry.update!(url: "https://example.com/updated")
+    assert_equal "https://example.com/updated", entry.content_url
+  end
+
+  test "sets content_url to nil for non-HTTP url" do
+    entry = Entry.create!(
+      feed: feeds(:ruby_blog),
+      guid: "new-entry-2",
+      url: "javascript:alert(1)"
+    )
+    assert_nil entry.content_url
+  end
+
+  # -- duplicates_of scope tests --
+
+  test "duplicates_of returns entries with same content_url" do
+    entry = entries(:ruby_article_one)
+    entry.update_column(:content_url, "https://example.com/ruby/1")
+
+    dup = entries(:aggregator_ruby_one)
+    dup.update_column(:content_url, "https://example.com/ruby/1")
+
+    duplicates = Entry.duplicates_of(entry)
+    assert_includes duplicates, dup
+    assert_not_includes duplicates, entry
+  end
+
+  test "duplicates_of returns none when content_url is blank" do
+    entry = Entry.new(content_url: nil)
+    assert_empty Entry.duplicates_of(entry)
+  end
+
   test "attributes_from_rss_item strips HTML from title" do
     parsed = RSS::Parser.parse(<<~RSS, false)
       <?xml version="1.0"?>

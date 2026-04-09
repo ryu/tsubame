@@ -26,3 +26,12 @@ rails_article_one:
   author: Charlie
   body: <p>Rails 8.1 is now available with...</p>
   published_at: <%= 3.hours.ago %>
+
+aggregator_ruby_one:
+  feed: aggregator
+  guid: aggregator-ruby-1
+  title: "Introduction to Ruby 4.0 (via Aggregator)"
+  url: https://example.com/ruby/1
+  author: Alice
+  body: <p>Ruby 4.0 introduces many new features...</p>
+  published_at: <%= 1.day.ago %>
