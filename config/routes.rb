@@ -12,6 +12,7 @@ Rails.application.routes.draw do
   end
 
   resources :folders, except: [ :show ]
+  resources :users, except: [ :show ]
 
   resources :feed_imports, only: [ :new, :create ]
   resource :feed_export, only: :show

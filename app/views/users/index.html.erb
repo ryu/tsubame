@@ -1,0 +1,43 @@
+<div class="manage-page">
+  <nav class="manage-nav">
+    <%= link_to "← ホーム", root_path %>
+  </nav>
+
+  <h1>ユーザー管理</h1>
+
+  <p>
+    <%= link_to "ユーザーを追加", new_user_path, class: "manage-action-link" %>
+  </p>
+
+  <% if @users.any? %>
+    <table class="manage-table">
+      <thead>
+        <tr>
+          <th>メールアドレス</th>
+          <th>管理者</th>
+          <th>作成日</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @users.each do |user| %>
+          <tr>
+            <td><%= user.email_address %></td>
+            <td><%= user.admin? ? "はい" : "" %></td>
+            <td><%= user.created_at.strftime("%Y-%m-%d") %></td>
+            <td>
+              <div class="manage-actions">
+                <%= link_to "編集", edit_user_path(user), class: "manage-btn-small" %>
+                <% unless user == Current.user %>
+                  <%= link_to "削除", user_path(user), data: { turbo_method: :delete, turbo_confirm: "「#{user.email_address}」を削除しますか？" }, class: "manage-btn-small manage-btn-danger" %>
+                <% end %>
+              </div>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  <% else %>
+    <p class="empty-message">ユーザーがいません。</p>
+  <% end %>
+</div>

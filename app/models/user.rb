@@ -6,11 +6,16 @@ class User < ApplicationRecord
   has_many :folders, dependent: :destroy
   has_many :user_entry_states, dependent: :destroy
   has_many :entries, through: :feeds
+  has_one :admin, dependent: :destroy
 
   normalizes :email_address, with: ->(e) { e.strip.downcase }
 
   validates :email_address, presence: true, uniqueness: true
   validates :password, length: { minimum: 8 }, if: -> { password.present? }
+
+  def admin?
+    admin.present?
+  end
 
   def invalidate_other_sessions!(except:)
     sessions.where.not(id: except).destroy_all

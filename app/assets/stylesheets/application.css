@@ -648,6 +648,12 @@ body:has(.three-pane-layout) {
   margin-bottom: 6px;
 }
 
+.manage-form-hint {
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
 .manage-submit {
   padding: 8px 20px;
   background: var(--color-accent);

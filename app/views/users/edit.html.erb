@@ -1,0 +1,44 @@
+<div class="manage-page">
+  <nav class="manage-nav">
+    <%= link_to "← ユーザー管理", users_path %>
+  </nav>
+
+  <h1>ユーザーを編集</h1>
+
+  <% if @user.errors.any? %>
+    <div class="form-errors">
+      <ul>
+        <% @user.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <%= form_with model: @user, class: "manage-form" do |form| %>
+    <div class="manage-form-field">
+      <%= form.label :email_address, "メールアドレス" %>
+      <%= form.email_field :email_address, class: "manage-input", autofocus: true %>
+    </div>
+
+    <div class="manage-form-field">
+      <%= form.label :password, "パスワード" %>
+      <%= form.password_field :password, class: "manage-input" %>
+      <p class="manage-form-hint">変更する場合のみ入力</p>
+    </div>
+
+    <div class="manage-form-field">
+      <%= form.label :password_confirmation, "パスワード（確認）" %>
+      <%= form.password_field :password_confirmation, class: "manage-input" %>
+    </div>
+
+    <div class="manage-form-field">
+      <%= check_box_tag :admin, "1", params[:admin] ? params[:admin] == "1" : @user.admin? %>
+      <%= label_tag :admin, "管理者" %>
+    </div>
+
+    <div>
+      <%= form.submit "保存", class: "manage-submit" %>
+    </div>
+  <% end %>
+</div>
