@@ -1,5 +1,27 @@
 # Changelog
 
+## [2.2.0] - 2026-04-09
+
+### Added
+- エントリ重複排除: 同一URLの記事が複数フィードに存在する場合、一方を既読にすると他のエントリも自動的に既読にする
+- `content_url` カラム（正規化URL）を entries テーブルに追加
+- URL正規化ルール: utm_*/fbclid/gclid パラメータ除去、フラグメント除去、末尾スラッシュ除去
+- 遡及同期用 Rake タスク (`bin/rails entries:sync_duplicate_read_states`)
+
+### Changed
+- `mark_feed_entries_as_read!` の `upsert_all` に `update_only` を追加し、ピン状態が上書きされないよう修正
+
+### Fixed
+- エントリ切り替え時に詳細ペインのスクロール位置を先頭にリセット
+
+### Dependencies
+- Rails 8.1.2.1 → 8.1.3
+- Bundler 4.0.9
+- solid_queue 1.3.2 → 1.4.0
+- kamal 2.10.1 → 2.11.0
+- sqlite3 2.9.1 → 2.9.2
+- webmock 3.26.1 → 3.26.2
+
 ## [2.1.0] - 2026-03-21
 
 ### Added
