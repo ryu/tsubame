@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.3.2] - 2026-04-13
+
+### Fixed
+- Safari でキーボードショートカット `o`（ピン一括オープン）が動かない問題を修正
+  - 事前ブランクタブ方式（空URLの `window.open`）が Safari でブロックされるため、ピンURLを `#pin_badge` の data 属性に事前埋め込みする方式に変更
+  - ポップアップがブロックされた場合はピン状態を保持（誤って消さない）
+
+### Changed
+- `PinnedEntryOpensController#create` を削除（不要になったため）
+- `PinnedEntryOpensController#destroy` を JSON から Turbo Stream レスポンスに変更
+- `entry_pins/_pin_badge.html.erb` 共通パーシャル化
+
 ## [2.3.1] - 2026-04-12
 
 ### Changed

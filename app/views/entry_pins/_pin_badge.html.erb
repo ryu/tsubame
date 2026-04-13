@@ -1,0 +1,7 @@
+<span id="pin_badge"
+      data-pin-urls="<%= pinned_entries.filter_map(&:safe_url_for_link).to_json %>"
+      data-pin-entry-ids="<%= pinned_entries.map(&:id).to_json %>">
+  <% if pinned_count > 0 %>
+    <span class="pin-badge"><%= pinned_count %></span>
+  <% end %>
+</span>

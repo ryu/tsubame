@@ -19,11 +19,7 @@
       <div class="pane-header-links">
         <%= link_to pinned_entries_path, data: { turbo_frame: "entry_list" }, class: "pin-list-link" do %>
           📌 ピン一覧
-          <span id="pin_badge">
-            <% if @pinned_count > 0 %>
-              <span class="pin-badge"><%= @pinned_count %></span>
-            <% end %>
-          </span>
+          <%= render partial: "entry_pins/pin_badge", locals: { pinned_entries: @pinned_entries, pinned_count: @pinned_count } %>
         <% end %>
         <button type="button" class="reload-button" aria-label="ページ再読み込み" title="ページ再読み込み (r)" data-action="click->selection#reloadPage">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

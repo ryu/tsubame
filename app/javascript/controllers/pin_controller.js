@@ -1,5 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
-import { fetchWithCsrf, openInBackground } from "lib/fetch_helper"
+import { fetchWithCsrf } from "lib/fetch_helper"
 
 // Manages pin operations: toggle pin, open pinned entries
 export default class extends Controller {
@@ -38,66 +38,45 @@ export default class extends Controller {
       })
   }
 
-  // Open all pinned entries in new tabs.
-  // Pre-opens blank tabs synchronously to preserve user activation, then
-  // navigates them to actual URLs after the fetch completes.
+  // Open all pinned entries in new tabs, then unpin only the ones that opened.
+  // URLs are pre-rendered into #pin_badge data attributes so window.open can
+  // be called synchronously with real URLs (Safari blocks empty-URL popups).
   openPinned() {
-    const pinCount = this._getPinCount()
-    if (pinCount === 0) return
+    const badge = document.getElementById("pin_badge")
+    if (!badge) return
 
-    // Pre-open blank tabs while user activation is still valid
-    const preOpenedTabs = []
-    for (let i = 0; i < pinCount; i++) {
-      const tab = window.open("", "_blank")
-      if (!tab) {
-        preOpenedTabs.forEach(t => t.close())
-        return
-      }
-      preOpenedTabs.push(tab)
-    }
+    const urls = JSON.parse(badge.dataset.pinUrls || "[]")
+    const entryIds = JSON.parse(badge.dataset.pinEntryIds || "[]")
+    if (urls.length === 0) return
+
+    const openedEntryIds = []
+    urls.forEach((url, i) => {
+      const w = window.open(url, "_blank")
+      if (w) openedEntryIds.push(entryIds[i])
+      else console.warn(`[pin.openPinned] window.open blocked for url: ${url}`)
+    })
     window.focus()
 
-    const abortController = new AbortController()
+    if (openedEntryIds.length === 0) {
+      console.warn("[pin.openPinned] no tabs opened, skipping unpin")
+      return
+    }
+
     fetchWithCsrf("/pinned_entry_open", {
-      method: "POST",
-      signal: abortController.signal
+      method: "DELETE",
+      headers: { "Accept": "text/vnd.turbo-stream.html" },
+      body: JSON.stringify({ entry_ids: openedEntryIds })
     })
-      .then(response => response.json())
-      .then(data => {
-        if (data.urls.length === 0) {
-          preOpenedTabs.forEach(tab => tab.close())
-          return
-        }
-
-        // Navigate pre-opened tabs to actual URLs
-        data.urls.forEach((url, i) => {
-          if (preOpenedTabs[i]) {
-            preOpenedTabs[i].location.href = url
-          }
-        })
-
-        // Close extra tabs if fewer URLs than pre-opened
-        for (let i = data.urls.length; i < preOpenedTabs.length; i++) {
-          preOpenedTabs[i].close()
-        }
-
-        // All tabs navigated — now unpin
-        return fetchWithCsrf("/pinned_entry_open", {
-          method: "DELETE",
-          body: JSON.stringify({ entry_ids: data.entry_ids }),
-          signal: abortController.signal
-        })
-          .then(response => response.json())
-          .then(unpinData => {
-            data.entry_ids.forEach(id => this._removePinIcon(id))
-            this._updatePinBadge(unpinData.pinned_count)
-          })
+      .then(response => {
+        if (!response.ok) throw new Error(`HTTP ${response.status}`)
+        return response.text()
+      })
+      .then(html => {
+        Turbo.renderStreamMessage(html)
+        openedEntryIds.forEach(id => this._removePinIcon(id))
       })
       .catch(error => {
-        if (error.name !== "AbortError") {
-          console.warn("Failed to open pinned entries:", error)
-          preOpenedTabs.forEach(tab => tab.close())
-        }
+        console.warn("Failed to unpin opened entries:", error)
       })
   }
 
@@ -125,24 +104,6 @@ export default class extends Controller {
 
     const pinIcon = entryItem.querySelector(".pin-icon")
     if (pinIcon) pinIcon.remove()
-  }
-
-  _updatePinBadge(count) {
-    const badge = document.getElementById("pin_badge")
-    if (!badge) return
-
-    badge.textContent = ""
-    if (count > 0) {
-      const span = document.createElement("span")
-      span.className = "pin-badge"
-      span.textContent = count
-      badge.appendChild(span)
-    }
-  }
-
-  _getPinCount() {
-    const badge = document.querySelector("#pin_badge .pin-badge")
-    return badge ? Math.min(parseInt(badge.textContent, 10) || 0, 5) : 0
   }
 
   _extractEntryId(entryItem) {

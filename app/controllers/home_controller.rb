@@ -4,5 +4,6 @@ class HomeController < ApplicationController
     @grouped_subscriptions = Current.user.grouped_subscriptions_for_home(rate: @rate)
     @subscriptions = @grouped_subscriptions.flat_map(&:subscriptions)
     @pinned_count = Current.user.pinned_entry_count
+    @pinned_entries = Current.user.pinned_entries.limit(5)
   end
 end
