@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.3.3] - 2026-04-13
+
+### Fixed
+- OPML エクスポート時の `output = ""` を `String.new` に変更し、Ruby 4.x の文字列リテラル凍結化に備える（`bin/rails test` 実行時に `xmldecl.rb:51` で出ていた frozen-string 警告も解消）
+
+### Dependencies
+- thruster 0.1.19 → 0.1.20（HTTP→HTTPS リダイレクト前の Host 検証を追加するセキュリティ修正）
+
 ## [2.3.2] - 2026-04-13
 
 ### Fixed

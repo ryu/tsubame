@@ -47,7 +47,7 @@ module Feed::Opml
         body.add_element("outline", attrs)
       end
 
-      output = ""
+      output = String.new
       doc.write(output)
       output
     end
