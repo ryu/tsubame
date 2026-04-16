@@ -238,4 +238,7 @@ bin/rails entries:sync_duplicate_read_states
 ## ステータス
 
 - 設計: 完了（レビュー承認済み）
-- 実装: 未着手
+- 実装: 完了
+  - マイグレーション: `AddContentUrlToEntries`, `BackfillContentUrlOnEntries`
+  - モデル: `Entry#normalize_url`, `Entry.duplicates_of`, `Entry#set_content_url`, `User#sync_read_state_to_duplicates!`
+  - Rake タスク: `bin/rails entries:sync_duplicate_read_states`

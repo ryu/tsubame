@@ -40,6 +40,7 @@
 | author | string | 著者 |
 | body | text | 本文 (HTML) |
 | published_at | datetime | 公開日時 |
+| content_url | string | 正規化URL（重複排除用、`before_save` で `url` から自動生成） |
 | created_at | datetime | |
 | updated_at | datetime | |
 
@@ -48,6 +49,7 @@
 - `index_entries_on_feed_id`
 - `index_entries_on_feed_id_and_guid` (unique)
 - `index_entries_on_published_at`
+- `index_entries_on_content_url`
 
 ## Subscription
 
@@ -67,8 +69,9 @@
 ### インデックス
 
 - `index_subscriptions_on_user_id_and_feed_id` (unique)
-- `index_subscriptions_on_user_id_and_folder_id`
+- `index_subscriptions_on_user_id`
 - `index_subscriptions_on_feed_id`
+- `index_subscriptions_on_folder_id`
 
 ## UserEntryState
 
@@ -87,8 +90,10 @@
 ### インデックス
 
 - `index_user_entry_states_on_user_id_and_entry_id` (unique)
+- `index_user_entry_states_on_user_id`
 - `index_user_entry_states_on_user_id_and_pinned`
 - `index_user_entry_states_on_user_id_and_read_at`
+- `index_user_entry_states_on_entry_id`
 
 ## Folder
 
@@ -105,10 +110,26 @@
 ### インデックス
 
 - `index_folders_on_user_id_and_name` (unique)
+- `index_folders_on_user_id`
 
 ## User
 
 認証・購読管理。Rails 8 の `bin/rails generate authentication` で生成されるスキーマに準拠。
+
+## Admin
+
+管理者権限を表すレコード。行が存在するユーザーが管理者。
+
+| カラム | 型 | 説明 |
+|--------|------|------|
+| id | integer | PK |
+| user_id | integer | FK → users.id (not null, unique) |
+| created_at | datetime | |
+| updated_at | datetime | |
+
+### インデックス
+
+- `index_admins_on_user_id` (unique)
 
 ## Session
 

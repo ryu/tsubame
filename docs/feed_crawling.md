@@ -103,5 +103,5 @@ guid が空の場合は nil を返す。
 ### CleanupEntriesJob
 
 - Solid Queue の recurring schedule で日次実行（午前3時）
-- 条件: `read_at` が90日以上前 AND `pinned = false`
-- 対象エントリを削除
+- 条件: `created_at` が90日以上前 AND どのユーザーからもピン留めされていない
+- 対象エントリをグローバルに削除（`UserEntryState` は `dependent: :destroy` で連鎖削除）

@@ -46,6 +46,7 @@ Hotwire (Turbo + Stimulus) + Vanilla CSS による SPA ライクな操作感。
 - `help_dialog_controller` — ヘルプダイアログの開閉
 - `hatena_bookmark_controller` — はてなブックマーク数取得・表示（外部API連携、バッチ取得）
 - `mobile_pane_controller` — モバイル向けペイン切り替え（feeds / entries / detail）
+- `dropdown_controller` — ドロップダウンメニューの開閉
 
 ### JavaScript ライブラリ (`app/javascript/lib/`)
 
