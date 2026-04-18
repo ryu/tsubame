@@ -178,7 +178,48 @@ resources :magic_links, only: :show, param: :token
 
 ---
 
-## 未解決事項
+## 今後の作業
 
-- 既存ユーザーの `password_digest` は移行後に NULL にするか、そのまま残すか
-- 期限切れ `magic_links` レコードの定期クリーンアップ（`CleanupEntriesJob` に相乗りするか別ジョブにするか）
+v3.0.0（2026-04-18）で本番投入済。以下はレビュー時に挙がった後続タスク。優先度順。
+
+### 1. 期限切れ `MagicLink` レコードの定期クリーンアップ（優先度: 中）
+
+**問題**: 現状、使用済み `MagicLink` は `destroy!` で消えるが、期限切れで未使用のレコードは DB に残り続ける。放置するとテーブルが肥大化。
+
+**対応案**:
+- 既存 `CleanupEntriesJob` にピギーバックして `MagicLink.where("expires_at < ?", 1.day.ago).delete_all` を追加
+- または専用の `CleanupMagicLinksJob` を作成し、`config/recurring.yml` で日次実行
+
+### 2. `MagicLink` モデル / `MagicLinkMailer` の単体テスト追加（優先度: 中）
+
+**現状**: `MagicLinksController` の統合テストのみ。モデル・メーラー単体のテストがない。
+
+**追加対象**:
+- `test/models/magic_link_test.rb`: `generate_for` がユニークなトークンを返すか、digest 経由で検証できるか、期限切れが `valid` スコープで除外されるか
+- `test/mailers/magic_link_mailer_test.rb`: メール本文に URL が含まれるか、件名・宛先が正しいか
+
+### 3. `find_by_token` のリネーム検討（優先度: 低）
+
+**問題**: `MagicLink.find_by_token` は Rails の動的ファインダ規約（`find_by_カラム名`）と名前衝突し、読み手が混乱しやすい。現状はクラスメソッドで明示的にオーバーライドしているため動作は問題なし。
+
+**候補名**: `authenticate_by_token`、`consume_token`、`valid_for`
+
+### 4. メールプリフェッチ対策（優先度: 低）
+
+**問題**: 企業のメールセキュリティプロキシやアンチウイルスがメール内リンクを事前フェッチすると、ユーザーがクリックする前にトークンが消費される。
+
+**対応案**:
+- GET `/magic_links/:token` でワンタイム確認ページを表示し、ユーザーのボタン操作（POST）でセッション確立する二段階フロー
+- ただし UX が悪化するため、実害が観測されるまで保留
+
+### 5. メーラー設定の環境変数化（優先度: 低）
+
+**問題**: `ApplicationMailer` の `from` が `noreply@ryu-yamamoto.org` 直書き。開発環境でも同じドメインが使われる。
+
+**対応案**: `ENV.fetch("MAIL_FROM", "Tsubame <noreply@ryu-yamamoto.org>")` に変更し、ステージング等で切り替え可能にする。
+
+### 6. 配送失敗時のフォールバック検討（優先度: 低）
+
+**問題**: 本番で `raise_delivery_errors = true` のため、Resend 側の障害でログインフロー全体が 500 エラーになる。
+
+**対応案**: `MagicLinkMailer` 呼び出しを `rescue_from` でラップ、エラー時は notice を変えずに 302 で戻す（ユーザー列挙対策を維持）。ログに記録して運用側で検知。
