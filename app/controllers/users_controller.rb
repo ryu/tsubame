@@ -52,12 +52,7 @@ class UsersController < ApplicationController
   end
 
   def user_params
-    permitted = params.require(:user).permit(:email_address, :password, :password_confirmation)
-    if permitted[:password].blank?
-      permitted.delete(:password)
-      permitted.delete(:password_confirmation)
-    end
-    permitted
+    params.require(:user).permit(:email_address)
   end
 
   def manage_admin_status

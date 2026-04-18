@@ -67,3 +67,5 @@ group :test do
   # Mock HTTP requests in tests
   gem "webmock"
 end
+
+gem "resend", "~> 1.3"
