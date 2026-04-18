@@ -1,5 +1,36 @@
 # Changelog
 
+## [3.0.0] - 2026-04-18
+
+### Changed (Breaking)
+- 認証方式をパスワードからマジックリンクに変更。既存ユーザーのパスワードログインは廃止され、メールアドレス入力 → 受信したリンクをクリックしてログインするフローに統一
+
+### Added
+- `MagicLink` モデル: トークンを SHA-256 ハッシュ化して保存、15 分有効・使い捨て
+- `MagicLinksController#show` でトークン検証とセッション確立
+- `MagicLinkMailer` によるログインリンクメール送信
+- メール送信サービスに Resend を採用（`gem "resend"`、`config/initializers/resend.rb`）
+- セッション作成のレート制限: IP 単位（10 回/3 分）に加え、メールアドレス単位（3 回/10 分）を追加し、メール爆撃を防止
+- 本番環境の `APP_HOST` を `config/deploy.yml` に設定し、メーラー URL を `https` 固定に
+- `docs/magic_link_auth.md` に実装設計を記載
+
+### Removed
+- `has_secure_password` および関連機能（`PasswordsController`、`RegistrationsController` とそれぞれのビュー／テスト）
+- シード用環境変数 `TSUBAME_PASSWORD`
+- ログイン・新規登録・設定画面のパスワード関連フィールド
+
+### Security
+- トークンは DB に SHA-256 ハッシュのみ保存。生トークンはメール送信時のみ使用
+- 検証後に `destroy!` でトークン破棄（再利用不可）
+- ユーザー列挙対策: 入力メールの存否にかかわらず同一レスポンスを返す
+
+### Database
+- `magic_links` テーブル追加（`token_digest` unique index、`expires_at`、`user_id` FK）
+- `users.password_digest` を nullable に変更
+
+### Dependencies
+- resend 1.3 追加
+
 ## [2.3.3] - 2026-04-13
 
 ### Fixed
