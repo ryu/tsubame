@@ -10,8 +10,4 @@
 
 # Create default user for single-user feed reader
 email = ENV.fetch("TSUBAME_EMAIL", "admin@example.com")
-password = ENV.fetch("TSUBAME_PASSWORD", "password")
-
-User.find_or_create_by!(email_address: email) do |user|
-  user.password = password
-end
+User.find_or_create_by!(email_address: email)

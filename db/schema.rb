@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_04_09_120502) do
+ActiveRecord::Schema[8.1].define(version: 2026_04_18_135610) do
   create_table "admins", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
@@ -62,6 +62,16 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_09_120502) do
     t.index ["user_id"], name: "index_folders_on_user_id"
   end
 
+  create_table "magic_links", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.datetime "expires_at", null: false
+    t.string "token_digest", null: false
+    t.datetime "updated_at", null: false
+    t.integer "user_id", null: false
+    t.index ["token_digest"], name: "index_magic_links_on_token_digest", unique: true
+    t.index ["user_id"], name: "index_magic_links_on_user_id"
+  end
+
   create_table "sessions", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "ip_address"
@@ -102,7 +112,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_09_120502) do
   create_table "users", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "email_address", null: false
-    t.string "password_digest", null: false
+    t.string "password_digest"
     t.datetime "updated_at", null: false
     t.index ["email_address"], name: "index_users_on_email_address", unique: true
   end
@@ -110,6 +120,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_09_120502) do
   add_foreign_key "admins", "users"
   add_foreign_key "entries", "feeds"
   add_foreign_key "folders", "users"
+  add_foreign_key "magic_links", "users"
   add_foreign_key "sessions", "users"
   add_foreign_key "subscriptions", "feeds"
   add_foreign_key "subscriptions", "folders"

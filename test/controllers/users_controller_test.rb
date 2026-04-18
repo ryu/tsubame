@@ -19,7 +19,7 @@ class UsersControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "create requires authentication" do
-    post users_path, params: { user: { email_address: "new@example.com", password: "password123" } }
+    post users_path, params: { user: { email_address: "new@example.com" } }
     assert_redirected_to new_session_path
   end
 
@@ -56,7 +56,7 @@ class UsersControllerTest < ActionDispatch::IntegrationTest
   test "create requires admin" do
     sign_in_as(@non_admin)
     assert_no_difference "User.count" do
-      post users_path, params: { user: { email_address: "new@example.com", password: "password123" } }
+      post users_path, params: { user: { email_address: "new@example.com" } }
     end
     assert_redirected_to root_path
   end
@@ -100,7 +100,6 @@ class UsersControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_select "input[type=email]"
-    assert_select "input[type=password]"
   end
 
   # -- Create --
@@ -109,7 +108,7 @@ class UsersControllerTest < ActionDispatch::IntegrationTest
     sign_in_as(@admin)
 
     assert_difference "User.count", 1 do
-      post users_path, params: { user: { email_address: "new@example.com", password: "password123", password_confirmation: "password123" } }
+      post users_path, params: { user: { email_address: "new@example.com" } }
     end
 
     assert_redirected_to users_path
@@ -120,7 +119,7 @@ class UsersControllerTest < ActionDispatch::IntegrationTest
     sign_in_as(@admin)
 
     assert_difference [ "User.count", "Admin.count" ], 1 do
-      post users_path, params: { user: { email_address: "newadmin@example.com", password: "password123", password_confirmation: "password123" }, admin: "1" }
+      post users_path, params: { user: { email_address: "newadmin@example.com" }, admin: "1" }
     end
 
     assert User.find_by(email_address: "newadmin@example.com").admin?
@@ -130,7 +129,7 @@ class UsersControllerTest < ActionDispatch::IntegrationTest
     sign_in_as(@admin)
 
     assert_no_difference "User.count" do
-      post users_path, params: { user: { email_address: "", password: "password123", password_confirmation: "password123" } }
+      post users_path, params: { user: { email_address: "" } }
     end
 
     assert_response :unprocessable_entity
@@ -140,27 +139,7 @@ class UsersControllerTest < ActionDispatch::IntegrationTest
     sign_in_as(@admin)
 
     assert_no_difference "User.count" do
-      post users_path, params: { user: { email_address: @admin.email_address, password: "password123", password_confirmation: "password123" } }
-    end
-
-    assert_response :unprocessable_entity
-  end
-
-  test "create fails with password confirmation mismatch" do
-    sign_in_as(@admin)
-
-    assert_no_difference "User.count" do
-      post users_path, params: { user: { email_address: "new@example.com", password: "password123", password_confirmation: "different" } }
-    end
-
-    assert_response :unprocessable_entity
-  end
-
-  test "create fails with short password" do
-    sign_in_as(@admin)
-
-    assert_no_difference "User.count" do
-      post users_path, params: { user: { email_address: "new@example.com", password: "short", password_confirmation: "short" } }
+      post users_path, params: { user: { email_address: @admin.email_address } }
     end
 
     assert_response :unprocessable_entity
@@ -186,24 +165,6 @@ class UsersControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to users_path
     assert_equal "ユーザーを更新しました。", flash[:notice]
     assert_equal "changed@example.com", @non_admin.reload.email_address
-  end
-
-  test "update without password keeps existing password" do
-    sign_in_as(@admin)
-
-    patch user_path(@non_admin), params: { user: { email_address: @non_admin.email_address, password: "", password_confirmation: "" } }
-
-    assert_redirected_to users_path
-    assert @non_admin.reload.authenticate("password")
-  end
-
-  test "update with new password changes password" do
-    sign_in_as(@admin)
-
-    patch user_path(@non_admin), params: { user: { email_address: @non_admin.email_address, password: "newpassword123", password_confirmation: "newpassword123" } }
-
-    assert_redirected_to users_path
-    assert @non_admin.reload.authenticate("newpassword123")
   end
 
   test "update can grant admin" do

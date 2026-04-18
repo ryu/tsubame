@@ -7,9 +7,7 @@ class HomeControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "authenticated user sees home page" do
-    user = User.create!(email_address: "user@example.com", password: "password")
-    post session_url, params: { email_address: user.email_address, password: "password" }
-
+    sign_in_as(users(:one))
     get root_url
     assert_response :success
     assert_select "h1", "Tsubame"

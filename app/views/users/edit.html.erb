@@ -22,17 +22,6 @@
     </div>
 
     <div class="manage-form-field">
-      <%= form.label :password, "パスワード" %>
-      <%= form.password_field :password, class: "manage-input" %>
-      <p class="manage-form-hint">変更する場合のみ入力</p>
-    </div>
-
-    <div class="manage-form-field">
-      <%= form.label :password_confirmation, "パスワード（確認）" %>
-      <%= form.password_field :password_confirmation, class: "manage-input" %>
-    </div>
-
-    <div class="manage-form-field">
       <%= check_box_tag :admin, "1", params[:admin] ? params[:admin] == "1" : @user.admin? %>
       <%= label_tag :admin, "管理者" %>
     </div>

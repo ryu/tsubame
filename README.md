@@ -10,6 +10,7 @@ Fastladder 互換のパーソナルフィードリーダー。複数ユーザー
 - 定期フィードクロール（RSS 2.0 / Atom / RDF 対応）
 - エントリの既読管理・ピン留め
 - モバイル対応・ダークモード対応
+- パスワードレス認証（マジックリンク）
 
 ## 動作要件
 
@@ -27,7 +28,7 @@ bin/setup
 初回ユーザーを作成:
 
 ```bash
-TSUBAME_EMAIL=you@example.com TSUBAME_PASSWORD=your_password bin/rails db:seed
+TSUBAME_EMAIL=you@example.com bin/rails db:seed
 ```
 
 開発サーバーを起動:
@@ -36,7 +37,20 @@ TSUBAME_EMAIL=you@example.com TSUBAME_PASSWORD=your_password bin/rails db:seed
 bin/dev
 ```
 
-http://localhost:3000 にアクセスしてログイン。
+http://localhost:3000 にアクセスし、メールアドレスを入力するとログインリンクが届きます。
+
+### メール送信の設定（本番環境）
+
+[Resend](https://resend.com) を使用します。API キーを取得後、credentials に設定してください:
+
+```bash
+VISUAL="nvim" bin/rails credentials:edit
+```
+
+```yaml
+resend:
+  api_key: re_xxxxxxxxxx
+```
 
 ## 開発コマンド
 
@@ -68,6 +82,7 @@ kamal deploy
 - [docs/data_model.md](docs/data_model.md) — データモデル定義
 - [docs/keyboard_shortcuts.md](docs/keyboard_shortcuts.md) — キーボードショートカット一覧
 - [docs/feed_crawling.md](docs/feed_crawling.md) — フィードクロール設計
+- [docs/magic_link_auth.md](docs/magic_link_auth.md) — マジックリンク認証の設計
 - [docs/deployment.md](docs/deployment.md) — デプロイ手順
 - [docs/backup.md](docs/backup.md) — バックアップ手順
 
