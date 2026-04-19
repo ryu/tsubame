@@ -1,5 +1,8 @@
 #!/bin/bash -e
 
+# ONCE/Docker 共通: ストレージディレクトリを確保する
+mkdir -p "${STORAGE_PATH:-storage}"
+
 # If running the rails server then create or migrate existing database
 if [ "${@: -2:1}" == "./bin/rails" ] && [ "${@: -1:1}" == "server" ]; then
   ./bin/rails db:prepare
