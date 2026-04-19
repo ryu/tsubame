@@ -56,7 +56,6 @@ module Feed::Autodiscovery
 
   private
 
-  # HTML 専用リクエスト: MAX_HTML_PROBE_SIZE で打ち切り、</head> で早期終了
   # build_http is provided by Feed::Fetching (included in the same model)
   def perform_html_request(uri, resolved_ip)
     http = build_http(uri, resolved_ip)
@@ -66,26 +65,19 @@ module Feed::Autodiscovery
     request["Accept"] = "text/html,application/xhtml+xml"
     request["Accept-Encoding"] = "identity"
 
-    result_response = nil
-    result_body = nil
+    response = http.request(request)
+    body = extract_head_section(response.body) if response.is_a?(Net::HTTPSuccess)
 
-    http.request(request) do |response|
-      result_body = read_html_with_limit!(response) if response.is_a?(Net::HTTPSuccess)
-      result_response = response
-    end
-
-    [ result_response, result_body ]
+    [ response, body ]
   end
 
-  # MAX_HTML_PROBE_SIZE または </head> 到達で読み込みを打ち切る
-  def read_html_with_limit!(response)
-    body = +""
-    response.read_body do |chunk|
-      body << chunk
-      raise "HTML response too large" if body.bytesize > MAX_HTML_PROBE_SIZE
-      break if body.include?("</head>")
+  def extract_head_section(body)
+    body = body.byteslice(0, MAX_HTML_PROBE_SIZE) if body.bytesize > MAX_HTML_PROBE_SIZE
+    if (head_end = body.index("</head>"))
+      body.byteslice(0, head_end + "</head>".length)
+    else
+      body
     end
-    body
   end
 
   # <link rel="alternate" type="application/...+xml" href="..."> を抽出
