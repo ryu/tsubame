@@ -1,5 +1,17 @@
 # Changelog
 
+## [3.1.0] - 2026-04-19
+
+### Added
+- ONCE 互換のストレージ設定: `STORAGE_PATH` 環境変数でデータ保存先を切り替え可能に（デフォルト `/storage`）
+- `hooks/pre-backup`: バックアップ前に SQLite WAL をチェックポイントして安全にバックアップ
+- `hooks/post-restore`: リストア後に `db:migrate` を自動実行
+
+### Changed
+- `config/database.yml` / `config/storage.yml`: ストレージパスを `STORAGE_PATH` 環境変数で参照するよう変更
+- `config/deploy.yml`: Kamal のボリュームマウント先を `/rails/storage` → `/storage` に変更
+- `Dockerfile`: `ENV STORAGE_PATH=/storage`、`VOLUME ["/storage"]` を追加
+
 ## [3.0.0] - 2026-04-18
 
 ### Changed (Breaking)
