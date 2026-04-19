@@ -1,15 +1,12 @@
 # Changelog
 
-## [3.1.3] - 2026-04-19
+## [3.1.2] - 2026-04-19
 
 ### Fixed
-- Auto Discovery: Turbo フォームへの HTML 200 レスポンスが無視される問題を修正。フィード候補選択を POST `render` から session + `redirect_to GET /feeds/select` パターンに変更
-- Auto Discovery: `Transfer-Encoding: chunked` レスポンスで `break` するとチャンクパーサーがクラッシュする問題を修正。ストリーミング読み込みを廃止し、一括受信後に切り詰める方式に変更
-
-## [3.1.1] - 2026-04-19
-
-### Fixed
-- Auto Discovery: gzip 圧縮レスポンスで `break` 時に `Net::HTTPResponse::Inflater#closed?` が呼ばれ `NoMethodError` になるバグを修正。`Accept-Encoding: identity` を追加して gzip を無効化
+- Auto Discovery: gzip 圧縮レスポンス・chunked 転送エンコーディング・Turbo フォームの3つの問題を修正
+  - `Accept-Encoding: identity` を追加して gzip を無効化（`Inflater#closed?` NoMethodError 解消）
+  - ストリーミング `break` を廃止し一括受信後に切り詰める方式に変更（chunked クラッシュ解消）
+  - フィード候補選択を POST `render` から session + `redirect_to GET /feeds/select` に変更（Turbo 対応）
 
 ## [3.1.0] - 2026-04-19
 
