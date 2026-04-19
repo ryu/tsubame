@@ -1,0 +1,5 @@
+#!/bin/bash -e
+
+# リストア後にマイグレーションを適用する
+cd /rails
+./bin/rails db:migrate

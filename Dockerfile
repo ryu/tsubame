@@ -70,6 +70,10 @@ USER 1000:1000
 COPY --chown=rails:rails --from=build "${BUNDLE_PATH}" "${BUNDLE_PATH}"
 COPY --chown=rails:rails --from=build /rails /rails
 
+# ONCE バックアップフック
+COPY --chown=rails:rails hooks/ /hooks/
+RUN chmod +x /hooks/pre-backup /hooks/post-restore
+
 # Entrypoint prepares the database.
 VOLUME ["/storage"]
 

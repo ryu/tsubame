@@ -1,0 +1,7 @@
+#!/bin/bash -e
+
+# バックアップ前に SQLite の WAL をチェックポイントしてデータを確実にファイルに書き出す
+for db in /storage/*.sqlite3; do
+  [ -f "$db" ] || continue
+  sqlite3 "$db" "PRAGMA wal_checkpoint(TRUNCATE);"
+done
