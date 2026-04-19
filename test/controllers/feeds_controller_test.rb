@@ -112,7 +112,8 @@ class FeedsControllerTest < ActionDispatch::IntegrationTest
 
     post feeds_path, params: { feed: { url: "https://example.com/multi" } }
 
-    assert_response :ok
+    assert_redirected_to select_feeds_path
+    follow_redirect!
     assert_select "input[type=radio][value='https://example.com/rss']"
     assert_select "input[type=radio][value='https://example.com/atom']"
   end

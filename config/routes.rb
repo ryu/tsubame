@@ -5,6 +5,9 @@ Rails.application.routes.draw do
   resources :magic_links, only: :show, param: :token
 
   resources :feeds, only: [ :index, :new, :create, :edit, :update, :destroy ] do
+    collection do
+      get :select
+    end
     resource :mark_as_read, only: :create, controller: "feed_mark_as_reads"
     resource :fetch, only: :create, controller: "feed_fetches"
     resources :entries, only: [ :index ]

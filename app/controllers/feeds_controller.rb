@@ -8,6 +8,13 @@ class FeedsController < ApplicationController
     @folders = Current.user.folders.order(:name)
   end
 
+  def select
+    @feed_candidates = session.delete(:feed_candidates)
+    @original_url    = session.delete(:feed_original_url)
+    @folder_id       = session.delete(:feed_folder_id)
+    redirect_to new_feed_path if @feed_candidates.blank?
+  end
+
   def create
     raw_url = feed_url
     folder_id = params.dig(:feed, :folder_id).to_i.nonzero?
@@ -33,10 +40,10 @@ class FeedsController < ApplicationController
     when 1
       create_and_redirect(feed_urls.first, folder_id)
     when (2..)
-      @feed_candidates = feed_urls
-      @original_url = raw_url
-      @folder_id = folder_id
-      render :select_feed, status: :ok
+      session[:feed_candidates] = feed_urls
+      session[:feed_original_url] = raw_url
+      session[:feed_folder_id] = folder_id
+      redirect_to select_feeds_path
     end
   rescue Feed::SsrfError
     @feed = Feed.new(url: raw_url)
