@@ -1,5 +1,10 @@
 # Changelog
 
+## [3.1.1] - 2026-04-19
+
+### Fixed
+- Auto Discovery: gzip 圧縮レスポンスで `break` 時に `Net::HTTPResponse::Inflater#closed?` が呼ばれ `NoMethodError` になるバグを修正。`Accept-Encoding: identity` を追加して gzip を無効化
+
 ## [3.1.0] - 2026-04-19
 
 ### Added

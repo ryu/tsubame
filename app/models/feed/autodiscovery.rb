@@ -64,6 +64,7 @@ module Feed::Autodiscovery
     request = Net::HTTP::Get.new(uri)
     request["User-Agent"] = Feed::Fetching::USER_AGENT
     request["Accept"] = "text/html,application/xhtml+xml"
+    request["Accept-Encoding"] = "identity"
 
     result_response = nil
     result_body = nil
