@@ -1,13 +1,41 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
 # Tsubame - Feed Reader
 
 Fastladder互換のフィードリーダー。複数ユーザー対応。
 
 ## 技術スタック
 
-- Ruby 4.0 / Rails 8.1 / SQLite3
+- Ruby 4.0.3 / Rails 8.1 / SQLite3
 - Hotwire (Turbo + Stimulus) + Vanilla CSS
-- Solid Queue (バックグラウンドジョブ)
-- Kamal (デプロイ先: さくらのVPS)
+- Solid Queue（バックグラウンドジョブ）/ Solid Cache / Solid Cable
+- Resend（メール送信）
+- Kamal（デプロイ先: さくらのVPS）
+
+## 開発コマンド
+
+```bash
+bin/setup        # 初期セットアップ（bundle, db:prepare, ログクリア）
+bin/dev          # 開発サーバー起動
+bin/ci           # CI全実行（rubocop, bundler-audit, importmap audit, brakeman, テスト, seed）
+bin/rails test   # テストのみ
+bin/rails test test/models/feed_test.rb  # 単一ファイル実行
+bin/rubocop      # Lintのみ
+```
+
+コミット前は必ず `bin/ci` を全パスさせること。
+
+## アーキテクチャ
+
+37signals / DHH コーディングスタイル準拠。詳細は `.claude/rules/` を参照。
+
+- **リッチドメインモデル**: サービスオブジェクト不使用。ロジックはモデル・concernに置く
+- **CRUDベースコントローラー**: 7つの標準アクションのみ。逸脱する場合は新リソースを作る
+- **状態はレコードで表現**: boolean カラムでなく別テーブルのレコード有無で管理（`UserEntryState` が典型例）
+- **DB バックエンド優先**: Solid Queue / Solid Cache。Redis 不使用
+- **フィードパース**: Ruby 標準ライブラリ `rss`（外部gem不使用）
 
 ## モジュール構成
 
@@ -19,6 +47,7 @@ Fastladder互換のフィードリーダー。複数ユーザー対応。
 - `UserEntryState` — ユーザーごとの既読/ピン状態（行なし＝未読・未ピン）
 - `Folder` — フォルダによるフィード分類（ユーザーごと）
 - `User` — 認証・購読管理・既読/ピン状態管理
+- `MagicLink` / `Session` — パスワードレス認証
 
 ### コントローラー
 
@@ -45,12 +74,6 @@ Fastladder互換のフィードリーダー。複数ユーザー対応。
 - `FetchFeedsJob` — 全フィード定期クロール
 - `FetchFeedJob` — 個別フィードフェッチ
 - `CleanupEntriesJob` — 古いエントリーの削除
-
-## セッション開始手順
-
-1. `docs/` ディレクトリの関連ドキュメントを確認する
-2. `git status` で現在の状態を把握する
-3. 変更対象のコードを読んでから作業を開始する
 
 ## ドキュメント
 
