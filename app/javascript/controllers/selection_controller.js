@@ -170,7 +170,42 @@ export default class extends Controller {
 
   _handleFrameLoad() {
     this.activeEntryIndexValue = -1
+    this._syncActiveFeedIndexFromFrame()
+    this._clearStaleBadgeOnEmptyFeed()
     this._updateNavButtons()
+  }
+
+  // data-feed-id からキーボードナビ用インデックスを同期（直接クリック時の対応）
+  _syncActiveFeedIndexFromFrame() {
+    const frame = this._entryListFrame()
+    const feedId = frame?.dataset.feedId
+    if (!feedId) return
+
+    const feedItems = this._getFeedItems()
+    const index = feedItems.findIndex(item => item.dataset.feedId === feedId)
+    if (index >= 0) {
+      this.activeFeedIndexValue = index
+      this._updateFeedActiveState()
+    }
+  }
+
+  // エントリーリストが空のとき、サイドバーの未読バッジを解消する
+  // （cross-feed 既読同期後にバッジが古い値を示すケースへの対応）
+  _clearStaleBadgeOnEmptyFeed() {
+    if (this._getEntryItems().length > 0) return
+
+    const frame = this._entryListFrame()
+    const feedId = frame?.dataset.feedId
+    if (!feedId) return
+
+    const feedItem = this.feedListTarget.querySelector(`.feed-item[data-feed-id="${feedId}"]`)
+    if (!feedItem) return
+
+    const badge = feedItem.querySelector(".unread-badge")
+    if (!badge) return
+
+    badge.remove()
+    this._refreshFolderBadge(feedItem)
   }
 
   _activateFeed(index) {
@@ -260,6 +295,37 @@ export default class extends Controller {
     } else {
       badge.remove()
     }
+
+    this._refreshFolderBadge(activeFeed)
+  }
+
+  // フォルダ配下の全フィードバッジを合算し、フォルダバッジを正確に更新する
+  // DOM 構造: .feed-folder-header の直後に .feed-item が続き、次の .feed-folder-header まで同一フォルダ
+  _refreshFolderBadge(feedItem) {
+    const header = this._findFolderHeader(feedItem)
+    if (!header) return
+
+    let total = 0
+    let sibling = header.nextElementSibling
+    while (sibling && !sibling.classList.contains("feed-folder-header")) {
+      const b = sibling.querySelector(".unread-badge")
+      if (b) total += parseInt(b.textContent, 10) || 0
+      sibling = sibling.nextElementSibling
+    }
+
+    const folderBadge = header.querySelector(".unread-badge")
+    if (folderBadge) {
+      total > 0 ? (folderBadge.textContent = total) : folderBadge.remove()
+    }
+  }
+
+  _findFolderHeader(feedItem) {
+    let sibling = feedItem.previousElementSibling
+    while (sibling) {
+      if (sibling.classList.contains("feed-folder-header")) return sibling
+      sibling = sibling.previousElementSibling
+    }
+    return null
   }
 
   _updateNavButtons() {

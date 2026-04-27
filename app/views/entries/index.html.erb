@@ -1,4 +1,4 @@
-<%= turbo_frame_tag "entry_list", data: { controller: "hatena-bookmark" } do %>
+<%= turbo_frame_tag "entry_list", data: { controller: "hatena-bookmark", feed_id: @feed.id } do %>
   <button class="mobile-back-button" data-action="click->mobile-pane#showFeeds">&larr; フィード</button>
   <div class="pane-header">
     <h2><%= @feed.title || @feed.url %></h2>
