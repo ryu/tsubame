@@ -226,4 +226,24 @@ class UsersControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to users_path
     assert_equal "自分自身は削除できません。", flash[:alert]
   end
+
+  test "destroy invalidates all sessions of deleted user" do
+    sign_in_as(@admin)
+    @non_admin.sessions.create!(user_agent: "TestAgent", ip_address: "127.0.0.1")
+    @non_admin.sessions.create!(user_agent: "TestAgent2", ip_address: "127.0.0.1")
+
+    delete user_path(@non_admin)
+
+    assert_equal 0, Session.where(user: @non_admin).count
+  end
+
+  test "create fails with invalid email format" do
+    sign_in_as(@admin)
+
+    assert_no_difference "User.count" do
+      post users_path, params: { user: { email_address: "not-an-email" } }
+    end
+
+    assert_response :unprocessable_entity
+  end
 end

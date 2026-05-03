@@ -6,6 +6,22 @@ class UserTest < ActiveSupport::TestCase
     assert_equal("downcased@example.com", user.email_address)
   end
 
+  test "valid with properly formatted email" do
+    user = User.new(email_address: "valid@example.com")
+    assert user.valid?
+  end
+
+  test "invalid with malformed email" do
+    user = User.new(email_address: "not-an-email")
+    assert_not user.valid?
+    assert user.errors[:email_address].any?
+  end
+
+  test "invalid with email missing domain" do
+    user = User.new(email_address: "missing@")
+    assert_not user.valid?
+  end
+
   # -- mark_entry_as_read! with duplicate sync tests --
 
   test "mark_entry_as_read syncs read state to duplicate entries" do

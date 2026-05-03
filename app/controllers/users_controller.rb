@@ -36,6 +36,7 @@ class UsersController < ApplicationController
     if @user == Current.user
       redirect_to users_path, alert: "自分自身は削除できません。"
     else
+      @user.sessions.destroy_all
       @user.destroy
       redirect_to users_path, notice: "ユーザーを削除しました。"
     end
