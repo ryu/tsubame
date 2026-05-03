@@ -73,7 +73,9 @@ module Feed::Fetching
   rescue Net::OpenTimeout, Net::ReadTimeout => e
     record_fetch_error!("Request timed out")
     Rails.logger.error("Feed#fetch timeout for feed #{id}: #{e.class} - #{e.message}")
-  rescue StandardError => e
+  rescue Feed::SsrfError, URI::InvalidURIError, RuntimeError,
+         SocketError, Errno::ECONNREFUSED, Errno::EHOSTUNREACH,
+         Errno::ECONNRESET, OpenSSL::SSL::SSLError, EOFError => e
     record_fetch_error!("Failed to fetch feed")
     Rails.logger.error("Feed#fetch error for feed #{id}: #{e.class} - #{e.message}")
   end

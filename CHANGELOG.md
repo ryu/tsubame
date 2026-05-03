@@ -1,5 +1,23 @@
 # Changelog
 
+## [3.1.4] - 2026-05-03
+
+### Security
+- `rescue StandardError` を具体的な例外クラスに絞り込み（`fetching.rb`, `autodiscovery.rb`, `rss_parser.rb`）。プログラムバグ（`NoMethodError` 等）が握り潰されなくなった
+- Cookie に `secure: true`（本番環境のみ）を追加
+- ユーザー削除前に全セッションを無効化（`sessions.destroy_all`）
+- email フォーマットバリデーションを追加（`URI::MailTo::EMAIL_REGEXP`）
+
+### Fixed
+- フィードタイトル更新を値が変化したときのみ実行するよう修正（毎フェッチごとの不要な UPDATE を解消）
+
+### Changed
+- ジョブの `retry_on Deadlocked` / `discard_on DeserializationError` を有効化
+
+### Dependencies
+- puma 8.0.0 → 8.0.1
+- bootsnap 1.23.0 → 1.24.0
+
 ## [3.1.3] - 2026-04-27
 
 ### Fixed

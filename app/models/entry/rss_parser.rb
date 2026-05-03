@@ -83,7 +83,7 @@ module Entry::RssParser
       elsif item.respond_to?(:updated) && item.updated
         item.updated.respond_to?(:content) ? item.updated.content : item.updated
       end
-    rescue StandardError
+    rescue TypeError, ArgumentError, RangeError
       nil
     end
 

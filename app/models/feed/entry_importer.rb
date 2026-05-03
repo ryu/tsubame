@@ -27,7 +27,6 @@ module Feed::EntryImporter
       t = parsed.title
       (t.respond_to?(:content) ? t.content : t.to_s).presence
     end
-    # Skip callbacks/validations — just persisting the parsed title, no need to touch updated_at
-    update_column(:title, title) if title.present?
+    update_column(:title, title) if title.present? && title != self.title
   end
 end

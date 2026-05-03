@@ -115,7 +115,9 @@ module Feed::Autodiscovery
 
       ct = response["Content-Type"].to_s.split(";").first.to_s.strip.downcase
       urls << guess_uri.to_s if ct == "application/rss+xml" || ct == "application/atom+xml"
-    rescue StandardError
+    rescue Feed::SsrfError, URI::InvalidURIError, Net::OpenTimeout,
+           Net::ReadTimeout, SocketError, Errno::ECONNREFUSED,
+           Errno::EHOSTUNREACH, Errno::ECONNRESET, OpenSSL::SSL::SSLError
       next
     end
     urls
