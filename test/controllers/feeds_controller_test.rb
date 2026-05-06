@@ -219,6 +219,24 @@ class FeedsControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to feeds_path
   end
 
+  test "create shows already subscribed notice when posting an already subscribed feed URL" do
+    sign_in_as(@user)
+
+    stub_request(:get, feeds(:ruby_blog).url)
+      .to_return(
+        status: 200,
+        body: '<?xml version="1.0"?><rss version="2.0"><channel><title>Ruby Blog</title></channel></rss>',
+        headers: { "Content-Type" => "application/rss+xml" }
+      )
+
+    assert_no_difference "Subscription.count" do
+      post feeds_path, params: { feed: { url: feeds(:ruby_blog).url } }
+    end
+
+    assert_redirected_to feeds_path
+    assert_equal "既に登録済みのフィードです。", flash[:notice]
+  end
+
   test "create rejects blank URL" do
     sign_in_as(@user)
 

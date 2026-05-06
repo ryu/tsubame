@@ -115,7 +115,9 @@ class FeedsController < ApplicationController
     end
 
     folder = folder_id ? Current.user.folders.find_by(id: folder_id) : nil
-    Current.user.subscribe_to(@feed, folder: folder)
-    redirect_to feeds_path, notice: "フィードを追加しました。"
+    subscription = Current.user.subscribe_to(@feed, folder: folder)
+
+    notice = subscription.previously_new_record? ? "フィードを追加しました。" : "既に登録済みのフィードです。"
+    redirect_to feeds_path, notice: notice
   end
 end
