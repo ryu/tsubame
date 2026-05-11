@@ -114,7 +114,7 @@ module Feed::Autodiscovery
       next unless response.is_a?(Net::HTTPSuccess)
 
       ct = response["Content-Type"].to_s.split(";").first.to_s.strip.downcase
-      urls << guess_uri.to_s if ct == "application/rss+xml" || ct == "application/atom+xml"
+      urls << guess_uri.to_s if FEED_CONTENT_TYPES.include?(ct)
     rescue Feed::SsrfError, URI::InvalidURIError, Net::OpenTimeout,
            Net::ReadTimeout, SocketError, Errno::ECONNREFUSED,
            Errno::EHOSTUNREACH, Errno::ECONNRESET, OpenSSL::SSL::SSLError
