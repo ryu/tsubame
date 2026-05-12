@@ -8,7 +8,7 @@ Fastladder互換のフィードリーダー。複数ユーザー対応。
 
 ## 技術スタック
 
-- Ruby 4.0.3 / Rails 8.1 / SQLite3
+- Ruby 4.0.4 / Rails 8.1 / SQLite3
 - Hotwire (Turbo + Stimulus) + Vanilla CSS
 - Solid Queue（バックグラウンドジョブ）/ Solid Cache / Solid Cable
 - Resend（メール送信）
