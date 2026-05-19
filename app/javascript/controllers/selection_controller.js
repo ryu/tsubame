@@ -17,11 +17,15 @@ export default class extends Controller {
 
     this.boundHandleFrameLoad = this._handleFrameLoad.bind(this)
     this._entryListFrame()?.addEventListener("turbo:frame-load", this.boundHandleFrameLoad)
+
+    this.boundHandleFeedClick = this._handleFeedClick.bind(this)
+    this.feedListTarget.addEventListener("click", this.boundHandleFeedClick)
   }
 
   disconnect() {
     this.markAllAbort?.abort()
     this._entryListFrame()?.removeEventListener("turbo:frame-load", this.boundHandleFrameLoad)
+    this.feedListTarget.removeEventListener("click", this.boundHandleFeedClick)
   }
 
   // Feed navigation actions
@@ -54,6 +58,16 @@ export default class extends Controller {
     if (newIndex < entryItems.length) {
       this.activeEntryIndexValue = newIndex
       this._activateEntry(newIndex)
+    }
+  }
+
+  nextEntryOrFeed() {
+    const entryItems = this._getEntryItems()
+    const isLastEntry = this.activeEntryIndexValue >= entryItems.length - 1
+    if (isLastEntry && this._hasNextUnreadFeed()) {
+      this.nextFeed()
+    } else {
+      this.nextEntry()
     }
   }
 
@@ -167,6 +181,14 @@ export default class extends Controller {
   }
 
   // Private methods
+
+  _handleFeedClick(event) {
+    const feedItem = event.target.closest(".feed-item")
+    if (!feedItem) return
+    const feedItems = this._getFeedItems()
+    const index = feedItems.indexOf(feedItem)
+    if (index >= 0) this.activeFeedIndexValue = index
+  }
 
   _handleFrameLoad() {
     this.activeEntryIndexValue = -1
