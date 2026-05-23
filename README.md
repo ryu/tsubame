@@ -71,7 +71,7 @@ kamal deploy
 
 ## 技術スタック
 
-- Ruby 4.0 / Rails 8.1 / SQLite3
+- Ruby 4.0.5 / Rails 8.1 / SQLite3
 - Hotwire (Turbo + Stimulus) + Vanilla CSS
 - Solid Queue (バックグラウンドジョブ)
 - Kamal 2 (デプロイ)
