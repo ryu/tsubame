@@ -10,6 +10,8 @@ module Feed::Opml
     # Import feeds from OPML XML content for a specific user
     # Returns { added: N, skipped: N }
     def import_from_opml(xml_content, user:)
+      ensure_xml!(xml_content)
+
       doc = REXML::Document.new(xml_content, entity_expansion_text_limit: 0)
       existing_feed_urls = user.subscriptions.joins(:feed).pluck("feeds.url").to_set
       state = { added: 0, skipped: 0, existing_urls: existing_feed_urls, user: user }
@@ -53,6 +55,13 @@ module Feed::Opml
     end
 
     private
+
+    def ensure_xml!(content)
+      stripped = content.to_s.sub(/\A\xEF\xBB\xBF/n, "").lstrip
+      return if stripped.match?(/\A(<\?xml|<opml[\s>])/i)
+
+      raise ImportError, "XMLファイルを選択してください。"
+    end
 
     def import_outlines(element, state)
       element.each_element("outline") do |outline|
