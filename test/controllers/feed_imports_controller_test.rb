@@ -156,6 +156,6 @@ class FeedImportsControllerTest < ActionDispatch::IntegrationTest
     post feed_imports_path, params: { opml_file: invalid_file }
 
     assert_redirected_to new_feed_import_path
-    assert_match(/インポートに失敗しました/, flash[:alert])
+    assert_match(/OPMLファイルの形式が正しくありません/, flash[:alert])
   end
 end
