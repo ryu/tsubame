@@ -1,6 +1,7 @@
 class Feed < ApplicationRecord
   include Feed::Fetching       # HTTP通信・SSRF保護・エンコーディング・パース（BLOCKED_IP_RANGESを定義）
   include Feed::Autodiscovery  # HTML から feed URL を自動検出
+  include Feed::Subscribable   # URL からのフィード解決・購読（resolve / find_or_subscribe）
   include Feed::EntryImporter  # エントリインポート・フィードタイトル更新
   include Feed::Opml
 
