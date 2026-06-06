@@ -42,6 +42,8 @@ module Feed::Subscribable
     rescue Feed::SsrfError
       raise
     rescue StandardError => e
+      Rails.error.report(e, handled: true, severity: :warning,
+        source: "feed.autodiscovery", context: { url: url })
       Rails.logger.warn("Feed autodiscovery failed for #{url}: #{e.message}")
       []
     end

@@ -576,6 +576,19 @@ class FeedTest < ActiveSupport::TestCase
     assert_equal feed.id, report.context[:feed_id]
   end
 
+  test "resolve reports autodiscovery network failures to Rails.error" do
+    stub_request(:get, "https://example.com/slow").to_timeout
+
+    report = assert_error_reported(Net::OpenTimeout) do
+      resolution = Feed.resolve("https://example.com/slow")
+      assert_not_nil resolution.feed
+    end
+    assert_equal :warning, report.severity
+    assert report.handled
+    assert_equal "feed.autodiscovery", report.source
+    assert_equal "https://example.com/slow", report.context[:url]
+  end
+
   test "fetch should mark feed as error on parse error" do
     feed = feeds(:ruby_blog)
     feed.update!(url: "https://example.com/feed.xml", etag: nil, last_modified: nil, status: :ok, error_message: nil)
