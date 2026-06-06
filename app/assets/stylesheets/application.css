@@ -11,6 +11,9 @@
 
 /* Theme variables */
 :root {
+  /* Opt into light/dark rendering of form controls, scrollbars, etc. */
+  color-scheme: light dark;
+
   /* Text */
   --color-text: #333;
   --color-text-secondary: #666;
