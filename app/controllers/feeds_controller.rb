@@ -8,48 +8,21 @@ class FeedsController < ApplicationController
     @folders = Current.user.folders.order(:name)
   end
 
-  def select
-    @feed_candidates = session.delete(:feed_candidates)
-    @original_url    = session.delete(:feed_original_url)
-    @folder_id       = session.delete(:feed_folder_id)
-    redirect_to new_feed_path if @feed_candidates.blank?
-  end
-
   def create
-    raw_url = feed_url
-    folder_id = params.dig(:feed, :folder_id).to_i.nonzero?
+    @feed = Feed.new(url: feed_url)
+    return render_new_with_error(:blank) if @feed.url.blank?
 
-    if raw_url.blank?
-      @feed = Feed.new
-      @feed.errors.add(:url, :blank)
+    resolution = Feed.resolve(@feed.url)
+
+    if resolution.candidates?
+      @feed_candidates = resolution.candidates
       @folders = Current.user.folders.order(:name)
-      return render :new, status: :unprocessable_entity
+      return render :select
     end
 
-    result  = discover_feed(raw_url)
-
-    if result[:content_type] == :feed
-      return create_and_redirect(raw_url, folder_id)
-    end
-
-    feed_urls = Array(result[:feed_urls])
-
-    case feed_urls.length
-    when 0
-      create_and_redirect(raw_url, folder_id)
-    when 1
-      create_and_redirect(feed_urls.first, folder_id)
-    when (2..)
-      session[:feed_candidates] = feed_urls
-      session[:feed_original_url] = raw_url
-      session[:feed_folder_id] = folder_id
-      redirect_to select_feeds_path
-    end
+    subscribe(resolution.feed)
   rescue Feed::SsrfError
-    @feed = Feed.new(url: raw_url)
-    @feed.errors.add(:url, "cannot point to private network")
-    @folders = Current.user.folders.order(:name)
-    render :new, status: :unprocessable_entity
+    render_new_with_error("cannot point to private network")
   end
 
   def edit
@@ -95,29 +68,27 @@ class FeedsController < ApplicationController
     params.require(:feed).permit(:url)[:url].to_s.strip
   end
 
-  def discover_feed(url)
-    Feed.new.discover_from(url)
-  rescue Feed::SsrfError
-    raise  # 呼び出し元の create アクションで処理する
-  rescue StandardError => e
-    Rails.logger.warn("Feed autodiscovery failed for #{url}: #{e.message}")
-    { feed_urls: [], content_type: :unknown }
+  def folder
+    folder_id = params.dig(:feed, :folder_id).to_i.nonzero?
+    folder_id && Current.user.folders.find_by(id: folder_id)
   end
 
-  def create_and_redirect(url, folder_id = nil)
-    @feed = Feed.find_by(url: url) || Feed.subscribe(url)
+  def subscribe(feed)
+    @feed = feed
 
-    unless @feed.persisted?
-      unless @feed.save
-        @folders = Current.user.folders.order(:name)
-        return render :new, status: :unprocessable_entity
-      end
+    unless @feed.persisted? || @feed.save
+      @folders = Current.user.folders.order(:name)
+      return render :new, status: :unprocessable_entity
     end
 
-    folder = folder_id ? Current.user.folders.find_by(id: folder_id) : nil
     subscription = Current.user.subscribe_to(@feed, folder: folder)
-
     notice = subscription.previously_new_record? ? "フィードを追加しました。" : "既に登録済みのフィードです。"
     redirect_to feeds_path, notice: notice
+  end
+
+  def render_new_with_error(error)
+    @feed.errors.add(:url, error)
+    @folders = Current.user.folders.order(:name)
+    render :new, status: :unprocessable_entity
   end
 end
