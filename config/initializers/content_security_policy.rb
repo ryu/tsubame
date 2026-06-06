@@ -21,12 +21,8 @@ Rails.application.configure do
   end
 
   # Generate session nonces for permitted importmap and inline scripts/styles.
+  # Turbo picks this nonce up from csp_meta_tag for its runtime progress-bar <style>,
+  # and importmap-rails applies it to the import map / module preload scripts.
   config.content_security_policy_nonce_generator = ->(request) { request.session.id.to_s }
   config.content_security_policy_nonce_directives = %w[ script-src style-src ]
-
-  # Report violations without enforcing the policy. Flip to enforcing only after
-  # verifying in a browser that Turbo/Stimulus and styles work (Turbo injects a
-  # runtime <style> for its progress bar, which needs nonce/handling under
-  # enforced style-src).
-  config.content_security_policy_report_only = true
 end
