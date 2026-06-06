@@ -1,15 +1,15 @@
 require "test_helper"
 
 class ContentSecurityPolicyTest < ActionDispatch::IntegrationTest
-  test "sends the content security policy in report-only mode" do
+  test "enforces the content security policy" do
     get "/up"
     assert_response :success
 
-    assert_nil response.headers["Content-Security-Policy"],
-      "policy should not be enforced yet"
+    assert_nil response.headers["Content-Security-Policy-Report-Only"],
+      "policy should be enforced, not report-only"
 
-    policy = response.headers["Content-Security-Policy-Report-Only"]
-    assert policy.present?, "expected a report-only policy header"
+    policy = response.headers["Content-Security-Policy"]
+    assert policy.present?, "expected an enforced policy header"
     assert_includes policy, "default-src 'self'"
     assert_includes policy, "object-src 'none'"
     assert_includes policy, "connect-src 'self' https://bookmark.hatenaapis.com"
