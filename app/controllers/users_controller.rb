@@ -53,7 +53,7 @@ class UsersController < ApplicationController
   end
 
   def user_params
-    params.require(:user).permit(:email_address)
+    params.expect(user: [ :email_address ])
   end
 
   def manage_admin_status

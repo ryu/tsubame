@@ -561,6 +561,21 @@ class FeedTest < ActiveSupport::TestCase
     assert_not_nil feed.last_fetched_at
   end
 
+  test "fetch reports the error to Rails.error as a handled warning" do
+    feed = feeds(:ruby_blog)
+    feed.update!(url: "https://example.com/feed.xml", etag: nil, last_modified: nil, status: :ok, error_message: nil)
+
+    stub_request(:get, "https://example.com/feed.xml").to_timeout
+
+    report = assert_error_reported(Net::OpenTimeout) do
+      feed.fetch
+    end
+    assert_equal :warning, report.severity
+    assert report.handled
+    assert_equal "feed.fetch", report.source
+    assert_equal feed.id, report.context[:feed_id]
+  end
+
   test "fetch should mark feed as error on parse error" do
     feed = feeds(:ruby_blog)
     feed.update!(url: "https://example.com/feed.xml", etag: nil, last_modified: nil, status: :ok, error_message: nil)

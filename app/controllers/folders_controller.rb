@@ -41,6 +41,6 @@ class FoldersController < ApplicationController
   end
 
   def folder_params
-    params.require(:folder).permit(:name)
+    params.expect(folder: [ :name ])
   end
 end

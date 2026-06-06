@@ -38,11 +38,11 @@ class FeedsController < ApplicationController
     Feed.transaction do
       # fetch_interval_minutes はフィードのグローバル設定（全購読者に影響）
       if params[:feed].present?
-        @feed.update!(params.require(:feed).permit(:fetch_interval_minutes))
+        @feed.update!(params.expect(feed: [ :fetch_interval_minutes ]))
       end
 
       if params[:subscription].present?
-        @subscription.update!(params.require(:subscription).permit(:title, :rate, :folder_id))
+        @subscription.update!(params.expect(subscription: [ :title, :rate, :folder_id ]))
       end
     end
 
@@ -65,7 +65,7 @@ class FeedsController < ApplicationController
   private
 
   def feed_url
-    params.require(:feed).permit(:url)[:url].to_s.strip
+    params.expect(feed: [ :url ])[:url].to_s.strip
   end
 
   def folder

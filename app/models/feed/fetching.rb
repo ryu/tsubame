@@ -72,15 +72,30 @@ module Feed::Fetching
     )
   rescue Net::OpenTimeout, Net::ReadTimeout => e
     record_fetch_error!("Request timed out")
-    Rails.logger.error("Feed#fetch timeout for feed #{id}: #{e.class} - #{e.message}")
+    report_fetch_error(e)
   rescue Feed::SsrfError, URI::InvalidURIError, RuntimeError,
          SocketError, Errno::ECONNREFUSED, Errno::EHOSTUNREACH,
          Errno::ECONNRESET, OpenSSL::SSL::SSLError, EOFError => e
     record_fetch_error!("Failed to fetch feed")
-    Rails.logger.error("Feed#fetch error for feed #{id}: #{e.class} - #{e.message}")
+    report_fetch_error(e)
   end
 
   private
+
+  # Fetch failures are expected (network errors, SSRF, bad responses), so report them
+  # as handled warnings. Routing through Rails.error lets a future subscriber (e.g.
+  # Sentry) aggregate them; there is no default logging subscriber, so keep an explicit
+  # logger line for immediate visibility.
+  def report_fetch_error(error)
+    Rails.error.report(
+      error,
+      handled: true,
+      severity: :warning,
+      source: "feed.fetch",
+      context: { feed_id: id, url: url }
+    )
+    Rails.logger.warn("Feed#fetch error for feed #{id}: #{error.class} - #{error.message}")
+  end
 
   def fetch_with_redirects(target_url, headers)
     current_url = target_url
