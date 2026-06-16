@@ -286,7 +286,7 @@ GEM
       base64
       httparty (>= 0.22.0)
     rexml (3.4.4)
-    rss (0.3.2)
+    rss (0.3.3)
       rexml
     rubocop (1.84.1)
       json (~> 2.3)
