@@ -17,7 +17,7 @@ class FeedsController < ApplicationController
     if resolution.candidates?
       @feed_candidates = resolution.candidates
       @folders = Current.user.folders.order(:name)
-      return render :select
+      return render :select, status: :unprocessable_entity
     end
 
     subscribe(resolution.feed)

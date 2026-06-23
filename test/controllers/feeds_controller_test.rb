@@ -112,7 +112,9 @@ class FeedsControllerTest < ActionDispatch::IntegrationTest
 
     post feeds_path, params: { feed: { url: "https://example.com/multi" } }
 
-    assert_response :success
+    # 422 so Turbo Drive renders the candidate-selection page; a 200 form
+    # response would be silently ignored ("must redirect to another location").
+    assert_response :unprocessable_entity
     assert_select "input[type=radio][value='https://example.com/rss']"
     assert_select "input[type=radio][value='https://example.com/atom']"
   end
