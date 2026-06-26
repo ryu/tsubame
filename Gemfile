@@ -68,4 +68,4 @@ group :test do
   gem "webmock"
 end
 
-gem "resend", "~> 1.3"
+gem "resend", "~> 1.5"
