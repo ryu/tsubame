@@ -4,7 +4,6 @@ import { fetchWithCsrf, openInBackground } from "lib/fetch_helper"
 
 const SCROLL_RATIO = 0.8
 
-// Manages feed/entry navigation, active state, and entry actions
 export default class extends Controller {
   static targets = ["feedList", "entryList", "entryDetail", "prevButton", "nextButton"]
   static values = {
@@ -28,7 +27,7 @@ export default class extends Controller {
     this.feedListTarget.removeEventListener("click", this.boundHandleFeedClick)
   }
 
-  // Feed navigation actions
+  // Feed navigation
 
   nextFeed() {
     const feedItems = this._getFeedItems()
@@ -48,7 +47,7 @@ export default class extends Controller {
     this._activateFeed(newIndex)
   }
 
-  // Entry navigation actions
+  // Entry navigation
 
   nextEntry() {
     const entryItems = this._getEntryItems()
@@ -94,10 +93,7 @@ export default class extends Controller {
     if (!this.hasEntryDetailTarget) return
 
     const externalLink = this.entryDetailTarget.querySelector(".external-link")
-    if (!externalLink || !externalLink.href) {
-      console.warn("No external link found for current entry")
-      return
-    }
+    if (!externalLink || !externalLink.href) return
 
     openInBackground(externalLink.href)
   }
@@ -126,31 +122,21 @@ export default class extends Controller {
 
   markAllAsRead() {
     const feedItems = this._getFeedItems()
-    if (this.activeFeedIndexValue < 0 || this.activeFeedIndexValue >= feedItems.length) {
-      console.warn("No active feed selected")
-      return
-    }
+    if (this.activeFeedIndexValue < 0 || this.activeFeedIndexValue >= feedItems.length) return
 
     const activeFeed = feedItems[this.activeFeedIndexValue]
     const feedId = activeFeed.dataset.feedId
-    if (!feedId) {
-      console.warn("Feed ID not found")
-      return
-    }
+    if (!feedId) return
 
     this.markAllAbort?.abort()
     this.markAllAbort = new AbortController()
     fetchWithCsrf(`/feeds/${feedId}/mark_as_read`, {
       method: "POST",
+      headers: { "Accept": "text/vnd.turbo-stream.html" },
       signal: this.markAllAbort.signal
     })
-      .then(response => response.json())
-      .then(data => {
-        if (data.success) {
-          // Reload page to update unread badges in left pane
-          window.Turbo.visit(window.location.href, { action: "replace" })
-        }
-      })
+      .then(response => response.text())
+      .then(html => Turbo.renderStreamMessage(html))
       .catch(error => {
         if (error.name !== "AbortError") {
           console.warn("Failed to mark all as read:", error)
@@ -162,12 +148,10 @@ export default class extends Controller {
     window.Turbo.visit(window.location.href, { action: "replace" })
   }
 
-  // Public getter for activeEntryIndexValue (used by pin_controller via outlets)
   get activeEntryIndex() {
     return this.activeEntryIndexValue
   }
 
-  // Public getter for active entry element (used by pin_controller)
   getActiveEntry() {
     const entryItems = this._getEntryItems()
     if (this.activeEntryIndexValue < 0 || this.activeEntryIndexValue >= entryItems.length) {
@@ -180,7 +164,7 @@ export default class extends Controller {
     this._updateNavButtons()
   }
 
-  // Private methods
+  // Private
 
   _handleFeedClick(event) {
     const feedItem = event.target.closest(".feed-item")
@@ -193,11 +177,15 @@ export default class extends Controller {
   _handleFrameLoad() {
     this.activeEntryIndexValue = -1
     this._syncActiveFeedIndexFromFrame()
-    this._clearStaleBadgeOnEmptyFeed()
     this._updateNavButtons()
+
+    const frame = this._entryListFrame()
+    const feedId = frame?.dataset.feedId
+    if (feedId) {
+      this.dispatch("feed-loaded", { detail: { feedId, isEmpty: this._getEntryItems().length === 0 } })
+    }
   }
 
-  // data-feed-id からキーボードナビ用インデックスを同期（直接クリック時の対応）
   _syncActiveFeedIndexFromFrame() {
     const frame = this._entryListFrame()
     const feedId = frame?.dataset.feedId
@@ -211,25 +199,6 @@ export default class extends Controller {
     }
   }
 
-  // エントリーリストが空のとき、サイドバーの未読バッジを解消する
-  // （cross-feed 既読同期後にバッジが古い値を示すケースへの対応）
-  _clearStaleBadgeOnEmptyFeed() {
-    if (this._getEntryItems().length > 0) return
-
-    const frame = this._entryListFrame()
-    const feedId = frame?.dataset.feedId
-    if (!feedId) return
-
-    const feedItem = this.feedListTarget.querySelector(`.feed-item[data-feed-id="${feedId}"]`)
-    if (!feedItem) return
-
-    const badge = feedItem.querySelector(".unread-badge")
-    if (!badge) return
-
-    badge.remove()
-    this._refreshFolderBadge(feedItem)
-  }
-
   _activateFeed(index) {
     const feedItems = this._getFeedItems()
     if (index < 0 || index >= feedItems.length) return
@@ -237,7 +206,6 @@ export default class extends Controller {
     const feedItem = feedItems[index]
     this._updateFeedActiveState()
 
-    // Click the feed link to load entries via Turbo Frame
     const link = feedItem.matches("a") ? feedItem : feedItem.querySelector("a")
     if (link) link.click()
 
@@ -269,15 +237,15 @@ export default class extends Controller {
     const entryItem = entryItems[index]
     this._updateEntryActiveState()
 
-    // Optimistically mark as read in UI
-    // (EntriesController#show handles server-side mark_as_read)
     if (entryItem.classList.contains("entry-unread")) {
       entryItem.classList.remove("entry-unread")
       entryItem.classList.add("entry-read")
-      this._decrementUnreadBadge()
+
+      const feedItems = this._getFeedItems()
+      const feedItem = feedItems[this.activeFeedIndexValue]
+      this.dispatch("entry-read", { detail: { feedItem } })
     }
 
-    // Click the entry link to load detail via Turbo Frame
     const link = entryItem.matches("a") ? entryItem : entryItem.querySelector("a")
     if (link) link.click()
 
@@ -303,53 +271,6 @@ export default class extends Controller {
     return Array.from(this.entryListTarget.querySelectorAll(".entry-item"))
   }
 
-  _decrementUnreadBadge() {
-    const activeFeedItems = this._getFeedItems()
-    if (this.activeFeedIndexValue < 0 || this.activeFeedIndexValue >= activeFeedItems.length) return
-
-    const activeFeed = activeFeedItems[this.activeFeedIndexValue]
-    const badge = activeFeed.querySelector(".unread-badge")
-    if (!badge) return
-
-    const currentCount = parseInt(badge.textContent, 10)
-    if (currentCount > 1) {
-      badge.textContent = currentCount - 1
-    } else {
-      badge.remove()
-    }
-
-    this._refreshFolderBadge(activeFeed)
-  }
-
-  // フォルダ配下の全フィードバッジを合算し、フォルダバッジを正確に更新する
-  // DOM 構造: .feed-folder-header の直後に .feed-item が続き、次の .feed-folder-header まで同一フォルダ
-  _refreshFolderBadge(feedItem) {
-    const header = this._findFolderHeader(feedItem)
-    if (!header) return
-
-    let total = 0
-    let sibling = header.nextElementSibling
-    while (sibling && !sibling.classList.contains("feed-folder-header")) {
-      const b = sibling.querySelector(".unread-badge")
-      if (b) total += parseInt(b.textContent, 10) || 0
-      sibling = sibling.nextElementSibling
-    }
-
-    const folderBadge = header.querySelector(".unread-badge")
-    if (folderBadge) {
-      total > 0 ? (folderBadge.textContent = total) : folderBadge.remove()
-    }
-  }
-
-  _findFolderHeader(feedItem) {
-    let sibling = feedItem.previousElementSibling
-    while (sibling) {
-      if (sibling.classList.contains("feed-folder-header")) return sibling
-      sibling = sibling.previousElementSibling
-    }
-    return null
-  }
-
   _updateNavButtons() {
     if (!this.hasPrevButtonTarget || !this.hasNextButtonTarget) return
 
@@ -367,8 +288,8 @@ export default class extends Controller {
     this.nextButtonTarget.disabled = isLastEntry && !hasNextFeed
 
     this.nextButtonTarget.textContent = hasNextFeed
-      ? "次のフィードへ \u203a"
-      : "次のエントリ \u203a"
+      ? "次のフィードへ ›"
+      : "次のエントリ ›"
     this.nextButtonTarget.setAttribute("aria-label",
       hasNextFeed ? "次のフィードに移動" : "次のエントリに移動")
   }
@@ -406,5 +327,4 @@ export default class extends Controller {
       element.scrollIntoView({ block: "end", behavior: "smooth" })
     }
   }
-
 }

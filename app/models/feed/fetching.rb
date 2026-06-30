@@ -3,8 +3,6 @@ require "resolv"
 require "rss"
 require "ipaddr"
 
-class Feed::SsrfError < StandardError; end
-
 module Feed::Fetching
   extend ActiveSupport::Concern
 
@@ -13,35 +11,7 @@ module Feed::Fetching
   READ_TIMEOUT = 30
   MAX_REDIRECTS = 5
   MAX_RESPONSE_SIZE = 10.megabytes
-
-  # Number of bytes to probe for XML encoding declaration
   XML_ENCODING_PROBE_SIZE = 200
-
-  BLOCKED_IP_RANGES = [
-    IPAddr.new("0.0.0.0/8"),
-    IPAddr.new("127.0.0.0/8"),
-    IPAddr.new("10.0.0.0/8"),
-    IPAddr.new("172.16.0.0/12"),
-    IPAddr.new("192.168.0.0/16"),
-    IPAddr.new("169.254.0.0/16"),
-    IPAddr.new("::1/128"),
-    IPAddr.new("fc00::/7"),
-    IPAddr.new("fe80::/10")
-  ].freeze
-
-  class_methods do
-    def blocked_ip_address?(ip_addr)
-      BLOCKED_IP_RANGES.any? { |range| range.include?(ip_addr) }
-    end
-
-    def private_ip?(host)
-      ip = Resolv.getaddress(host)
-      ip_addr = IPAddr.new(ip)
-      blocked_ip_address?(ip_addr)
-    rescue Resolv::ResolvError, SocketError, IPAddr::InvalidAddressError
-      true
-    end
-  end
 
   def fetch
     response, body = fetch_with_redirects(url, conditional_get_headers)
@@ -132,11 +102,9 @@ module Feed::Fetching
     result_body = nil
 
     http.request(request) do |response|
-      # Reject early based on Content-Length before reading the body
       content_length = response["Content-Length"]&.to_i
       raise "Response too large" if content_length && content_length > MAX_RESPONSE_SIZE
 
-      # Stream-read body with size limit only for success responses
       if response.is_a?(Net::HTTPSuccess)
         result_body = read_body_with_limit!(response)
       end
@@ -154,18 +122,6 @@ module Feed::Fetching
       raise "Response too large" if body.bytesize > MAX_RESPONSE_SIZE
     end
     body
-  end
-
-  def validate_url_safety!(uri)
-    raise Feed::SsrfError, "URL must use HTTP or HTTPS" unless uri.is_a?(URI::HTTP) || uri.is_a?(URI::HTTPS)
-
-    ip = Resolv.getaddress(uri.host)
-    ip_addr = IPAddr.new(ip)
-    raise Feed::SsrfError, "URL points to private network" if Feed.blocked_ip_address?(ip_addr)
-
-    ip
-  rescue Resolv::ResolvError, SocketError, IPAddr::InvalidAddressError
-    raise Feed::SsrfError, "Cannot resolve hostname"
   end
 
   def build_http(uri, resolved_ip, open_timeout: OPEN_TIMEOUT, read_timeout: READ_TIMEOUT)

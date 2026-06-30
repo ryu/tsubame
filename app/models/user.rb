@@ -21,15 +21,12 @@ class User < ApplicationRecord
     sessions.where.not(id: except).destroy_all
   end
 
-  # Subscribe to a feed. Returns existing subscription if already subscribed.
   def subscribe_to(feed, folder: nil)
     subscriptions.find_or_create_by!(feed: feed) do |sub|
       sub.folder = folder
     end
   end
 
-  # Subscribed feeds grouped by folder with unread counts for the home screen.
-  # Returns FolderGroup objects sorted by folder name, with nil (unclassified) last.
   def grouped_subscriptions_for_home(rate:)
     subs = subscriptions
       .with_rate_at_least(rate)
@@ -44,12 +41,10 @@ class User < ApplicationRecord
       .map { |folder, subscriptions| FolderGroup.new(folder:, subscriptions:) }
   end
 
-  # Find or initialize a UserEntryState for an entry
   def entry_state_for(entry)
     user_entry_states.find_or_initialize_by(entry: entry)
   end
 
-  # Mark an entry as read. Returns true if newly marked.
   def mark_entry_as_read!(entry)
     state = entry_state_for(entry)
     return false if state.read_at.present?
@@ -60,14 +55,12 @@ class User < ApplicationRecord
     true
   end
 
-  # Toggle pin on an entry
   def toggle_entry_pin!(entry)
     state = entry_state_for(entry)
     state.update!(pinned: !state.pinned)
     state
   end
 
-  # Mark all entries of a feed as read
   def mark_feed_entries_as_read!(feed)
     unread_entry_ids = feed.entries
       .where.not(id: user_entry_states.where.not(read_at: nil).select(:entry_id))
@@ -99,12 +92,10 @@ class User < ApplicationRecord
     unread_entry_ids.size
   end
 
-  # Count of pinned entries for the current user
   def pinned_entry_count
     user_entry_states.pinned.count
   end
 
-  # Pinned entries with associated feed
   def pinned_entries
     Entry.joins(:user_entry_states)
       .where(user_entry_states: { user_id: id, pinned: true })
@@ -112,7 +103,6 @@ class User < ApplicationRecord
       .recently_published
   end
 
-  # Unread entries for a feed
   def unread_entries_for(feed)
     read_entry_ids = user_entry_states.where.not(read_at: nil)
       .joins(:entry).where(entries: { feed_id: feed.id })
@@ -120,12 +110,10 @@ class User < ApplicationRecord
     feed.entries.where.not(id: read_entry_ids).recently_published
   end
 
-  # Check if an entry is read
   def entry_read?(entry)
     user_entry_states.where.not(read_at: nil).exists?(entry: entry)
   end
 
-  # Check if an entry is pinned
   def entry_pinned?(entry)
     user_entry_states.exists?(entry: entry, pinned: true)
   end

@@ -1,8 +1,9 @@
 class Feed < ApplicationRecord
-  include Feed::Fetching       # HTTP通信・SSRF保護・エンコーディング・パース（BLOCKED_IP_RANGESを定義）
-  include Feed::Autodiscovery  # HTML から feed URL を自動検出
-  include Feed::Subscribable   # URL からのフィード解決・購読（resolve / find_or_subscribe）
-  include Feed::EntryImporter  # エントリインポート・フィードタイトル更新
+  include Feed::SsrfProtection  # SSRF保護・ブロックIP判定
+  include Feed::Fetching         # HTTP通信・エンコーディング・パース
+  include Feed::Autodiscovery    # HTML から feed URL を自動検出
+  include Feed::Subscribable     # URL からのフィード解決・購読（resolve / find_or_subscribe）
+  include Feed::EntryImporter    # エントリインポート・フィードタイトル更新
   include Feed::Opml
 
   has_many :entries, dependent: :destroy
@@ -34,7 +35,6 @@ class Feed < ApplicationRecord
   # this callback only fires when fetch_interval_minutes is changed (e.g. from settings).
   before_save :set_next_fetch_at, if: :fetch_interval_minutes_changed?
 
-  # Returns an unsaved Feed ready for immediate scheduling.
   def self.subscribe(url)
     new(url: url, next_fetch_at: Time.current)
   end

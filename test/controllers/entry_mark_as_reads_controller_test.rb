@@ -13,16 +13,12 @@ class EntryMarkAsReadsControllerTest < ActionDispatch::IntegrationTest
 
   test "create marks entry as read" do
     sign_in_as(@user)
-    # ruby_article_two has a UserEntryState with pinned:true but no read_at
     state = @user.user_entry_states.find_by(entry: @entry)
     assert_nil state&.read_at
 
-    post entry_mark_as_read_path(@entry)
+    post entry_mark_as_read_path(@entry), headers: { "Accept" => "text/vnd.turbo-stream.html" }
     assert_response :success
 
-    json = JSON.parse(response.body)
-    assert json["success"]
-    assert json["was_unread"]
     state = @user.user_entry_states.find_by(entry: @entry)
     assert_not_nil state.read_at
   end
@@ -41,7 +37,7 @@ class EntryMarkAsReadsControllerTest < ActionDispatch::IntegrationTest
     original.update_column(:content_url, "https://example.com/ruby/2")
     duplicate.update_column(:content_url, "https://example.com/ruby/2")
 
-    post entry_mark_as_read_path(original)
+    post entry_mark_as_read_path(original), headers: { "Accept" => "text/vnd.turbo-stream.html" }
     assert_response :success
 
     dup_state = @user.user_entry_states.find_by(entry: duplicate)
@@ -52,11 +48,7 @@ class EntryMarkAsReadsControllerTest < ActionDispatch::IntegrationTest
     sign_in_as(@user)
     @user.mark_entry_as_read!(@entry)
 
-    post entry_mark_as_read_path(@entry)
+    post entry_mark_as_read_path(@entry), headers: { "Accept" => "text/vnd.turbo-stream.html" }
     assert_response :success
-
-    json = JSON.parse(response.body)
-    assert json["success"]
-    assert_not json["was_unread"]
   end
 end

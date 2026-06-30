@@ -1,5 +1,5 @@
 <div class="three-pane-layout"
-     data-controller="keyboard selection pin help-dialog mobile-pane"
+     data-controller="keyboard selection pin help-dialog mobile-pane badge"
      data-pin-selection-outlet=".three-pane-layout"
      data-mobile-pane="feeds"
      data-action="keyboard:next-entry->selection#nextEntry
@@ -11,7 +11,9 @@
                   keyboard:toggle-pin->pin#togglePin
                   keyboard:mark-all-as-read->selection#markAllAsRead
                   keyboard:reload-page->selection#reloadPage
-                  keyboard:toggle-help->help-dialog#toggle">
+                  keyboard:toggle-help->help-dialog#toggle
+                  selection:entry-read->badge#entryRead
+                  selection:feed-loaded->badge#feedLoaded">
   <!-- Left pane: Feed list -->
   <aside class="feed-list-pane">
     <div class="pane-header">
