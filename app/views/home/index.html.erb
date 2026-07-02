@@ -90,7 +90,7 @@
   <div class="content-pane">
     <!-- Top: Entry list -->
     <section class="entry-list-pane" data-selection-target="entryList">
-      <%= turbo_frame_tag "entry_list" do %>
+      <%= turbo_frame_tag "entry_list", refresh: :morph do %>
         <div class="empty-message">
           <p>左からフィードを選択してください</p>
         </div>
@@ -99,7 +99,7 @@
 
     <!-- Bottom: Entry detail -->
     <section class="entry-detail-pane" data-selection-target="entryDetail">
-      <%= turbo_frame_tag "entry_detail" do %>
+      <%= turbo_frame_tag "entry_detail", refresh: :morph do %>
         <div class="empty-message">
           <p>エントリを選択してください</p>
         </div>
