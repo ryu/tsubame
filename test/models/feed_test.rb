@@ -320,6 +320,22 @@ class FeedTest < ActiveSupport::TestCase
     assert_in_delta 30.minutes.from_now, feed.next_fetch_at, 2.seconds
   end
 
+  test "record_successful_fetch! reports a feed.fetched event" do
+    feed = feeds(:ruby_blog)
+
+    assert_event_reported("feed.fetched", payload: { feed_id: feed.id, url: feed.url }) do
+      feed.record_successful_fetch!
+    end
+  end
+
+  test "record_fetch_error! reports a feed.fetch_failed event" do
+    feed = feeds(:ruby_blog)
+
+    assert_event_reported("feed.fetch_failed", payload: { feed_id: feed.id, url: feed.url, error: "Connection timeout" }) do
+      feed.record_fetch_error!("Connection timeout")
+    end
+  end
+
   test "conditional_get_headers should return empty hash when no etag or last_modified" do
     feed = Feed.new(url: "https://example.com/feed.xml")
     assert_equal({}, feed.conditional_get_headers)

@@ -50,6 +50,7 @@ class Feed < ApplicationRecord
       etag: new_etag || etag,
       last_modified: new_last_modified || last_modified
     )
+    Rails.event.notify("feed.fetched", feed_id: id, url: url)
   end
 
   def record_fetch_error!(message)
@@ -59,6 +60,7 @@ class Feed < ApplicationRecord
       last_fetched_at: Time.current,
       next_fetch_at: ERROR_BACKOFF_MINUTES.minutes.from_now
     )
+    Rails.event.notify("feed.fetch_failed", feed_id: id, url: url, error: message)
   end
 
   def conditional_get_headers
