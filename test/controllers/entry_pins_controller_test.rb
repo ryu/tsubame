@@ -17,17 +17,31 @@ class EntryPinsControllerTest < ActionDispatch::IntegrationTest
     assert_response :not_found
   end
 
-  test "create toggles pinned status" do
+  test "create pins entry" do
     sign_in_as(@user)
-    # ruby_article_two has a UserEntryState with pinned:true from fixtures
-    state = @user.user_entry_states.find_by(entry: @entry)
-    original_pinned = state&.pinned || false
+    @user.user_entry_states.where(entry: @entry).update_all(pinned: false)
 
     post entry_pin_path(@entry), as: :turbo_stream
     assert_response :success
+    assert @user.entry_pinned?(@entry)
+  end
 
-    state = @user.user_entry_states.find_by(entry: @entry)
-    assert_equal !original_pinned, state.pinned
+  test "create is idempotent" do
+    sign_in_as(@user)
+    @user.pin_entry!(@entry)
+
+    post entry_pin_path(@entry), as: :turbo_stream
+    assert_response :success
+    assert @user.entry_pinned?(@entry)
+  end
+
+  test "destroy unpins entry" do
+    sign_in_as(@user)
+    @user.pin_entry!(@entry)
+
+    delete entry_pin_path(@entry), as: :turbo_stream
+    assert_response :success
+    assert_not @user.entry_pinned?(@entry)
   end
 
   test "create returns turbo stream" do

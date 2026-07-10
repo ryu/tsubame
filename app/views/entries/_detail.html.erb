@@ -14,7 +14,7 @@
         <% end %>
       </div>
       <div class="entry-actions">
-        <%= button_to entry_pin_path(entry), class: "pin-button" do %>
+        <%= button_to entry_pin_path(entry), method: pinned ? :delete : :post, class: "pin-button" do %>
           <%= pinned ? "📌 ピン解除" : "📌 ピン留め" %>
         <% end %>
         <% if entry.safe_url_for_link.present? %>

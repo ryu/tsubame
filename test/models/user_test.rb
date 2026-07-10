@@ -48,7 +48,7 @@ class UserTest < ActiveSupport::TestCase
     duplicate.update_column(:content_url, "https://example.com/shared")
 
     # Pin the duplicate first
-    user.toggle_entry_pin!(duplicate)
+    user.pin_entry!(duplicate)
     assert user.entry_pinned?(duplicate)
 
     # Clear read state so mark_entry_as_read! proceeds

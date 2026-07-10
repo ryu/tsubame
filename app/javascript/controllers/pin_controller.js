@@ -15,9 +15,10 @@ export default class extends Controller {
     const entryId = this._extractEntryId(entryItem)
     if (!entryId) return
 
+    const pinned = !!entryItem.querySelector(".pin-icon")
     const abortController = new AbortController()
     fetchWithCsrf(`/entries/${entryId}/pin`, {
-      method: "POST",
+      method: pinned ? "DELETE" : "POST",
       headers: {
         "Accept": "text/vnd.turbo-stream.html"
       },

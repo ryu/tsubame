@@ -20,7 +20,7 @@ Rails.application.routes.draw do
 
   resources :entries, only: [ :show ] do
     resource :mark_as_read, only: :create, controller: "entry_mark_as_reads"
-    resource :pin, only: :create, controller: "entry_pins"
+    resource :pin, only: %i[ create destroy ], controller: "entry_pins"
     collection do
       get :pinned
     end

@@ -7,6 +7,8 @@ class Subscription < ApplicationRecord
   validates :rate, inclusion: { in: 0..5 }
   validate :folder_belongs_to_same_user, if: -> { folder_id.present? }
 
+  after_destroy :destroy_orphaned_feed
+
   scope :with_rate_at_least, ->(rate) { rate.to_i > 0 ? where("subscriptions.rate >= ?", rate.to_i) : all }
 
   scope :with_unread_count, ->(user) {
@@ -26,6 +28,10 @@ class Subscription < ApplicationRecord
   end
 
   private
+
+  def destroy_orphaned_feed
+    feed.destroy if feed.subscriptions.none?
+  end
 
   def folder_belongs_to_same_user
     unless Folder.exists?(id: folder_id, user_id: user_id)

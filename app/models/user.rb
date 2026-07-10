@@ -17,10 +17,6 @@ class User < ApplicationRecord
     admin.present?
   end
 
-  def invalidate_other_sessions!(except:)
-    sessions.where.not(id: except).destroy_all
-  end
-
   def subscribe_to(feed, folder: nil)
     subscriptions.find_or_create_by!(feed: feed) do |sub|
       sub.folder = folder
@@ -51,14 +47,20 @@ class User < ApplicationRecord
 
     now = Time.current
     state.update!(read_at: now)
-    sync_read_state_to_duplicates!(entry, now)
+    upsert_read_states(unread_duplicate_ids_for([ entry.id ]), now)
     true
   end
 
-  def toggle_entry_pin!(entry)
-    state = entry_state_for(entry)
-    state.update!(pinned: !state.pinned)
-    state
+  def pin_entry!(entry)
+    entry_state_for(entry).update!(pinned: true)
+  end
+
+  def unpin_entry!(entry)
+    entry_state_for(entry).update!(pinned: false)
+  end
+
+  def unpin_entries!(entry_ids)
+    user_entry_states.where(entry_id: Array(entry_ids), pinned: true).update_all(pinned: false)
   end
 
   def mark_feed_entries_as_read!(feed)
@@ -69,31 +71,18 @@ class User < ApplicationRecord
     return 0 if unread_entry_ids.empty?
 
     now = Time.current
-    records = unread_entry_ids.map do |entry_id|
-      { user_id: id, entry_id: entry_id, read_at: now, created_at: now, updated_at: now }
-    end
-    UserEntryState.upsert_all(records, unique_by: [ :user_id, :entry_id ], update_only: [ :read_at, :updated_at ])
-
-    content_urls = Entry.where(id: unread_entry_ids).where.not(content_url: nil).pluck(:content_url).uniq
-    if content_urls.any?
-      duplicate_entry_ids = Entry.where(content_url: content_urls)
-        .where.not(id: unread_entry_ids)
-        .where.not(id: user_entry_states.where.not(read_at: nil).select(:entry_id))
-        .pluck(:id)
-
-      if duplicate_entry_ids.any?
-        dup_records = duplicate_entry_ids.map do |entry_id|
-          { user_id: id, entry_id: entry_id, read_at: now, created_at: now, updated_at: now }
-        end
-        UserEntryState.upsert_all(dup_records, unique_by: [ :user_id, :entry_id ], update_only: [ :read_at, :updated_at ])
-      end
-    end
+    upsert_read_states(unread_entry_ids, now)
+    upsert_read_states(unread_duplicate_ids_for(unread_entry_ids), now)
 
     unread_entry_ids.size
   end
 
   def pinned_entry_count
     user_entry_states.pinned.count
+  end
+
+  def pinned_entries_preview
+    pinned_entries.limit(5)
   end
 
   def pinned_entries
@@ -120,18 +109,24 @@ class User < ApplicationRecord
 
   private
 
-  def sync_read_state_to_duplicates!(entry, read_at)
-    return if entry.content_url.blank?
+  # update_only で pinned に触れないことで、重複エントリーのピン状態を保持する
+  def upsert_read_states(entry_ids, read_at)
+    return if entry_ids.empty?
 
-    duplicate_ids = Entry.duplicates_of(entry)
-      .where.not(id: user_entry_states.where.not(read_at: nil).select(:entry_id))
-      .pluck(:id)
-
-    return if duplicate_ids.empty?
-
-    records = duplicate_ids.map do |entry_id|
+    records = entry_ids.map do |entry_id|
       { user_id: id, entry_id: entry_id, read_at: read_at, created_at: read_at, updated_at: read_at }
     end
     UserEntryState.upsert_all(records, unique_by: [ :user_id, :entry_id ], update_only: [ :read_at, :updated_at ])
+  end
+
+  # content_url が同じ別フィードの未読エントリー ID（既読の重複同期用）
+  def unread_duplicate_ids_for(entry_ids)
+    content_urls = Entry.where(id: entry_ids).where.not(content_url: nil).distinct.pluck(:content_url)
+    return [] if content_urls.empty?
+
+    Entry.where(content_url: content_urls)
+      .where.not(id: entry_ids)
+      .where.not(id: user_entry_states.where.not(read_at: nil).select(:entry_id))
+      .pluck(:id)
   end
 end

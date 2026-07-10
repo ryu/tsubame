@@ -53,12 +53,7 @@ class FeedsController < ApplicationController
   end
 
   def destroy
-    subscription = Current.user.subscriptions.find_by!(feed_id: params[:id])
-    feed = subscription.feed
-    Feed.transaction do
-      subscription.destroy!
-      feed.destroy if feed.subscriptions.reload.none?
-    end
+    Current.user.subscriptions.find_by!(feed_id: params[:id]).destroy!
     redirect_to feeds_path, notice: "フィードを削除しました。"
   end
 
