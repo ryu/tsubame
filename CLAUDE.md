@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 # Tsubame - Feed Reader
 
-Fastladder互換のフィードリーダー。複数ユーザー対応。
+Fastladder互換のフィードリーダー。シングルユーザー運用前提（データモデルは複数ユーザーを許容するが、設計判断はシングルユーザー優先。詳細は docs/architecture.md）。
 
 ## 技術スタック
 

@@ -18,6 +18,18 @@
 - Solid Queue は Puma プロセス内で実行 (SOLID_QUEUE_IN_PUMA=true)
 - SQLite3 は WAL mode で並行読み書きに対応
 
+### シングルユーザー前提の設計判断
+
+データモデル（User / Subscription / UserEntryState / Admin）は複数ユーザーを許容する形だが、
+運用はシングルユーザー前提であり、以下は既知のトレードオフとして許容する:
+
+- `feeds.fetch_interval_minutes` はグローバル設定（購読者ごとに変えられない）
+- ピン留めされたエントリーは保持期間を過ぎても削除されない（CleanupEntriesJob が除外）
+- SQLite の単一ライターにクロール・既読化・削除の書き込みが集中する
+
+複数ユーザー運用へ本格移行する場合は、フェッチ間隔の Subscription への移動、
+未読数集計のキャッシュ、Postgres 移行を再検討すること。
+
 ## フロントエンド
 
 Hotwire (Turbo + Stimulus) + Vanilla CSS による SPA ライクな操作感。
@@ -97,7 +109,7 @@ seed で 1 ユーザーのみ作成。
 ### 完了済み
 
 - プロジェクトセットアップ + Kamal デプロイ
-- 認証（Rails 8 authentication generator）+ パスワード変更
+- 認証（マジックリンクによるパスワードレス認証）
 - OPML インポート / エクスポート
 - フィードクロール (Solid Queue)
 - フィード発見 (autodiscovery)
