@@ -581,4 +581,24 @@ class Feed::AutodiscoveryTest < ActiveSupport::TestCase
     assert_includes result[:feed_urls], "https://example.com/feed"
     assert_includes result[:feed_urls], "https://example.com/rss.xml"
   end
+
+  test "discover_from truncates oversized HTML responses" do
+    head = <<~HTML
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Huge Page</title>
+          <link rel="alternate" type="application/rss+xml" href="/feed.xml">
+        </head>
+    HTML
+    html_content = head + "<body>" + ("x" * 2.megabytes) + "</body></html>"
+
+    stub_request(:get, "https://example.com/huge")
+      .to_return(status: 200, body: html_content, headers: { "Content-Type" => "text/html; charset=utf-8" })
+
+    result = Feed.new.discover_from("https://example.com/huge")
+
+    assert_equal :html, result[:content_type]
+    assert_equal [ "https://example.com/feed.xml" ], result[:feed_urls]
+  end
 end

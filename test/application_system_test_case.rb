@@ -13,5 +13,6 @@ class ApplicationSystemTestCase < ActionDispatch::SystemTestCase
   # Log in through the real magic-link flow (this app has no password auth).
   def sign_in_as(user)
     visit magic_link_path(MagicLink.generate_for(user))
+    click_button "ログイン"
   end
 end

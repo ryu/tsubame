@@ -77,6 +77,10 @@ class FeedsController < ApplicationController
     @feed = feed
 
     unless @feed.persisted? || @feed.save
+      # resolve 後に他ユーザーが同じ URL を登録した場合は、そのレコードを購読する
+      if (existing = Feed.find_by(url: @feed.url))
+        return subscribe(existing)
+      end
       @folders = Current.user.folders.order(:name)
       return render :new, status: :unprocessable_entity
     end
@@ -84,6 +88,9 @@ class FeedsController < ApplicationController
     subscription = Current.user.subscribe_to(@feed, folder: folder)
     notice = subscription.previously_new_record? ? "フィードを追加しました。" : "既に登録済みのフィードです。"
     redirect_to feeds_path, notice: notice
+  rescue ActiveRecord::RecordNotUnique
+    # 同一 URL の同時購読で挿入が競合したら、勝った側のレコードで購読し直す
+    subscribe(Feed.find_by!(url: @feed.url))
   end
 
   def render_new_with_error(error)

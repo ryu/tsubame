@@ -2,8 +2,10 @@ class MagicLink < ApplicationRecord
   belongs_to :user
 
   scope :valid, -> { where("expires_at > ?", Time.current) }
+  scope :expired, -> { where(expires_at: ..Time.current) }
 
   def self.generate_for(user)
+    user.magic_links.expired.delete_all
     token = SecureRandom.urlsafe_base64(32)
     create!(user: user, token_digest: digest(token), expires_at: 15.minutes.from_now)
     token

@@ -141,17 +141,27 @@ module Feed::Fetching
       nil
     end
     charset ||= detect_xml_encoding(body)
+    encoding = find_encoding(charset)
 
-    if charset.present?
-      encoded = body.force_encoding(charset).encode("UTF-8", invalid: :replace, undef: :replace)
-      encoded.sub!(/(<\?xml[^?]*encoding=)["'][^"']+["']/i, '\1"UTF-8"')
-      encoded
-    elsif body.encoding == Encoding::ASCII_8BIT
-      utf8_body = body.dup.force_encoding("UTF-8")
-      utf8_body.valid_encoding? ? utf8_body : body.encode("UTF-8", invalid: :replace, undef: :replace)
-    else
-      body.encode("UTF-8", invalid: :replace, undef: :replace)
-    end
+    encoded =
+      if encoding
+        body.force_encoding(encoding).encode("UTF-8", invalid: :replace, undef: :replace)
+      elsif body.encoding == Encoding::ASCII_8BIT
+        utf8_body = body.dup.force_encoding("UTF-8")
+        utf8_body.valid_encoding? ? utf8_body : body.encode("UTF-8", invalid: :replace, undef: :replace)
+      else
+        body.encode("UTF-8", invalid: :replace, undef: :replace)
+      end
+
+    # 宣言が実際のエンコーディングと食い違うと REXML が ArgumentError を投げるため必ず書き換える
+    encoded.sub(/(<\?xml[^?]*encoding=)["'][^"']+["']/i, '\1"UTF-8"')
+  end
+
+  # リモート由来の charset は未知の名前があり得るため、不明なら nil を返してフォールバックさせる
+  def find_encoding(charset)
+    Encoding.find(charset) if charset.present?
+  rescue ArgumentError
+    nil
   end
 
   def detect_xml_encoding(body)
@@ -172,7 +182,7 @@ module Feed::Fetching
       return nil
     end
     parsed
-  rescue RSS::Error => e
+  rescue RSS::Error, ArgumentError => e
     Rails.logger.warn("Feed#fetch: parse error for feed #{id}: #{e.message}")
     nil
   end

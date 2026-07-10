@@ -2,7 +2,9 @@ Rails.application.routes.draw do
   mount MissionControl::Jobs::Engine, at: "/jobs"
 
   resource :session, only: %i[ new create destroy ]
-  resources :magic_links, only: :show, param: :token
+  resources :magic_links, only: :show, param: :token do
+    resource :consumption, only: :create, controller: "magic_link_consumptions"
+  end
 
   resources :feeds, only: [ :index, :new, :create, :edit, :update, :destroy ] do
     resource :mark_as_read, only: :create, controller: "feed_mark_as_reads"

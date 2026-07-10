@@ -57,6 +57,26 @@ class FeedsControllerTest < ActionDispatch::IntegrationTest
     assert_not_nil feed.next_fetch_at
   end
 
+  test "create subscribes to existing feed when another user registered the same URL concurrently" do
+    sign_in_as(@user)
+    existing = feeds(:ruby_blog)
+
+    # resolve が未保存の Feed を返した後に同一 URL が登録済みになった状況を再現する
+    resolution = Feed::Subscribable::Resolution.new(feed: Feed.new(url: existing.url))
+    Feed.define_singleton_method(:resolve) { |_url| resolution }
+
+    begin
+      assert_no_difference "Feed.count" do
+        post feeds_path, params: { feed: { url: existing.url } }
+      end
+    ensure
+      Feed.singleton_class.remove_method(:resolve)
+    end
+
+    assert_redirected_to feeds_path
+    assert @user.subscriptions.exists?(feed: existing)
+  end
+
   test "create autodiscovers single feed from HTML and registers it" do
     sign_in_as(@user)
 

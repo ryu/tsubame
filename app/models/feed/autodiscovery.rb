@@ -65,10 +65,27 @@ module Feed::Autodiscovery
     request["Accept"] = "text/html,application/xhtml+xml"
     request["Accept-Encoding"] = "identity"
 
-    response = http.request(request)
-    body = extract_head_section(response.body) if response.is_a?(Net::HTTPSuccess)
+    result_response = nil
+    body = nil
 
-    [ response, body ]
+    http.request(request) do |response|
+      body = read_probe_body(response) if response.is_a?(Net::HTTPSuccess)
+      result_response = response
+    end
+
+    [ result_response, body && extract_head_section(body) ]
+  end
+
+  # HTML は <head> 内の <link> しか見ないため、先頭 MAX_HTML_PROBE_SIZE で読み込みを打ち切る
+  def read_probe_body(response)
+    body = +""
+    catch(:probe_full) do
+      response.read_body do |chunk|
+        body << chunk
+        throw :probe_full if body.bytesize >= MAX_HTML_PROBE_SIZE
+      end
+    end
+    body
   end
 
   def extract_head_section(body)

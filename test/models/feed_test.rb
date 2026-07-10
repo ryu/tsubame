@@ -677,6 +677,56 @@ class FeedTest < ActiveSupport::TestCase
     assert_match(/Failed to fetch feed/, feed.error_message)
   end
 
+  test "fetch should not crash on unknown charset in Content-Type" do
+    feed = feeds(:ruby_blog)
+    feed.update!(url: "https://example.com/feed.xml", etag: nil, last_modified: nil, status: :ok, error_message: nil)
+
+    rss_content = <<~RSS
+      <?xml version="1.0"?>
+      <rss version="2.0">
+        <channel>
+          <title>Example Feed</title>
+          <item>
+            <guid>https://example.com/charset-entry</guid>
+            <title>Entry</title>
+            <link>https://example.com/charset-entry</link>
+          </item>
+        </channel>
+      </rss>
+    RSS
+
+    stub_request(:get, "https://example.com/feed.xml")
+      .to_return(status: 200, body: rss_content, headers: { "Content-Type" => "application/rss+xml; charset=bogus-charset" })
+
+    assert_nothing_raised do
+      feed.fetch
+    end
+
+    assert feed.reload.ok?
+    assert feed.entries.exists?(guid: "https://example.com/charset-entry")
+  end
+
+  test "fetch should not crash on unknown encoding in XML declaration" do
+    feed = feeds(:ruby_blog)
+    feed.update!(url: "https://example.com/feed.xml", etag: nil, last_modified: nil, status: :ok, error_message: nil)
+
+    rss_content = <<~RSS
+      <?xml version="1.0" encoding="bogus-encoding"?>
+      <rss version="2.0">
+        <channel>
+          <title>Example Feed</title>
+        </channel>
+      </rss>
+    RSS
+
+    stub_request(:get, "https://example.com/feed.xml")
+      .to_return(status: 200, body: rss_content)
+
+    assert_nothing_raised do
+      feed.fetch
+    end
+  end
+
   test "fetch should not create duplicate entries" do
     feed = feeds(:ruby_blog)
     feed.update!(url: "https://example.com/feed.xml", etag: nil, last_modified: nil, status: :ok, error_message: nil)
