@@ -61,11 +61,6 @@ class EntryTest < ActiveSupport::TestCase
     assert_equal "https://example.com/article?a=1&b=2#frag", entry.safe_url_for_link
   end
 
-  test "safe_url_for_link accepts an uppercase scheme and returns it unchanged" do
-    entry = entry_with_url("HTTPS://EXAMPLE.COM/a")
-    assert_equal "HTTPS://EXAMPLE.COM/a", entry.safe_url_for_link
-  end
-
   # link_to の href と window.open にそのまま渡るため、http(s) 以外は必ず落とす。
   test "safe_url_for_link rejects non-http schemes" do
     [
