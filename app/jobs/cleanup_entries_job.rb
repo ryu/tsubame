@@ -25,6 +25,6 @@ class CleanupEntriesJob < ApplicationJob
 
   def deletable_entries
     pinned_entry_ids = UserEntryState.where(pinned: true).select(:entry_id)
-    Entry.where("entries.created_at < ?", RETENTION.ago).where.not(id: pinned_entry_ids)
+    Entry.where(created_at: ...RETENTION.ago).where.not(id: pinned_entry_ids)
   end
 end

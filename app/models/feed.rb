@@ -39,7 +39,7 @@ class Feed < ApplicationRecord
     new(url: url, next_fetch_at: Time.current)
   end
 
-  scope :due_for_fetch, -> { where("next_fetch_at <= ?", Time.current).where.not(next_fetch_at: nil) }
+  scope :due_for_fetch, -> { where(next_fetch_at: ..Time.current) }
 
   def record_successful_fetch!(new_etag: nil, new_last_modified: nil)
     update!(

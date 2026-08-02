@@ -9,7 +9,7 @@ class Subscription < ApplicationRecord
 
   after_destroy :destroy_orphaned_feed
 
-  scope :with_rate_at_least, ->(rate) { rate.to_i > 0 ? where("subscriptions.rate >= ?", rate.to_i) : all }
+  scope :with_rate_at_least, ->(rate) { rate > 0 ? where(rate: rate..) : all }
 
   scope :with_unread_count, ->(user) {
     left_joins(feed: :entries)

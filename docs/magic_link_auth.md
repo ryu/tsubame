@@ -39,7 +39,7 @@ change_column_null :users, :password_digest, true
 class MagicLink < ApplicationRecord
   belongs_to :user
 
-  scope :valid, -> { where("expires_at > ?", Time.current) }
+  scope :valid, -> { where(expires_at: Time.current..) }
 
   def self.generate_for(user)
     token = SecureRandom.urlsafe_base64(32)
