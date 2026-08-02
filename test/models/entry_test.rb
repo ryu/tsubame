@@ -56,22 +56,38 @@ class EntryTest < ActiveSupport::TestCase
     assert_equal entry.url, entry.safe_url_for_link
   end
 
-  test "safe_url_for_link returns nil for invalid url" do
-    entry = Entry.new(
-      feed: feeds(:ruby_blog),
-      guid: "test",
-      url: "javascript:alert('xss')"
-    )
-    assert_nil entry.safe_url_for_link
+  test "safe_url_for_link returns url for https url" do
+    entry = entry_with_url("https://example.com/article?a=1&b=2#frag")
+    assert_equal "https://example.com/article?a=1&b=2#frag", entry.safe_url_for_link
+  end
+
+  test "safe_url_for_link accepts an uppercase scheme and returns it unchanged" do
+    entry = entry_with_url("HTTPS://EXAMPLE.COM/a")
+    assert_equal "HTTPS://EXAMPLE.COM/a", entry.safe_url_for_link
+  end
+
+  # link_to の href と window.open にそのまま渡るため、http(s) 以外は必ず落とす。
+  test "safe_url_for_link rejects non-http schemes" do
+    [
+      "javascript:alert('xss')",
+      " javascript:alert(1)",
+      "JaVaScRiPt:alert(1)",
+      "vbscript:msgbox(1)",
+      "data:text/html;base64,PHNjcmlwdD5hbGVydCgxKTwvc2NyaXB0Pg==",
+      "file:///etc/passwd",
+      "//evil.example.com/path"
+    ].each do |url|
+      assert_nil entry_with_url(url).safe_url_for_link, "#{url.inspect} should be rejected"
+    end
+  end
+
+  test "safe_url_for_link returns nil for an unparsable url" do
+    assert_nil entry_with_url(%q{https://example.com/" onmouseover="alert(1)}).safe_url_for_link
   end
 
   test "safe_url_for_link returns nil for blank url" do
-    entry = Entry.new(
-      feed: feeds(:ruby_blog),
-      guid: "test",
-      url: nil
-    )
-    assert_nil entry.safe_url_for_link
+    assert_nil entry_with_url(nil).safe_url_for_link
+    assert_nil entry_with_url("").safe_url_for_link
   end
 
   # -- attributes_from_rss_item tests --
@@ -301,4 +317,9 @@ class EntryTest < ActiveSupport::TestCase
     attrs = Entry.attributes_from_rss_item(parsed.items.first)
     assert_equal "Bold title", attrs[:title]
   end
+
+  private
+    def entry_with_url(url)
+      Entry.new(feed: feeds(:ruby_blog), guid: "test", url: url)
+    end
 end
