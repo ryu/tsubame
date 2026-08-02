@@ -1,18 +1,19 @@
-# CLAUDE.md
-
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-
 # Tsubame - Feed Reader
 
-Fastladder互換のフィードリーダー。シングルユーザー運用前提（データモデルは複数ユーザーを許容するが、設計判断はシングルユーザー優先。詳細は docs/architecture.md）。
+Fastladder 互換のフィードリーダー。Ruby 4.0 / Rails 8.1 / SQLite3 / Hotwire / Kamal（さくらのVPS）。
 
-## 技術スタック
+## このリポジトリ固有の前提
 
-- Ruby 4.0.5 / Rails 8.1 / SQLite3
-- Hotwire (Turbo + Stimulus) + Vanilla CSS
-- Solid Queue（バックグラウンドジョブ）/ Solid Cache / Solid Cable
-- Resend（メール送信）
-- Kamal（デプロイ先: さくらのVPS）
+コードを読んでも分からない判断だけをここに書く。構成はコードと `docs/` を参照すること。
+
+- **シングルユーザー運用**: データモデルは複数ユーザーを許容するが、設計判断はシングルユーザーを優先する。既知のトレードオフは [docs/architecture.md](docs/architecture.md) 参照
+- **状態はレコードで表現**: 既読・ピンは boolean カラムでなく `UserEntryState` の行の有無で持つ（行なし＝未読・未ピン）
+- **Feed / Entry はグローバル共有**: ユーザー固有の情報は `Subscription` / `UserEntryState` 側に置く
+- **フィードパース**: Ruby 標準ライブラリ `rss` を使う。パーサ用の gem は追加しない
+- **DB バックエンド**: Solid Queue / Solid Cache / Solid Cable。Redis は使わない
+- **モデルの concern**: 50〜150行が目安。200行を超えたら責務分割を検討する
+
+コーディングスタイルは `.claude/rules/dhh_style.md`。
 
 ## 開発コマンド
 
@@ -20,66 +21,20 @@ Fastladder互換のフィードリーダー。シングルユーザー運用前�
 bin/setup        # 初期セットアップ（bundle, db:prepare, ログクリア）
 bin/dev          # 開発サーバー起動
 bin/ci           # CI全実行（rubocop, bundler-audit, importmap audit, brakeman, テスト, seed）
-bin/rails test   # テストのみ
 bin/rails test test/models/feed_test.rb  # 単一ファイル実行
-bin/rubocop      # Lintのみ
 ```
 
 コミット前は必ず `bin/ci` を全パスさせること。
 
-## アーキテクチャ
-
-37signals / DHH コーディングスタイル準拠。詳細は `.claude/rules/` を参照。
-
-- **リッチドメインモデル**: サービスオブジェクト不使用。ロジックはモデル・concernに置く
-- **CRUDベースコントローラー**: 7つの標準アクションのみ。逸脱する場合は新リソースを作る
-- **状態はレコードで表現**: boolean カラムでなく別テーブルのレコード有無で管理（`UserEntryState` が典型例）
-- **DB バックエンド優先**: Solid Queue / Solid Cache。Redis 不使用
-- **フィードパース**: Ruby 標準ライブラリ `rss`（外部gem不使用）
-
-## モジュール構成
-
-### モデル
-
-- `Feed` — フィード管理（グローバル共有）。concern: `Fetching`, `Autodiscovery`, `EntryImporter`, `Opml`
-- `Entry` — エントリー管理（グローバル共有）。concern: `RssParser`
-- `Subscription` — ユーザーとフィードの中間テーブル（フォルダ・レート・カスタムタイトル管理）
-- `UserEntryState` — ユーザーごとの既読/ピン状態（行なし＝未読・未ピン）
-- `Folder` — フォルダによるフィード分類（ユーザーごと）
-- `User` — 認証・購読管理・既読/ピン状態管理
-- `MagicLink` / `Session` — パスワードレス認証
-
-### コントローラー
-
-- `HomeController` — メイン画面（フィード一覧 + エントリー一覧）
-- `FeedsController` / `EntriesController` — CRUD
-- `EntryPinsController` — ピン留め
-- `EntryMarkAsReadsController` / `FeedMarkAsReadsController` — 既読管理
-- `FeedImportsController` / `FeedExportsController` — OPML インポート/エクスポート
-- `FeedFetchesController` — 手動フェッチ
-- `PinnedEntryOpensController` — ピン留めエントリー一括開封
-
-### Stimulus コントローラー
-
-- `keyboard_controller` — キーボードショートカットのルーター
-- `selection_controller` — フィード/エントリーのナビゲーション・選択状態
-- `pin_controller` — ピン留めトグル・一括開封
-- `help_dialog_controller` — ヘルプダイアログ
-- `hatena_bookmark_controller` — はてなブックマーク数表示
-- `mobile_pane_controller` — モバイルペイン切り替え
-- 共通ヘルパー: `lib/fetch_helper.js`
-
-### ジョブ
-
-- `FetchFeedsJob` — 全フィード定期クロール
-- `FetchFeedJob` — 個別フィードフェッチ
-- `CleanupEntriesJob` — 古いエントリーの削除
-
 ## ドキュメント
 
-- [docs/architecture.md](docs/architecture.md) — アーキテクチャ概要
-- [docs/data_model.md](docs/data_model.md) — データモデル定義
+必要になった時点で読む。
+
+- [docs/architecture.md](docs/architecture.md) — システム構成・フロントエンド構成・設計上のトレードオフ
+- [docs/data_model.md](docs/data_model.md) — テーブル定義とリレーション
+- [docs/feed_crawling.md](docs/feed_crawling.md) — クロールのジョブ構成・スケジューリング
+- [docs/entry_dedup_design.md](docs/entry_dedup_design.md) — エントリ重複排除の設計
+- [docs/magic_link_auth.md](docs/magic_link_auth.md) — マジックリンク認証の設計
 - [docs/keyboard_shortcuts.md](docs/keyboard_shortcuts.md) — キーボードショートカット一覧
-- [docs/feed_crawling.md](docs/feed_crawling.md) — フィードクロール設計
 - [docs/deployment.md](docs/deployment.md) — デプロイ手順
 - [docs/backup.md](docs/backup.md) — バックアップ手順

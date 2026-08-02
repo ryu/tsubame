@@ -50,20 +50,15 @@ Hotwire (Turbo + Stimulus) + Vanilla CSS による SPA ライクな操作感。
 - 右上ペイン: エントリ一覧
 - 右下ペイン: エントリ本文
 
-### Stimulus コントローラー構成
+### Stimulus の責務分担
 
-- `keyboard_controller` — グローバルキーボードショートカット。keydown ルーターとして各コマンドをイベントでディスパッチ
-- `selection_controller` — キーボードコマンドの実行先。フィード/エントリナビゲーション、スクロール、既読管理、はてブ操作等を担う中央ハブ
-- `pin_controller` — ピン追加/解除・ピン済みエントリを開く（selection outlet 経由）
-- `help_dialog_controller` — ヘルプダイアログの開閉
-- `hatena_bookmark_controller` — はてなブックマーク数取得・表示（外部API連携、バッチ取得）
-- `mobile_pane_controller` — モバイル向けペイン切り替え（feeds / entries / detail）
-- `dropdown_controller` — ドロップダウンメニューの開閉
+キーボード操作は「入力の受け口」と「操作の実行先」を分けている。
 
-### JavaScript ライブラリ (`app/javascript/lib/`)
+- `keyboard_controller` — keydown のルーター。キーをコマンドに変換してカスタムイベントを dispatch するだけで、操作自体は行わない
+- `selection_controller` — dispatch されたコマンドの実行先。フィード/エントリの選択状態を単独で保持する中央ハブ。他のコントローラーは outlet 経由でここを参照する
+- `badge_controller` — 未読数バッジの更新。既読化イベントを受けてフィード・フォルダのバッジを再計算する（サーバー再取得なし）
 
-- `fetch_helper.js` — `fetchWithCsrf`（CSRF トークン自動付与）、`openInBackground`（背面タブで開く）
-- `hatena_bookmark.js` — はてなブックマークページURL生成・オープン
+その他（`pin` / `help_dialog` / `hatena_bookmark` / `mobile_pane` / `dropdown`）は単機能。実装は `app/javascript/controllers/`、共有ヘルパーは `app/javascript/lib/`（`fetch_helper.js` の `fetchWithCsrf` / `openInBackground` など）。
 
 ## モデル構成
 
@@ -75,17 +70,16 @@ Hotwire (Turbo + Stimulus) + Vanilla CSS による SPA ライクな操作感。
 app/models/
 ├── feed.rb                # コア（associations, validations, enums, scopes, ステータス管理）
 └── feed/
-    ├── fetching.rb        # HTTP fetch, SSRF 防御, エンコーディング変換
-    ├── autodiscovery.rb   # HTML から feed URL を自動検出
+    ├── fetching.rb        # HTTP fetch, リダイレクト追従, エンコーディング変換, RSS::Parser
+    ├── ssrf_protection.rb # 名前解決とプライベートIP帯のブロック（Feed::SsrfError）
+    ├── autodiscovery.rb   # HTML の <link rel="alternate"> から feed URL を検出
+    ├── subscribable.rb    # 入力URLからの購読解決（Resolution: feed か candidates）
     ├── entry_importer.rb  # エントリインポート, フィードタイトル更新
     └── opml.rb            # OPML インポート/エクスポート
 ```
 
-- **Feed** — `has_many :entries`, enum, バリデーション, `record_successful_fetch!` / `record_fetch_error!`
-- **Feed::Fetching** — `fetch`, HTTP リダイレクト追従, SSRF 防御, エンコーディング変換, `RSS::Parser.parse` によるフィードオブジェクト生成
-- **Feed::Autodiscovery** — `discover_from(url)`, HTML `<link rel="alternate">` 解析, フォールバックパス推測
-- **Feed::EntryImporter** — `import_entries`, `update_feed_title`
-- **Feed::Opml** — `import_from_opml`, `to_opml`
+外部 URL を取りに行く経路（`fetching` / `autodiscovery`）は必ず `ssrf_protection` を通す。
+`subscribable.resolve` は候補が複数あるとき `feed` を返さず `candidates` を返し、選択をユーザーに委ねる。
 
 ### Entry
 
@@ -104,25 +98,6 @@ app/models/
 Rails 8 の `bin/rails generate authentication` を使用。
 seed で 1 ユーザーのみ作成。
 
-## 実装状況
-
-### 完了済み
-
-- プロジェクトセットアップ + Kamal デプロイ
-- 認証（マジックリンクによるパスワードレス認証）
-- OPML インポート / エクスポート
-- フィードクロール (Solid Queue)
-- フィード発見 (autodiscovery)
-- 3ペインUI + キーボードショートカット
-- 既読管理
-- ピン
-- はてなブックマーク連携
-- モバイル対応
-- エントリ自動削除（90日経過 & 既読 & 非ピン）
-- バックアップ（VPS + ローカル転送）
-- レート（★）によるフィード分類（0〜5、フィルタリング対応）
-- フォルダ管理（フィードのグループ化）
-
-### 未実装
+## 未実装
 
 - 検索機能

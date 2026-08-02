@@ -1,68 +1,44 @@
-## DHH / 37signals コーディング規約（詳細）
+# コーディングスタイル（DHH / 37signals 準拠）
 
-### 命名規則
+このプロジェクトで意図的に選んでいる方針。一般的な Rails の作法は書かない。
 
-- **動詞メソッド**: 状態を変える操作は明確な動詞（`card.close`, `card.reopen`, `board.publish`）。`set_xxx` や `update_xxx_status` は使わない
-- **述語メソッド**: 状態の問い合わせは `?` 付き（`card.closed?`, `board.published?`）。関連レコードの有無で判定
-- **Concern 名**: 能力を表す形容詞（`Closeable`, `Publishable`, `Watchable`）。`XxxHelpers` は不可
-- **スコープ名**: 業務用語（`chronologically`, `reverse_chronologically`, `alphabetically`, `latest`, `preloaded`, `active`）。SQL的な名前（`ordered_by_created_at`）は避ける
+## 構造
 
-### REST マッピング
+- **リッチドメインモデル**: サービスオブジェクト・フォームオブジェクトは作らない。ロジックはモデルと concern に置く
+- **CRUD ベースのコントローラー**: 標準7アクションのみ。カスタムアクションが欲しくなったら新しいリソースを作る
+  - `POST /cards/:id/close` ではなく `POST /cards/:id/closure`（create）
+  - 1対1の状態は単数形 `resource`、1対多は複数形 `resources`
+- **状態はレコードで表現**: boolean カラムでなく関連レコードの有無で持つ。`joins(:closure)` / `where.missing(:closure)` で引ける
+- **認可はモデルに置く**: `User#can_administer?(resource)` パターンを before_action から呼ぶ。pundit / cancancan は使わない
+- **ジョブは薄いラッパー**: モデルメソッドを呼ぶだけ。モデル側は `_later` / `_now` サフィックスで公開する
 
-カスタムアクションは作らない。動詞を名詞リソースに変換する:
+## 命名
 
-- `POST /cards/:id/close` → `POST /cards/:id/closure`（create）
-- `DELETE /cards/:id/close` → `DELETE /cards/:id/closure`（destroy）
-- 1対1の状態は `resource`（単数形）、1対多は `resources`（複数形）
+- 状態を変える操作は動詞（`feed.subscribe`）。`set_xxx` / `update_xxx_status` は使わない
+- 状態の問い合わせは述語（`entry.read?`）
+- concern 名は能力を表す形容詞（`Fetchable`, `Subscribable`）。`XxxHelpers` は不可
+- スコープ名は業務用語（`chronologically`, `latest`, `unread`）。`ordered_by_created_at` のような SQL 的な名前は避ける
 
-### 状態はレコードで表現
+## フロントエンド
 
-boolean カラムでなく、別テーブルのレコード有無で状態を管理する:
+- Hotwire（Turbo + Stimulus）のみ。React / Vue は使わない
+- Stimulus コントローラーは単一責務・50行以内が目安
+- ネイティブ CSS（`@layer`・ネスティング・カスタムプロパティ）。プリプロセッサ・Tailwind 不使用
+- 標準パーシャルで組む。ViewComponent 不使用
 
-- `Card.joins(:closure)` = クローズ済み
-- `Card.where.missing(:closure)` = オープン
-- 利点: 誰が・いつ変更したかを自動記録、`joins` / `where.missing` で直感的にクエリ可能
+## テスト
 
-### モデル
+Minitest + fixtures。RSpec / factory_bot は使わない。fixture は最小限のデータで書く。
 
-- **認可ロジックはモデルに置く**: `User#can_administer?(resource)` パターン。pundit / cancancan 不使用
-- **コールバックは控えめに**: `after_commit` で非同期処理、`before_save` で導出データのみ。複雑なチェーンや業務ロジックをコールバックに入れない
-- **bang メソッド優先**: `create!`, `update!`, `destroy!` で失敗時に例外を発生させる。静かに失敗させない
-- **Current attributes**: `belongs_to :creator, default: -> { Current.user }` で作成者を自動設定
-- **normalizes**: `normalizes :email, with: ->(e) { e.strip.downcase }` でデータ正規化
-- **DB 制約 > モデルバリデーション**: データ整合性はユニークインデックス・外部キーで担保
+## 依存
 
-### コントローラー
+新しい gem を入れる前に Rails 標準機能で解決できないか確認する。150行以内で自前実装できるなら入れない。
 
-- **Concern で共有行動を抽出**: `XxxScoped`（リソース読み込み）、認可チェック等
-- **認可は before_action**: モデルの認可メソッドを呼ぶ形
+使わない gem: devise, pundit, cancancan, sidekiq, redis, view_component, GraphQL, factory_bot, rspec, Tailwind
 
-### ジョブ
+## Ruby 構文
 
-- **薄いラッパー**: ジョブはモデルメソッドを呼ぶだけ。ロジックはモデル側
-- **命名**: `_later`（非同期）/ `_now`（同期）サフィックスでモデルから呼び出し
-- **エラー処理**: `retry_on`（一時エラー）/ `discard_on`（永続エラー）を使い分け
+rubocop-rails-omakase が見ない範囲の慣習のみ:
 
-### フロントエンド
-
-- **Stimulus**: 単一責務、50行以内が目安。Values API でデータ渡し、disconnect でクリーンアップ
-- **Turbo Stream**: 部分更新に使用。morph で複雑な更新
-- **CSS**: ネイティブ CSS（`@layer`, ネスティング, CSS 変数）。プリプロセッサ・Tailwind 不使用
-- **パーシャル**: ViewComponent 不使用。標準パーシャルで十分
-
-### テスト
-
-- **Minitest + fixtures**: RSpec / factory_bot は使わない
-- **fixtures はシンプルに**: 最小限のデータで十分
-
-### 避けるべき gem
-
-devise, pundit, cancancan, sidekiq, redis, view_component, GraphQL, factory_bot, rspec, Tailwind。
-Rails 標準機能や自前実装（150行以内で書けるなら）を優先する。
-
-### Ruby 構文
-
-- シンボル配列: `%i[ show edit update destroy ]`（角括弧内にスペース）
-- private 以下のメソッドは2スペースインデント
-- 単純な条件分岐はテルナリー演算子
+- シンボル配列は角括弧内にスペース: `%i[ show edit update destroy ]`
 - 複数条件は expression-less `case`（`case` の後に変数を置かない）
