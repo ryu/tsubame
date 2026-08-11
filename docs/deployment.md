@@ -53,8 +53,12 @@ Docker ボリューム `tsubame_storage` に永続化される。
 
 ```yaml
 volumes:
-  - "tsubame_storage:/rails/storage"
+  - "tsubame_storage:/storage"
 ```
+
+コンテナは UID 1000 (`rails`) で動くため、Dockerfile 側で `/storage` を
+`rails` 所有で作っておく必要がある。これを怠ると新規ボリュームが root 所有で
+初期化され、SQLite が `unable to open database file` で起動に失敗する。
 
 ## ロールバック
 
