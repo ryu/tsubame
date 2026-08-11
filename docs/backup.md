@@ -53,7 +53,18 @@ chmod +x ~/bin/fetch-tsubame-backup.sh
 
 # cronに登録（毎日8:00）
 crontab -e
-0 8 * * * $HOME/bin/fetch-tsubame-backup.sh >> $HOME/backups/tsubame/fetch.log 2>&1
+0 8 * * * TSUBAME_REMOTE_HOST=YOUR_SERVER_IP $HOME/bin/fetch-tsubame-backup.sh >> $HOME/backups/tsubame/fetch.log 2>&1
+```
+
+cron には ssh-agent がないため、パスフレーズ付きの鍵を使っている場合は
+`~/.ssh/config` に Keychain から読ませる設定が必要。これがないと毎朝
+`Permission denied (publickey)` で失敗する。
+
+```
+Host YOUR_SERVER_IP
+  UseKeychain yes
+  AddKeysToAgent yes
+  IdentityFile ~/.ssh/id_ed25519
 ```
 
 ## リストア
