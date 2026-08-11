@@ -57,11 +57,15 @@ module Feed::Opml
     private
 
     def ensure_xml!(content)
-      stripped = content.to_s.sub(/\A\xEF\xBB\xBF/n, "").lstrip
+      stripped = utf8(content).sub(/\A\uFEFF/, "").lstrip
       return if stripped.match?(/\A(<\?xml|<opml[\s>])/i)
 
       raise ImportError, "XMLファイルを選択してください。"
     end
+
+    # アップロードされたファイルは ASCII-8BIT、File.read は UTF-8 で渡ってくる。
+    # BOM の除去はどちらの場合も同じ結果になってほしいので UTF-8 に揃える
+    def utf8(content) = content.to_s.dup.force_encoding(Encoding::UTF_8).scrub
 
     def import_outlines(element, state)
       element.each_element("outline") do |outline|
