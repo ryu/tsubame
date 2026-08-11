@@ -276,6 +276,7 @@ class FeedTest < ActiveSupport::TestCase
     feed.update!(
       status: :error,
       error_message: "Some error",
+      fetch_interval_minutes: 30,
       last_fetched_at: 2.hours.ago,
       next_fetch_at: 1.hour.ago
     )
@@ -286,7 +287,7 @@ class FeedTest < ActiveSupport::TestCase
     assert feed.ok?
     assert_nil feed.error_message
     assert_in_delta Time.current, feed.last_fetched_at, 2.seconds
-    assert_in_delta 10.minutes.from_now, feed.next_fetch_at, 2.seconds
+    assert_in_delta 30.minutes.from_now, feed.next_fetch_at, 2.seconds
     assert_equal "new-etag", feed.etag
     assert_equal "Mon, 01 Jan 2024 00:00:00 GMT", feed.last_modified
   end
