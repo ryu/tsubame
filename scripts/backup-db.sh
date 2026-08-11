@@ -25,7 +25,7 @@ if [ -z "$CONTAINER" ]; then
 fi
 
 # Create backup using SQLite's .backup command (safe with WAL mode)
-docker exec "$CONTAINER" sqlite3 /rails/storage/production.sqlite3 ".backup /tmp/tsubame_backup.sqlite3"
+docker exec "$CONTAINER" sqlite3 /storage/production.sqlite3 ".backup /tmp/tsubame_backup.sqlite3"
 
 # Copy from container to host
 docker cp "$CONTAINER:/tmp/tsubame_backup.sqlite3" "$BACKUP_DIR/tsubame-$TIMESTAMP.sqlite3"
