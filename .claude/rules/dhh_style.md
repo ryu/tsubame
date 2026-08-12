@@ -23,6 +23,7 @@
 
 - Hotwire（Turbo + Stimulus）のみ。React / Vue は使わない
 - Stimulus コントローラーは単一責務・50行以内が目安
+- `connect()` で子要素にリスナーを直接バインドしない。`data-action` で宣言する（接続時点で子要素が未パースなことがあり、黙って失敗する）。`document` / `this.element` へのバインドは可
 - ネイティブ CSS（`@layer`・ネスティング・カスタムプロパティ）。プリプロセッサ・Tailwind 不使用
 - 標準パーシャルで組む。ViewComponent 不使用
 
