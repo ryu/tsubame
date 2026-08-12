@@ -13,7 +13,8 @@
                   keyboard:reload-page->selection#reloadPage
                   keyboard:toggle-help->help-dialog#toggle
                   selection:entry-read->badge#entryRead
-                  selection:feed-loaded->badge#feedLoaded">
+                  selection:feed-loaded->badge#feedLoaded
+                  turbo:frame-load->selection#frameLoad">
   <!-- Left pane: Feed list -->
   <aside class="feed-list-pane">
     <div class="pane-header">
@@ -62,7 +63,7 @@
       <% end %>
     </nav>
 
-    <div class="feed-list" data-selection-target="feedList">
+    <div class="feed-list" data-selection-target="feedList" data-action="click->selection#feedClick">
       <% if @subscriptions.any? %>
         <% @grouped_subscriptions.each do |group| %>
           <div class="feed-folder-header">
