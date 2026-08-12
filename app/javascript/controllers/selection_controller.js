@@ -13,18 +13,36 @@ export default class extends Controller {
 
   connect() {
     this.markAllAbort = null
-
-    this.boundHandleFrameLoad = this._handleFrameLoad.bind(this)
-    this._entryListFrame()?.addEventListener("turbo:frame-load", this.boundHandleFrameLoad)
-
-    this.boundHandleFeedClick = this._handleFeedClick.bind(this)
-    this.feedListTarget.addEventListener("click", this.boundHandleFeedClick)
   }
 
   disconnect() {
     this.markAllAbort?.abort()
-    this._entryListFrame()?.removeEventListener("turbo:frame-load", this.boundHandleFrameLoad)
-    this.feedListTarget.removeEventListener("click", this.boundHandleFeedClick)
+  }
+
+  // Wired from data-action. Binding these in connect() is unreliable: Stimulus
+  // connects the controller as soon as its element is parsed, before the panes
+  // inside it exist.
+
+  frameLoad(event) {
+    if (event.target.id !== "entry_list") return
+
+    const feedId = event.target.dataset.feedId
+
+    this.activeEntryIndexValue = -1
+    this._syncActiveFeedIndex(feedId)
+    this._updateNavButtons()
+
+    if (feedId) {
+      this.dispatch("feed-loaded", { detail: { feedId, isEmpty: this._getEntryItems().length === 0 } })
+    }
+  }
+
+  feedClick(event) {
+    const feedItem = event.target.closest(".feed-item")
+    if (!feedItem) return
+
+    const index = this._getFeedItems().indexOf(feedItem)
+    if (index >= 0) this.activeFeedIndexValue = index
   }
 
   // Feed navigation
@@ -166,29 +184,7 @@ export default class extends Controller {
 
   // Private
 
-  _handleFeedClick(event) {
-    const feedItem = event.target.closest(".feed-item")
-    if (!feedItem) return
-    const feedItems = this._getFeedItems()
-    const index = feedItems.indexOf(feedItem)
-    if (index >= 0) this.activeFeedIndexValue = index
-  }
-
-  _handleFrameLoad() {
-    this.activeEntryIndexValue = -1
-    this._syncActiveFeedIndexFromFrame()
-    this._updateNavButtons()
-
-    const frame = this._entryListFrame()
-    const feedId = frame?.dataset.feedId
-    if (feedId) {
-      this.dispatch("feed-loaded", { detail: { feedId, isEmpty: this._getEntryItems().length === 0 } })
-    }
-  }
-
-  _syncActiveFeedIndexFromFrame() {
-    const frame = this._entryListFrame()
-    const feedId = frame?.dataset.feedId
+  _syncActiveFeedIndex(feedId) {
     if (!feedId) return
 
     const feedItems = this._getFeedItems()
@@ -310,11 +306,6 @@ export default class extends Controller {
       top: scrollAmount * direction,
       behavior: "smooth"
     })
-  }
-
-  _entryListFrame() {
-    if (!this.hasEntryListTarget) return null
-    return this.entryListTarget.querySelector("turbo-frame#entry_list")
   }
 
   _scrollIntoViewIfNeeded(element, container) {

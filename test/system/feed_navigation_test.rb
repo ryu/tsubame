@@ -21,4 +21,26 @@ class FeedNavigationTest < ApplicationSystemTestCase
       assert_text "Advanced Ruby Patterns"
     end
   end
+
+  test "keyboard selection resets when switching feeds" do
+    sign_in_as users(:one)
+
+    click_on "Ruby Blog"
+    find("body").send_keys("j")
+    within "#entry_detail" do
+      assert_text "Advanced Ruby Patterns"
+    end
+
+    # Loading another feed must reset the entry cursor, otherwise `j` would ask
+    # for an entry past the end of the new list and silently do nothing.
+    click_on "Rails News"
+    within "#entry_list" do
+      assert_text "Rails 8.1 Released"
+    end
+
+    find("body").send_keys("j")
+    within "#entry_detail" do
+      assert_text "Rails 8.1 Released"
+    end
+  end
 end
