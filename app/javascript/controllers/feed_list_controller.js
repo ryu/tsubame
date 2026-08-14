@@ -5,7 +5,6 @@ import { scrollIntoViewIfNeeded } from "lib/scroll"
 // Selection and navigation of the feed pane.
 export default class extends Controller {
   static targets = ["list"]
-  static values = { activeIndex: { type: Number, default: -1 } }
 
   disconnect() {
     this.markAllAbort?.abort()
@@ -17,27 +16,21 @@ export default class extends Controller {
     const feedId = event.target.dataset.feedId
     if (!feedId) return
 
-    const index = this.items.findIndex(item => item.dataset.feedId === feedId)
-    if (index >= 0) {
-      this.activeIndexValue = index
-      this.#markActive()
-    }
+    this.activeId = feedId
+    this.#markActive()
   }
 
   click(event) {
     const item = event.target.closest(".feed-item")
-    if (!item) return
-
-    const index = this.items.indexOf(item)
-    if (index >= 0) this.activeIndexValue = index
+    if (item) this.activeId = item.dataset.feedId
   }
 
   next() {
-    if (this.items.length > 0) this.#activate(Math.min(this.activeIndexValue + 1, this.items.length - 1))
+    if (this.items.length > 0) this.#activate(Math.min(this.activeIndex + 1, this.items.length - 1))
   }
 
   previous() {
-    if (this.items.length > 0) this.#activate(Math.max(this.activeIndexValue - 1, 0))
+    if (this.items.length > 0) this.#activate(Math.max(this.activeIndex - 1, 0))
   }
 
   markAllAsRead() {
@@ -60,11 +53,17 @@ export default class extends Controller {
   }
 
   get activeItem() {
-    return this.items[this.activeIndexValue] || null
+    return this.items[this.activeIndex] || null
   }
 
   get hasNextUnread() {
-    return this.items.slice(this.activeIndexValue + 1).some(item => item.querySelector(".unread-badge"))
+    return this.items.slice(this.activeIndex + 1).some(item => item.querySelector(".unread-badge"))
+  }
+
+  // Derived from the selected feed, never stored: a morph refresh re-renders the
+  // pane and would leave a stored index pointing at whatever moved into its slot.
+  get activeIndex() {
+    return this.activeId ? this.items.findIndex(item => item.dataset.feedId === this.activeId) : -1
   }
 
   // Private
@@ -73,7 +72,7 @@ export default class extends Controller {
     const item = this.items[index]
     if (!item) return
 
-    this.activeIndexValue = index
+    this.activeId = item.dataset.feedId
     this.#markActive()
 
     const link = item.matches("a") ? item : item.querySelector("a")
@@ -83,8 +82,8 @@ export default class extends Controller {
   }
 
   #markActive() {
-    this.items.forEach((item, i) => {
-      if (i === this.activeIndexValue) {
+    this.items.forEach(item => {
+      if (item.dataset.feedId === this.activeId) {
         item.dataset.active = "true"
         item.setAttribute("aria-current", "true")
       } else {

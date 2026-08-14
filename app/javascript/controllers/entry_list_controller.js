@@ -7,12 +7,11 @@ import { scrollIntoViewIfNeeded } from "lib/scroll"
 export default class extends Controller {
   static targets = ["list"]
   static outlets = ["feed-list"]
-  static values = { activeIndex: { type: Number, default: -1 } }
 
   frameLoad(event) {
     if (event.target.id !== "entry_list") return
 
-    this.activeIndexValue = -1
+    this.#markActive()
 
     const feedId = event.target.dataset.feedId
     if (feedId) {
@@ -21,12 +20,12 @@ export default class extends Controller {
   }
 
   next() {
-    const index = this.activeIndexValue + 1
+    const index = this.activeIndex + 1
     if (index < this.items.length) this.#activate(index)
   }
 
   nextOrFeed() {
-    const isLast = this.activeIndexValue >= this.items.length - 1
+    const isLast = this.activeIndex >= this.items.length - 1
     if (isLast && this.hasNextUnreadFeed) {
       this.feedListOutlet.next()
     } else {
@@ -35,7 +34,7 @@ export default class extends Controller {
   }
 
   previous() {
-    if (this.activeIndexValue > 0) this.#activate(this.activeIndexValue - 1)
+    if (this.activeIndex > 0) this.#activate(this.activeIndex - 1)
   }
 
   openHatenaBookmark() {
@@ -55,11 +54,15 @@ export default class extends Controller {
   }
 
   get activeItem() {
-    return this.items[this.activeIndexValue] || null
+    return this.items[this.activeIndex] || null
   }
 
+  // Derived from the selected entry, never stored. A frame load swaps the list
+  // out from under a stored index, and turbo:frame-load arrives after the entries
+  // are already in the DOM — late enough for the next keypress to read a stale
+  // cursor and either move nowhere or lose the selection.
   get activeIndex() {
-    return this.activeIndexValue
+    return this.activeId ? this.items.findIndex(item => item.id === this.activeId) : -1
   }
 
   get hasNextUnreadFeed() {
@@ -72,7 +75,7 @@ export default class extends Controller {
     const item = this.items[index]
     if (!item) return
 
-    this.activeIndexValue = index
+    this.activeId = item.id
     this.#markActive()
     this.#markRead(item)
 
@@ -92,8 +95,8 @@ export default class extends Controller {
   }
 
   #markActive() {
-    this.items.forEach((item, i) => {
-      if (i === this.activeIndexValue) {
+    this.items.forEach(item => {
+      if (item.id === this.activeId) {
         item.dataset.active = "true"
         item.setAttribute("aria-current", "true")
       } else {

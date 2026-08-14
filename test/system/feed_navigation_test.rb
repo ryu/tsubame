@@ -26,6 +26,10 @@ class FeedNavigationTest < ApplicationSystemTestCase
     sign_in_as users(:one)
 
     click_on "Ruby Blog"
+    within "#entry_list" do
+      assert_text "Advanced Ruby Patterns"
+    end
+
     find("body").send_keys("j")
     within "#entry_detail" do
       assert_text "Advanced Ruby Patterns"
