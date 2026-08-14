@@ -14,7 +14,7 @@ class FeedNavigationTest < ApplicationSystemTestCase
       assert_text "Advanced Ruby Patterns"
     end
 
-    # `j` routes through the keyboard + selection Stimulus controllers to select
+    # `j` routes through the keyboard + entry-list Stimulus controllers to select
     # the first entry and load its detail via Turbo.
     find("body").send_keys("j")
     within "#entry_detail" do
@@ -22,7 +22,7 @@ class FeedNavigationTest < ApplicationSystemTestCase
     end
   end
 
-  test "keyboard selection resets when switching feeds" do
+  test "entry selection resets when switching feeds" do
     sign_in_as users(:one)
 
     click_on "Ruby Blog"

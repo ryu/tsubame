@@ -1,37 +1,23 @@
 import { Controller } from "@hotwired/stimulus"
-import { fetchWithCsrf } from "lib/fetch_helper"
+import { submitTurboStream } from "lib/fetch_helper"
 
 // Manages pin operations: toggle pin, open pinned entries
 export default class extends Controller {
-  static outlets = ["selection"]
+  static outlets = ["entry-list"]
 
   // Toggle pin for currently active entry
   togglePin() {
-    if (!this.hasSelectionOutlet) return
+    if (!this.hasEntryListOutlet) return
 
-    const entryItem = this.selectionOutlet.getActiveEntry()
+    const entryItem = this.entryListOutlet.activeItem
     if (!entryItem) return
 
     const entryId = this._extractEntryId(entryItem)
     if (!entryId) return
 
     const pinned = !!entryItem.querySelector(".pin-icon")
-    const abortController = new AbortController()
-    fetchWithCsrf(`/entries/${entryId}/pin`, {
-      method: pinned ? "DELETE" : "POST",
-      headers: {
-        "Accept": "text/vnd.turbo-stream.html"
-      },
-      signal: abortController.signal
-    })
-      .then(response => {
-        if (!response.ok) throw new Error(`HTTP ${response.status}`)
-        return response.text()
-      })
-      .then(html => {
-        Turbo.renderStreamMessage(html)
-        this._updateEntryListPinIcon(entryItem)
-      })
+    submitTurboStream(`/entries/${entryId}/pin`, { method: pinned ? "DELETE" : "POST" })
+      .then(() => this._updateEntryListPinIcon(entryItem))
       .catch(error => {
         if (error.name !== "AbortError") {
           console.warn("Failed to toggle pin:", error)
@@ -63,19 +49,11 @@ export default class extends Controller {
       return
     }
 
-    fetchWithCsrf("/pinned_entry_open", {
+    submitTurboStream("/pinned_entry_open", {
       method: "DELETE",
-      headers: { "Accept": "text/vnd.turbo-stream.html" },
       body: JSON.stringify({ entry_ids: openedEntryIds })
     })
-      .then(response => {
-        if (!response.ok) throw new Error(`HTTP ${response.status}`)
-        return response.text()
-      })
-      .then(html => {
-        Turbo.renderStreamMessage(html)
-        openedEntryIds.forEach(id => this._removePinIcon(id))
-      })
+      .then(() => openedEntryIds.forEach(id => this._removePinIcon(id)))
       .catch(error => {
         console.warn("Failed to unpin opened entries:", error)
       })
