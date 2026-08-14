@@ -24,10 +24,10 @@ export default class extends Controller {
   // Stimulus dispatch() creates a CustomEvent (isTrusted=false) which does not carry
   // user activation in Safari 26+. These commands call the target controller directly.
   static userActivationCommands = {
-    "open-entry-in-new-tab": ["selection", "openEntryInNewTab"],
+    "open-entry-in-new-tab": ["entry-detail", "openInNewTab"],
     "open-pinned": ["pin", "openPinned"],
-    "open-hatena-bookmark": ["selection", "openHatenaBookmark"],
-    "open-hatena-bookmark-add": ["selection", "openHatenaBookmarkAdd"]
+    "open-hatena-bookmark": ["entry-list", "openHatenaBookmark"],
+    "open-hatena-bookmark-add": ["entry-detail", "openHatenaBookmarkAdd"]
   }
 
   connect() {

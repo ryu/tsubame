@@ -56,8 +56,8 @@ class EntriesControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
 
     assert_select "nav.mobile-entry-nav" do
-      assert_select "button[data-selection-target='prevButton'][aria-label='前のエントリに移動']", text: /前のエントリ/
-      assert_select "button[data-selection-target='nextButton'][aria-label='次のエントリに移動']", text: /次のエントリ/
+      assert_select "button[data-entry-nav-target='previous'][aria-label='前のエントリに移動']", text: /前のエントリ/
+      assert_select "button[data-entry-nav-target='next'][aria-label='次のエントリに移動']", text: /次のエントリ/
     end
   end
 
