@@ -23,6 +23,13 @@ Rails.application.configure do
   # Generate session nonces for permitted importmap and inline scripts/styles.
   # Turbo picks this nonce up from csp_meta_tag for its runtime progress-bar <style>,
   # and importmap-rails applies it to the import map / module preload scripts.
-  config.content_security_policy_nonce_generator = ->(request) { request.session.id.to_s }
+  #
+  # The nonce lives in the session rather than being derived from session.id: the id
+  # is nil until a session cookie exists, and an empty nonce renders the whole
+  # source list invalid, so every inline script -- the import map included -- is
+  # blocked and Stimulus never starts. The login cookie is permanent while the
+  # session cookie is not, so a returning browser hits exactly that request and the
+  # keyboard shortcuts stay dead until a reload.
+  config.content_security_policy_nonce_generator = ->(request) { request.session[:csp_nonce] ||= SecureRandom.base64(16) }
   config.content_security_policy_nonce_directives = %w[ script-src style-src ]
 end
