@@ -65,3 +65,28 @@ volumes:
 ```bash
 bin/kamal rollback <version>
 ```
+
+## SSH の設定
+
+Kamal は `ubuntu` ユーザー・公開鍵認証で接続する（`config/deploy.yml` の `ssh.user`）。
+サーバー側は `/etc/ssh/sshd_config.d/99-hardening.conf` でパスワード認証を無効化している。
+
+```
+PasswordAuthentication no
+PermitRootLogin no
+KbdInteractiveAuthentication no
+```
+
+drop-in として置いているため、OS 側の `sshd_config` が更新されても設定は残る。
+
+秘密鍵を失うと復旧手段が VNC コンソール（シングルユーザモード）経由のみになるため、
+`config/master.key` と同じ場所にバックアップしておくこと。
+
+設定を変更する場合は、既存の SSH セッションを開いたまま検証する。
+
+```bash
+sudo sshd -t && sudo systemctl reload ssh   # 構文チェックしてから reload
+ssh ubuntu@<host> 'echo OK'                 # 別セッションで疎通確認
+```
+
+`reload` は既存接続を切らないので、失敗しても元のセッションから戻せる。
