@@ -283,7 +283,7 @@ GEM
     regexp_parser (2.11.3)
     reline (0.6.3)
       io-console (~> 0.5)
-    resend (1.7.0)
+    resend (1.14.0)
       base64
       httparty (>= 0.22.0)
     rexml (3.4.4)
@@ -417,7 +417,7 @@ DEPENDENCIES
   propshaft
   puma (>= 5.0)
   rails (~> 8.1.3)
-  resend (~> 1.7)
+  resend (~> 1.14)
   rss
   rubocop-rails-omakase
   selenium-webdriver
