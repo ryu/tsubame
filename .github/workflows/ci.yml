@@ -65,6 +65,9 @@ jobs:
       - name: Lint code for consistent style
         run: bin/rubocop -f github
 
+      - name: Check for new code comments
+        run: bin/lint-comments
+
   test:
     runs-on: ubuntu-latest
 

@@ -5,7 +5,6 @@ class CleanupEntriesJobTest < ActiveJob::TestCase
     user = users(:one)
     feed = feeds(:ruby_blog)
 
-    # Create entry created 91 days ago, not pinned
     old_entry = feed.entries.create!(
       guid: "old-entry",
       title: "Old Entry",
@@ -13,7 +12,6 @@ class CleanupEntriesJobTest < ActiveJob::TestCase
       created_at: 91.days.ago
     )
 
-    # Create entry created 89 days ago, not pinned
     recent_entry = feed.entries.create!(
       guid: "recent-entry",
       title: "Recent Entry",
@@ -21,7 +19,6 @@ class CleanupEntriesJobTest < ActiveJob::TestCase
       created_at: 89.days.ago
     )
 
-    # Create entry created 91 days ago, but pinned by a user
     old_pinned_entry = feed.entries.create!(
       guid: "old-pinned",
       title: "Old Pinned Entry",
@@ -30,7 +27,6 @@ class CleanupEntriesJobTest < ActiveJob::TestCase
     )
     UserEntryState.create!(user: user, entry: old_pinned_entry, pinned: true)
 
-    # Create unread entry (recent)
     unread_entry = feed.entries.create!(
       guid: "unread",
       title: "Unread Entry",
@@ -41,16 +37,12 @@ class CleanupEntriesJobTest < ActiveJob::TestCase
       CleanupEntriesJob.perform_now
     end
 
-    # Old entry should be deleted
     assert_not Entry.exists?(old_entry.id)
 
-    # Recent entry should still exist
     assert Entry.exists?(recent_entry.id)
 
-    # Old pinned entry should still exist
     assert Entry.exists?(old_pinned_entry.id)
 
-    # Unread entry should still exist
     assert Entry.exists?(unread_entry.id)
   end
 
@@ -71,7 +63,6 @@ class CleanupEntriesJobTest < ActiveJob::TestCase
   end
 
   test "should handle no entries to delete" do
-    # All existing entries should not meet deletion criteria
     assert_no_difference "Entry.count" do
       CleanupEntriesJob.perform_now
     end

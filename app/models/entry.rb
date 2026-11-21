@@ -35,8 +35,6 @@ class Entry < ApplicationRecord
     nil
   end
 
-  # Returns sanitized URL safe for use in link hrefs.
-  # Returns nil if URL is blank or not HTTP(S).
   def safe_url_for_link
     return nil if url.blank?
 

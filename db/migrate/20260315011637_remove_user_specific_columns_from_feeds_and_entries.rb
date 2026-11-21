@@ -1,6 +1,5 @@
 class RemoveUserSpecificColumnsFromFeedsAndEntries < ActiveRecord::Migration[8.1]
   def change
-    # Make folders.user_id NOT NULL after data migration
     change_column_null :folders, :user_id, false
 
     remove_foreign_key :feeds, :folders

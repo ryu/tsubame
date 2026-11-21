@@ -132,7 +132,6 @@ class FeedTest < ActiveSupport::TestCase
       assert_equal 0, result[:skipped]
     end
 
-    # Verify feed attributes
     techcrunch = Feed.find_by(url: "https://techcrunch.com/feed/")
     assert_equal "TechCrunch", techcrunch.title
     assert_equal "https://techcrunch.com/", techcrunch.site_url
@@ -144,10 +143,8 @@ class FeedTest < ActiveSupport::TestCase
     user = users(:one)
     opml_content = file_fixture("sample.opml").read
 
-    # First import
     Feed.import_from_opml(opml_content, user: user)
 
-    # Second import should skip all (user already subscribed)
     assert_no_difference "Feed.count" do
       result = Feed.import_from_opml(opml_content, user: user)
       assert_equal 0, result[:added]
@@ -161,10 +158,8 @@ class FeedTest < ActiveSupport::TestCase
 
     Feed.import_from_opml(opml_content, user: user)
 
-    # Should import both nested feeds from "Tech News" folder
     assert Feed.exists?(url: "https://techcrunch.com/feed/")
     assert Feed.exists?(url: "https://news.ycombinator.com/rss")
-    # And the top-level feed
     assert Feed.exists?(url: "https://rubyweekly.com/rss")
   end
 
@@ -372,11 +367,9 @@ class FeedTest < ActiveSupport::TestCase
     xml = Feed.to_opml(user: user)
     doc = REXML::Document.new(xml)
 
-    # Verify root element
     assert_equal "opml", doc.root.name
     assert_equal "1.0", doc.root.attributes["version"]
 
-    # Verify head and body elements exist
     assert_not_nil REXML::XPath.first(doc, "//head")
     assert_not_nil REXML::XPath.first(doc, "//body")
     assert_not_nil REXML::XPath.first(doc, "//head/title")
@@ -447,8 +440,6 @@ class FeedTest < ActiveSupport::TestCase
     assert_nil outline.attributes["htmlUrl"]
     assert_equal "https://example.com/feed.xml", outline.attributes["xmlUrl"]
   end
-
-  # -- Feed#fetch integration tests --
 
   test "fetch should successfully fetch and parse RSS 2.0 feed" do
     feed = feeds(:ruby_blog)
@@ -804,7 +795,6 @@ class FeedTest < ActiveSupport::TestCase
     feed = feeds(:ruby_blog)
     uri = URI.parse("https://example.com/feed.xml")
 
-    # validate_url_safety! should return the resolved IP string (IPv4 or IPv6)
     resolved = feed.send(:validate_url_safety!, uri)
     assert IPAddr.new(resolved), "Expected a valid IP address, got: #{resolved}"
   end
@@ -1036,17 +1026,14 @@ class FeedTest < ActiveSupport::TestCase
     ]
     original_feeds.each { |f| user.subscribe_to(f) }
 
-    # Export
     xml = Feed.to_opml(user: user)
 
-    # Clear and re-import
     Feed.destroy_all
     result = Feed.import_from_opml(xml, user: user)
 
     assert_equal 3, result[:added]
     assert_equal 0, result[:skipped]
 
-    # Verify feeds match
     reimported = Feed.all.order(:url)
     assert_equal 3, reimported.size
     assert_equal "https://a.com/feed", reimported[0].url

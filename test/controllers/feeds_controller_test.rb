@@ -17,8 +17,6 @@ class FeedsControllerTest < ActionDispatch::IntegrationTest
     assert_select "h1", "フィード管理"
   end
 
-  # --- new/create tests ---
-
   test "new requires authentication" do
     get new_feed_path
     assert_redirected_to new_session_path
@@ -35,7 +33,6 @@ class FeedsControllerTest < ActionDispatch::IntegrationTest
   test "create adds feed with valid feed URL" do
     sign_in_as(@user)
 
-    # Stub direct feed URL (Content-Type: application/rss+xml)
     stub_request(:get, "https://example.com/new/feed.xml")
       .to_return(
         status: 200,
@@ -61,7 +58,6 @@ class FeedsControllerTest < ActionDispatch::IntegrationTest
     sign_in_as(@user)
     existing = feeds(:ruby_blog)
 
-    # resolve が未保存の Feed を返した後に同一 URL が登録済みになった状況を再現する
     resolution = Feed::Subscribable::Resolution.new(feed: Feed.new(url: existing.url))
     Feed.define_singleton_method(:resolve) { |_url| resolution }
 
@@ -132,8 +128,6 @@ class FeedsControllerTest < ActionDispatch::IntegrationTest
 
     post feeds_path, params: { feed: { url: "https://example.com/multi" } }
 
-    # 422 so Turbo Drive renders the candidate-selection page; a 200 form
-    # response would be silently ignored ("must redirect to another location").
     assert_response :unprocessable_entity
     assert_select "input[type=radio][value='https://example.com/rss']"
     assert_select "input[type=radio][value='https://example.com/atom']"
@@ -174,12 +168,9 @@ class FeedsControllerTest < ActionDispatch::IntegrationTest
   test "create falls back to registration when autodiscovery raises StandardError" do
     sign_in_as(@user)
 
-    # Simulate a network error during autodiscovery
     stub_request(:get, "https://example.com/unreliable")
       .to_timeout
 
-    # The controller catches the error and tries to register the URL as-is
-    # The URL is still valid HTTP, so it will be registered
     assert_difference "Feed.count", 1 do
       post feeds_path, params: { feed: { url: "https://example.com/unreliable" } }
     end
@@ -203,7 +194,6 @@ class FeedsControllerTest < ActionDispatch::IntegrationTest
   test "create rejects SSRF URL when submitted from select_feed form" do
     sign_in_as(@user)
 
-    # SSRF attempt directly on the URL field
     assert_no_difference "Feed.count" do
       post feeds_path, params: { feed: { url: "http://192.168.1.1/feed.xml" } }
     end
@@ -224,7 +214,6 @@ class FeedsControllerTest < ActionDispatch::IntegrationTest
   test "create rejects duplicate URL" do
     sign_in_as(@user)
 
-    # Stub the autodiscovery request for the existing feed URL
     stub_request(:get, feeds(:ruby_blog).url)
       .to_return(
         status: 200,
@@ -236,7 +225,6 @@ class FeedsControllerTest < ActionDispatch::IntegrationTest
       post feeds_path, params: { feed: { url: feeds(:ruby_blog).url } }
     end
 
-    # User already has a subscription, so it should redirect (find_or_create_by)
     assert_redirected_to feeds_path
   end
 
@@ -267,8 +255,6 @@ class FeedsControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :unprocessable_entity
   end
-
-  # --- edit/update tests ---
 
   test "edit requires authentication" do
     get edit_feed_path(feeds(:ruby_blog))
@@ -322,8 +308,6 @@ class FeedsControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
-  # --- destroy tests ---
-
   test "destroy requires authentication" do
     delete feed_path(feeds(:ruby_blog))
     assert_redirected_to new_session_path
@@ -357,8 +341,6 @@ class FeedsControllerTest < ActionDispatch::IntegrationTest
     assert_select "a", text: "削除"
   end
 
-  # -- Rate tests --
-
   test "edit form shows rate select field" do
     sign_in_as(@user)
     feed = feeds(:ruby_blog)
@@ -366,7 +348,6 @@ class FeedsControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_select "select[name='subscription[rate]']" do
-      # Verify rate options: 0-5
       (0..5).each do |rate|
         assert_select "option[value='#{rate}']"
       end
@@ -443,14 +424,12 @@ class FeedsControllerTest < ActionDispatch::IntegrationTest
     assert_equal 4, subscription.rate
   end
 
-  # -- Folder-related tests --
-
   test "new shows folder select when authenticated" do
     sign_in_as(@user)
     get new_feed_path
 
     assert_response :success
-    assert_select "select"  # Folder select should be present
+    assert_select "select"
   end
 
   test "edit shows folder select when authenticated" do
@@ -460,12 +439,12 @@ class FeedsControllerTest < ActionDispatch::IntegrationTest
     get edit_feed_path(feed)
 
     assert_response :success
-    assert_select "select"  # Folder select should be present
+    assert_select "select"
   end
 
   test "update assigns feed to folder" do
     sign_in_as(@user)
-    feed = feeds(:error_feed)  # Use a feed without folder initially
+    feed = feeds(:error_feed)
     subscription = @user.subscriptions.find_by!(feed: feed)
     folder = folders(:news)
 
@@ -477,7 +456,7 @@ class FeedsControllerTest < ActionDispatch::IntegrationTest
 
   test "update removes feed from folder" do
     sign_in_as(@user)
-    feed = feeds(:ruby_blog)  # ruby_blog subscription is in tech folder
+    feed = feeds(:ruby_blog)
     subscription = @user.subscriptions.find_by!(feed: feed)
 
     assert_not_nil subscription.folder_id
@@ -490,7 +469,7 @@ class FeedsControllerTest < ActionDispatch::IntegrationTest
 
   test "update changes feed folder" do
     sign_in_as(@user)
-    feed = feeds(:ruby_blog)  # Currently in tech folder
+    feed = feeds(:ruby_blog)
     subscription = @user.subscriptions.find_by!(feed: feed)
     new_folder = folders(:news)
 
@@ -513,8 +492,6 @@ class FeedsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "New Title", subscription.title
     assert_equal original_folder_id, subscription.folder_id
   end
-
-  # -- Cross-user data isolation tests --
 
   test "edit returns not found for unsubscribed feed" do
     sign_in_as(users(:two))

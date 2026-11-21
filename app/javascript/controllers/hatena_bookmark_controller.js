@@ -19,14 +19,11 @@ export default class extends Controller {
     this.element.removeEventListener("turbo:frame-load", this.boundHandleFrameLoad)
   }
 
-  // Stimulus action: called via data-action on count spans
   openBookmarkPage(event) {
     event.preventDefault()
     event.stopPropagation()
     openHatenaBookmarkPage(event.currentTarget.dataset.url)
   }
-
-  // Private methods
 
   _handleFrameLoad(event) {
     if (event.target !== this.element) return
@@ -34,8 +31,6 @@ export default class extends Controller {
     this._fetchBookmarkCounts()
   }
 
-  // If a fetch is already in progress, queue one re-fetch after it completes.
-  // Multiple queued requests collapse into a single re-fetch (1-stage queue).
   _fetchBookmarkCounts() {
     if (this.abortController) {
       this.pendingFetch = true

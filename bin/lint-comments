@@ -1,0 +1,123 @@
+#!/usr/bin/env ruby
+require "ripper"
+require "yaml"
+
+ROOT = File.expand_path("..", __dir__)
+BASELINE = File.join(ROOT, "config/comment_ratchet.yml")
+EXCLUDE = %r{\A(vendor|bin|public|log|tmp|storage)/|\Adb/\w*schema\.rb\z|\.kamal/hooks/.*\.sample\z|\.md\z}
+ALLOWED = [
+  /\A#!/,
+  /\A#\s*(frozen_string_literal|encoding|rubocop:(disable|enable|todo)):/,
+  /\A<%#\s*locals:/,
+  /\A#\s*(syntax|check|escape)=/
+]
+
+def language_of(path)
+  case
+  when path.end_with?(".rb", ".rake", "Gemfile", "Rakefile", "config.ru") then :ruby
+  when path.end_with?(".erb") then :erb
+  when path.end_with?(".js") then :js
+  when path.end_with?(".css") then :css
+  when path.end_with?(".yml", ".yaml", ".sh", ".toml", "Dockerfile", ".gitignore", ".dockerignore", ".gitattributes") then :hash
+  when File.read(path, 64).to_s.start_with?("#!") then :hash
+  end
+end
+
+def ruby_comments(source)
+  Ripper.lex(source).filter_map { |(line, _), type, token| [ line, token.strip ] if type == :on_comment || type == :on_embdoc_beg }
+end
+
+def hash_comments(source)
+  source.each_line.with_index(1).filter_map do |line, number|
+    quote = nil
+    line.each_char.with_index do |char, index|
+      case
+      when quote then quote = nil if char == quote
+      when char == '"' || char == "'" then quote = char
+      when char == "#" && (index.zero? || line[index - 1] =~ /\s/) then break [ number, line[index..].strip ]
+      end
+    end.then { |found| found.is_a?(Array) ? found : nil }
+  end
+end
+
+def erb_comments(source)
+  source.to_enum(:scan, /<%#.*?%>|<!--.*?-->/m).map do
+    match = Regexp.last_match
+    [ source[0...match.begin(0)].count("\n") + 1, match[0].lines.first.strip ]
+  end
+end
+
+def c_style_comments(source, line_comments:)
+  comments, index, line, quote, regex_allowed = [], 0, 1, nil, true
+
+  while index < source.length
+    char, pair = source[index], source[index, 2]
+    case
+    when quote
+      index += 1 if char == "\\"
+      quote = nil if char == quote
+    when pair == "/*"
+      finish = source.index("*/", index + 2) || source.length
+      comments << [ line, source[index...finish].lines.first.strip ]
+      line += source[index...finish].count("\n")
+      index = finish + 1
+    when line_comments && pair == "//"
+      finish = source.index("\n", index) || source.length
+      comments << [ line, source[index...finish].strip ]
+      index = finish - 1
+    when char == '"' || char == "'" || char == "`"
+      quote = char
+    when line_comments && char == "/" && regex_allowed
+      quote = "/"
+    end
+    line += 1 if source[index] == "\n"
+    regex_allowed = source[index] =~ /[(,=:\[!&|?{};\n]/ ? true : (source[index] =~ /\s/ ? regex_allowed : false)
+    index += 1
+  end
+
+  comments
+end
+
+def comments_in(path)
+  source = File.read(path)
+  comments =
+    case language_of(path)
+    when :ruby then ruby_comments(source)
+    when :erb then erb_comments(source)
+    when :js then c_style_comments(source, line_comments: true)
+    when :css then c_style_comments(source, line_comments: false)
+    when :hash then hash_comments(source)
+    else []
+    end
+  comments.reject { |(_, text)| ALLOWED.any? { |pattern| text.match?(pattern) } }
+end
+
+Dir.chdir(ROOT)
+files = `git ls-files -z --cached --others --exclude-standard`.split("\0").reject { |path| path.match?(EXCLUDE) || !File.file?(path) }
+current = files.sort.to_h { |path| [ path, comments_in(path) ] }.reject { |_, comments| comments.empty? }
+
+case ARGV.first
+when "--list"
+  current.each { |path, comments| comments.each { |(line, text)| puts "#{path}:#{line}: #{text}" } }
+when "--update"
+  File.write(BASELINE, current.transform_values(&:size).to_yaml)
+  puts "Updated #{BASELINE.delete_prefix("#{ROOT}/")} (#{current.values.sum(&:size)} comments in #{current.size} files)"
+else
+  baseline = File.exist?(BASELINE) ? YAML.load_file(BASELINE) : {}
+  grown = current.select { |path, comments| comments.size > baseline.fetch(path, 0) }
+  shrunk = baseline.select { |path, count| current.fetch(path, []).size < count }
+
+  grown.each do |path, comments|
+    puts "#{path}: #{comments.size} comments (allowed #{baseline.fetch(path, 0)})"
+    comments.each { |(line, text)| puts "  #{path}:#{line}: #{text}" }
+  end
+  shrunk.each { |path, count| puts "#{path}: #{current.fetch(path, []).size} comments, baseline says #{count}" }
+
+  if grown.any?
+    abort "\nComments are not allowed. Express intent in code, or record the decision in docs/adr/. See /delete-comment."
+  elsif shrunk.any?
+    abort "\nComments were removed. Ratchet the baseline down with: bin/lint-comments --update"
+  else
+    puts "No new comments (#{current.values.sum(&:size)} remaining in baseline)"
+  end
+end

@@ -1,6 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
 
-// Prev/next buttons rendered at the bottom of the entry detail pane on mobile.
 export default class extends Controller {
   static targets = ["previous", "next"]
   static outlets = ["entry-list"]
@@ -14,8 +13,6 @@ export default class extends Controller {
     document.removeEventListener("turbo:frame-load", this.boundRefresh)
   }
 
-  // The buttons are not parsed yet when connect() runs, so refresh once each
-  // shows up rather than reading them there.
   previousTargetConnected() {
     this.refresh()
   }

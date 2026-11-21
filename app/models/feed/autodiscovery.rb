@@ -25,15 +25,6 @@ module Feed::Autodiscovery
 
   GUESS_TIMEOUT = 5
 
-  # URL を受け取り、フィード URL の候補リストを返す。
-  # 戻り値:
-  #   { feed_urls: ["https://..."], content_type: :feed }   — URL 自体がフィード
-  #   { feed_urls: ["https://...", ...], content_type: :html } — HTML からフィードを検出
-  #   { feed_urls: [], content_type: :html }                 — HTML だがフィードなし
-  #   { feed_urls: [], content_type: :unknown }              — 不明な Content-Type
-  #
-  # SSRF エラー時は Feed::SsrfError を raise（呼び出し元でハンドリングする）。
-  # ネットワーク接続エラー時は StandardError を raise。
   def discover_from(url)
     uri = URI.parse(url)
     resolved_ip = validate_url_safety!(uri)
@@ -56,7 +47,6 @@ module Feed::Autodiscovery
 
   private
 
-  # build_http is provided by Feed::Fetching (included in the same model)
   def perform_html_request(uri, resolved_ip)
     http = build_http(uri, resolved_ip)
 
@@ -76,7 +66,6 @@ module Feed::Autodiscovery
     [ result_response, body && extract_head_section(body) ]
   end
 
-  # HTML は <head> 内の <link> しか見ないため、先頭 MAX_HTML_PROBE_SIZE で読み込みを打ち切る
   def read_probe_body(response)
     body = +""
     catch(:probe_full) do
@@ -97,8 +86,6 @@ module Feed::Autodiscovery
     end
   end
 
-  # <link rel="alternate" type="application/...+xml" href="..."> を抽出
-  # 属性の順序が異なる場合（type が先、rel が後）にも対応する
   def extract_feed_links(html, base_url)
     urls = []
     html.scan(/<link\s[^>]*>/i) do |tag|
@@ -114,8 +101,6 @@ module Feed::Autodiscovery
     urls.uniq
   end
 
-  # <link> タグが見つからない場合のフォールバック。
-  # よくあるフィードパスに HEAD リクエストを送り、Content-Type で判定する。
   def guess_feed_urls(base_uri)
     base = "#{base_uri.scheme}://#{base_uri.host}"
     base << ":#{base_uri.port}" unless base_uri.default_port == base_uri.port

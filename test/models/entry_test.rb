@@ -61,7 +61,6 @@ class EntryTest < ActiveSupport::TestCase
     assert_equal "https://example.com/article?a=1&b=2#frag", entry.safe_url_for_link
   end
 
-  # link_to の href と window.open にそのまま渡るため、http(s) 以外は必ず落とす。
   test "safe_url_for_link rejects non-http schemes" do
     [
       "javascript:alert('xss')",
@@ -84,8 +83,6 @@ class EntryTest < ActiveSupport::TestCase
     assert_nil entry_with_url(nil).safe_url_for_link
     assert_nil entry_with_url("").safe_url_for_link
   end
-
-  # -- attributes_from_rss_item tests --
 
   test "attributes_from_rss_item extracts RSS 2.0 item" do
     parsed = RSS::Parser.parse(<<~RSS, false)
@@ -204,8 +201,6 @@ class EntryTest < ActiveSupport::TestCase
     assert_nil attrs
   end
 
-  # -- normalize_url tests --
-
   test "normalize_url removes utm parameters" do
     assert_equal "https://example.com/post?id=1",
       Entry.normalize_url("https://example.com/post?utm_source=twitter&id=1")
@@ -249,8 +244,6 @@ class EntryTest < ActiveSupport::TestCase
     assert_nil Entry.normalize_url("ht tp://bad url")
   end
 
-  # -- before_save callback tests --
-
   test "sets content_url on create" do
     entry = Entry.create!(
       feed: feeds(:ruby_blog),
@@ -274,8 +267,6 @@ class EntryTest < ActiveSupport::TestCase
     )
     assert_nil entry.content_url
   end
-
-  # -- duplicates_of scope tests --
 
   test "duplicates_of returns entries with same content_url" do
     entry = entries(:ruby_article_one)

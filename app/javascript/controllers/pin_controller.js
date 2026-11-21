@@ -1,11 +1,9 @@
 import { Controller } from "@hotwired/stimulus"
 import { submitTurboStream } from "lib/fetch_helper"
 
-// Manages pin operations: toggle pin, open pinned entries
 export default class extends Controller {
   static outlets = ["entry-list"]
 
-  // Toggle pin for currently active entry
   togglePin() {
     if (!this.hasEntryListOutlet) return
 
@@ -25,9 +23,6 @@ export default class extends Controller {
       })
   }
 
-  // Open all pinned entries in new tabs, then unpin only the ones that opened.
-  // URLs are pre-rendered into #pin_badge data attributes so window.open can
-  // be called synchronously with real URLs (Safari blocks empty-URL popups).
   openPinned() {
     const badge = document.getElementById("pin_badge")
     if (!badge) return
@@ -58,8 +53,6 @@ export default class extends Controller {
         console.warn("Failed to unpin opened entries:", error)
       })
   }
-
-  // Private methods
 
   _updateEntryListPinIcon(entryItem) {
     const titleRow = entryItem.querySelector(".entry-title-row")

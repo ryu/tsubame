@@ -1,6 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
 
-// Manages help dialog visibility
 export default class extends Controller {
   static targets = ["dialog"]
 

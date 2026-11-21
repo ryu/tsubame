@@ -3,7 +3,6 @@ import { openInBackground } from "lib/fetch_helper"
 
 const SCROLL_RATIO = 0.8
 
-// Reading actions for the entry detail pane.
 export default class extends Controller {
   static targets = ["pane"]
 
@@ -26,8 +25,6 @@ export default class extends Controller {
   openHatenaBookmarkAdd() {
     this.#openLink(".hatena-add-link")
   }
-
-  // Private
 
   #openLink(selector) {
     if (!this.hasPaneTarget) return

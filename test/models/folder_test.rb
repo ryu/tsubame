@@ -44,10 +44,8 @@ class FolderTest < ActiveSupport::TestCase
 
     folder.destroy
 
-    # Verify folder is deleted
     assert_not Folder.exists?(folder.id)
 
-    # Verify subscriptions' folder_id is nil
     Subscription.where(id: subscription_ids).each do |subscription|
       assert_nil subscription.folder_id
     end

@@ -1,5 +1,3 @@
-// Scroll an element into view only when it sits outside its container's viewport,
-// so navigating within the visible range doesn't jump the list around.
 export function scrollIntoViewIfNeeded(element, container) {
   const elementRect = element.getBoundingClientRect()
   const containerRect = container.getBoundingClientRect()

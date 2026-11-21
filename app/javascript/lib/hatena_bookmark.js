@@ -1,5 +1,3 @@
-// Build the Hatena Bookmark page URL for a given entry URL.
-// Returns null for invalid URLs or non-http(s) protocols.
 export function hatenaBookmarkUrl(url) {
   if (!url) return null
 
@@ -22,7 +20,6 @@ export function hatenaBookmarkUrl(url) {
   }
 }
 
-// Open the Hatena Bookmark page for the given URL in a new tab.
 export function openHatenaBookmarkPage(url) {
   const bookmarkUrl = hatenaBookmarkUrl(url)
   if (bookmarkUrl) window.open(bookmarkUrl, "_blank", "noopener,noreferrer")

@@ -11,15 +11,11 @@ class MarkAllAsReadTest < ApplicationSystemTestCase
 
     find("body").send_keys([ :shift, "a" ])
 
-    # The refresh morphs the page and the entry_list frame reloads from its src
-    # instead of resetting to the home placeholder: no unread entries remain.
     within "#entry_list" do
       assert_text "エントリがありません"
       assert_no_text "左からフィードを選択してください"
     end
 
-    # The feed pane lists only feeds with unread entries, so the morph drops
-    # Ruby Blog while leaving the rest (Rails News badge) untouched.
     assert_no_selector ".feed-item", text: "Ruby Blog"
     find(".feed-item", text: "Rails News").assert_selector(".unread-badge", text: "1")
   end

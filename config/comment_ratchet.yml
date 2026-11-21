@@ -1,0 +1,27 @@
+---
+".dockerignore": 13
+".gitattributes": 3
+".github/workflows/ci.yml": 16
+".gitignore": 13
+".rubocop.yml": 6
+Dockerfile: 24
+Gemfile: 20
+Rakefile: 2
+config.ru: 1
+config/application.rb: 13
+config/boot.rb: 2
+config/bundler-audit.yml: 2
+config/cable.yml: 4
+config/cache.yml: 2
+config/database.yml: 11
+config/deploy.yml: 73
+config/environment.rb: 2
+config/environments/development.rb: 27
+config/environments/production.rb: 34
+config/environments/test.rb: 25
+config/initializers/assets.rb: 4
+config/initializers/filter_parameter_logging.rb: 4
+config/initializers/inflections.rb: 14
+config/locales/en.yml: 28
+config/puma.rb: 32
+config/storage.yml: 17
