@@ -12,6 +12,10 @@ module Feed::Fetching
   MAX_REDIRECTS = 5
   MAX_RESPONSE_SIZE = 10.megabytes
   XML_ENCODING_PROBE_SIZE = 200
+  NETWORK_ERRORS = [
+    Net::OpenTimeout, Net::ReadTimeout, SocketError, EOFError, OpenSSL::SSL::SSLError,
+    Errno::ECONNREFUSED, Errno::EHOSTUNREACH, Errno::ECONNRESET
+  ].freeze
 
   def fetch
     response, body = fetch_with_redirects(url, conditional_get_headers)
@@ -43,9 +47,7 @@ module Feed::Fetching
   rescue Net::OpenTimeout, Net::ReadTimeout => e
     record_fetch_error!("Request timed out")
     report_fetch_error(e)
-  rescue Feed::SsrfError, URI::InvalidURIError, RuntimeError,
-         SocketError, Errno::ECONNREFUSED, Errno::EHOSTUNREACH,
-         Errno::ECONNRESET, OpenSSL::SSL::SSLError, EOFError => e
+  rescue Feed::SsrfError, URI::InvalidURIError, RuntimeError, *NETWORK_ERRORS => e
     record_fetch_error!("Failed to fetch feed")
     report_fetch_error(e)
   end

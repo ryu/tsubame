@@ -1,3 +1,5 @@
+class Feed::UnreachableError < StandardError; end
+
 module Feed::Subscribable
   extend ActiveSupport::Concern
 
@@ -26,13 +28,13 @@ module Feed::Subscribable
     def candidate_urls(url)
       result = new.discover_from(url)
       result[:content_type] == :feed ? [ url ] : Array(result[:feed_urls])
-    rescue Feed::SsrfError
-      raise
-    rescue StandardError => e
+    rescue URI::InvalidURIError
+      []
+    rescue *Feed::Fetching::NETWORK_ERRORS => e
       Rails.error.report(e, handled: true, severity: :warning,
         source: "feed.autodiscovery", context: { url: url })
       Rails.logger.warn("Feed autodiscovery failed for #{url}: #{e.message}")
-      []
+      raise Feed::UnreachableError, e.message
     end
   end
 end

@@ -23,6 +23,8 @@ class FeedsController < ApplicationController
     subscribe(resolution.feed)
   rescue Feed::SsrfError
     render_new_with_error("cannot point to private network")
+  rescue Feed::UnreachableError
+    render_new_with_error("could not be reached")
   end
 
   def edit
