@@ -52,13 +52,18 @@ Hotwire (Turbo + Stimulus) + Vanilla CSS による SPA ライクな操作感。
 
 ### Stimulus の責務分担
 
-キーボード操作は「入力の受け口」と「操作の実行先」を分けている。
+キーボード操作は「入力の受け口」と「操作の実行先」を分けている。配線は `app/views/home/index.html.erb` の `data-action` に集まっている。
 
-- `keyboard_controller` — keydown のルーター。キーをコマンドに変換してカスタムイベントを dispatch するだけで、操作自体は行わない
-- `selection_controller` — dispatch されたコマンドの実行先。フィード/エントリの選択状態を単独で保持する中央ハブ。他のコントローラーは outlet 経由でここを参照する
-- `badge_controller` — 未読数バッジの更新。既読化イベントを受けてフィード・フォルダのバッジを再計算する（サーバー再取得なし）
+- `keyboard_controller` — keydown のルーター。キーをコマンドに変換して `keyboard:*` イベントを dispatch するだけで、操作自体は行わない。新規タブを開くコマンドだけは dispatch せず、対象コントローラーのメソッドを直接呼ぶ（[ADR 0003](adr/0003-user-activation-for-new-tabs.md)）
+- `feed_list_controller` — フィードペインの選択と移動（`s` / `a`）、すべて既読
+- `entry_list_controller` — エントリ一覧の選択と移動（`j` / `k`）、選択したエントリを既読表示にする。`feed-list` outlet で選択中のフィードを参照し、`read` / `loaded` / `moved` イベントを出す
+- `entry_detail_controller` — エントリ本文ペインのスクロール、新規タブで開く
+- `badge_controller` — 未読数バッジの更新。`entry-list` の `read` / `loaded` を受けてフィード・フォルダのバッジを再計算する（サーバー再取得なし）
 
-その他（`pin` / `help_dialog` / `hatena_bookmark` / `mobile_pane` / `dropdown`）は単機能。実装は `app/javascript/controllers/`、共有ヘルパーは `app/javascript/lib/`（`fetch_helper.js` の `fetchWithCsrf` / `openInBackground` など）。
+選択状態は各リストのコントローラーが要素 ID だけを持ち、インデックスは DOM から毎回導出する（[ADR 0002](adr/0002-derive-selection-cursor.md)）。`pin` と `entry_nav`（モバイルの前後ボタン）は `entry-list` outlet 経由で選択中のエントリを参照する。
+
+その他（`help_dialog` / `hatena_bookmark` / `mobile_pane` / `dropdown` / `reload`）は単機能。
+実装は `app/javascript/controllers/`、共有ヘルパーは `app/javascript/lib/`（`fetch_helper.js` の `fetchWithCsrf` / `openInBackground` など）。
 
 ## モデル構成
 
@@ -85,18 +90,19 @@ app/models/
 
 ```
 app/models/
-├── entry.rb             # コア（associations, validations, scopes, mark_as_read!, toggle_pin!）
+├── entry.rb             # コア（associations, validations, scopes, URL 正規化・content_url）
 └── entry/
     └── rss_parser.rb    # RSS/Atom/RDF アイテムから属性ハッシュを生成
 ```
 
-- **Entry** — `belongs_to :feed`, `mark_as_read!`, `toggle_pin!`, `safe_url_for_link`
+- **Entry** — `belongs_to :feed`, `duplicates_of` スコープ, `normalize_url`, `safe_url_for_link`（[ADR 0012](adr/0012-entry-url-sanitize.md)）
+- 既読化・ピン留めはユーザー固有の状態なので `User` 側にある（`mark_entry_as_read!` / `pin_entry!` / `unpin_entry!`、状態は `UserEntryState`）
 - **Entry::RssParser** — `attributes_from_rss_item` クラスメソッド（guid, title, url, author, body, published_at を抽出）
 
 ## 認証
 
-Rails 8 の `bin/rails generate authentication` を使用。
-seed で 1 ユーザーのみ作成。
+Rails 8 の `bin/rails generate authentication` が生成した `Authentication` concern（`start_new_session_for` / `terminate_session`）の上に、パスワードレスのマジックリンク認証を載せている。詳細は [magic_link_auth.md](magic_link_auth.md)。
+seed で 1 ユーザーのみ作成（`TSUBAME_EMAIL`）。
 
 ## 未実装
 
