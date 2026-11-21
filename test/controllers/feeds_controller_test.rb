@@ -165,20 +165,20 @@ class FeedsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "https://example.com/nofeed", feed.url
   end
 
-  test "create falls back to registration when autodiscovery raises StandardError" do
-    sign_in_as(@user)
+test "create does not register a URL whose site cannot be reached" do
+  sign_in_as(@user)
 
-    stub_request(:get, "https://example.com/unreliable")
-      .to_timeout
+  stub_request(:get, "https://example.com/unreliable")
+    .to_timeout
 
-    assert_difference "Feed.count", 1 do
-      post feeds_path, params: { feed: { url: "https://example.com/unreliable" } }
-    end
-
-    assert_redirected_to feeds_path
-    feed = Feed.last
-    assert_equal "https://example.com/unreliable", feed.url
+  assert_no_difference "Feed.count" do
+    post feeds_path, params: { feed: { url: "https://example.com/unreliable" } }
   end
+
+  assert_response :unprocessable_entity
+  assert_select ".form-errors", text: /could not be reached/
+  assert_select "input[name='feed[url]'][value=?]", "https://example.com/unreliable"
+end
 
   test "create rejects SSRF URL during autodiscovery with error message" do
     sign_in_as(@user)
