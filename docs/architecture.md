@@ -54,7 +54,7 @@ Hotwire (Turbo + Stimulus) + Vanilla CSS による SPA ライクな操作感。
 
 キーボード操作は「入力の受け口」と「操作の実行先」を分けている。配線は `app/views/home/index.html.erb` の `data-action` に集まっている。
 
-- `keyboard_controller` — keydown のルーター。キーをコマンドに変換して `keyboard:*` イベントを dispatch するだけで、操作自体は行わない。新規タブを開くコマンドだけは dispatch せず、対象コントローラーのメソッドを直接呼ぶ（[ADR 0003](adr/0003-user-activation-for-new-tabs.md)）
+- `keyboard_controller` — keydown のルーター。キーをコマンドに変換して `keyboard:*` イベントを dispatch するだけで、操作自体は行わない。新規タブを開くコマンドだけは dispatch せず、outlet 経由で対象コントローラーのメソッドを直接呼ぶ（[ADR 0003](adr/0003-user-activation-for-new-tabs.md)）
 - `feed_list_controller` — フィードペインの選択と移動（`s` / `a`）、すべて既読
 - `entry_list_controller` — エントリ一覧の選択と移動（`j` / `k`）、選択したエントリを既読表示にする。`feed-list` outlet で選択中のフィードを参照し、`read` / `loaded` / `moved` イベントを出す
 - `entry_detail_controller` — エントリ本文ペインのスクロール、新規タブで開く

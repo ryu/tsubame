@@ -15,4 +15,5 @@
 
 ## 結果
 
-- 直接呼ぶ経路でコントローラーが見つからない場合、ADR 作成時点では黙って何もしない。ryu/tsubame#114 で追跡している
+- 直接呼ぶ相手は `keyboard` の outlet（`entry-detail` / `entry-list` / `pin`）として宣言する。配線が欠けていれば、Stimulus が "Missing outlet" のエラーを投げる。以前は `getControllerForElementAndIdentifier` で引いており、見つからないと黙って何もしなかった（ryu/tsubame#114）
+- `test/system/new_tab_shortcut_test.rb` で、`v` と `o` が新規タブを開くことを確認している

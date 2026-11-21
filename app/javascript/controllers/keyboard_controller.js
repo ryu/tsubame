@@ -1,6 +1,8 @@
 import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
+  static outlets = ["entry-detail", "entry-list", "pin"]
+
   static commandMap = {
     "j": "next-entry",
     "k": "previous-entry",
@@ -19,10 +21,10 @@ export default class extends Controller {
   }
 
   static userActivationCommands = {
-    "open-entry-in-new-tab": ["entry-detail", "openInNewTab"],
-    "open-pinned": ["pin", "openPinned"],
-    "open-hatena-bookmark": ["entry-list", "openHatenaBookmark"],
-    "open-hatena-bookmark-add": ["entry-detail", "openHatenaBookmarkAdd"]
+    "open-entry-in-new-tab": ["entryDetailOutlet", "openInNewTab"],
+    "open-pinned": ["pinOutlet", "openPinned"],
+    "open-hatena-bookmark": ["entryListOutlet", "openHatenaBookmark"],
+    "open-hatena-bookmark-add": ["entryDetailOutlet", "openHatenaBookmarkAdd"]
   }
 
   connect() {
@@ -52,8 +54,10 @@ export default class extends Controller {
 
     event.preventDefault()
 
-    if (this.constructor.userActivationCommands[command]) {
-      this._directInvoke(command)
+    const userActivationTarget = this.constructor.userActivationCommands[command]
+    if (userActivationTarget) {
+      const [outlet, method] = userActivationTarget
+      this[outlet][method]()
       return
     }
 
@@ -73,18 +77,5 @@ export default class extends Controller {
     }
 
     return this.constructor.commandMap[key] || null
-  }
-
-  _directInvoke(command) {
-    const target = this.constructor.userActivationCommands[command]
-    if (!target) return false
-
-    const [controllerName, method] = target
-    const controller = this.application.getControllerForElementAndIdentifier(this.element, controllerName)
-    if (controller && typeof controller[method] === "function") {
-      controller[method]()
-      return true
-    }
-    return false
   }
 }
