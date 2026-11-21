@@ -9,3 +9,8 @@
 - ログインには本物のマジックリンクのフローを使う。このアプリにパスワード認証はない
 - System test はヘッドレス Chrome で動くので、`bin/ci` をローカルで実行するには Chrome が必要
 - System test は、Stimulus の outlet の配線ミスのように「黙って壊れる」箇所をエンドツーエンドで固定するために書く
+
+## 結果
+
+- Capybara 3.40.0 はセッションをリセットするときに `Storage.clearDataForOrigin(origin: "*")` を送り、最近の Chrome はこれを拒否する。そこで `ClearStorageForAppOrigin` を prepend して、アプリサーバーの origin を指定させている。上流の修正（teamcapybara/capybara#2865）がリリースされるまでの暫定措置
+- Capybara が 3.40.0 より新しくなると、`ClearStorageForAppOrigin.verify_still_needed!` が System test の起動時に例外を投げる。Dependabot の更新 PR で、パッチを外すか対象バージョンを上げるかを必ず判断することになる（ryu/tsubame#115）
