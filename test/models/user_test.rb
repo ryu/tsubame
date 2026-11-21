@@ -22,14 +22,11 @@ class UserTest < ActiveSupport::TestCase
     assert_not user.valid?
   end
 
-  # -- mark_entry_as_read! with duplicate sync tests --
-
   test "mark_entry_as_read syncs read state to duplicate entries" do
     user = users(:one)
     original = entries(:ruby_article_two)
     duplicate = entries(:aggregator_ruby_one)
 
-    # Set same content_url to simulate duplicates
     original.update_column(:content_url, "https://example.com/ruby/2")
     duplicate.update_column(:content_url, "https://example.com/ruby/2")
 
@@ -47,11 +44,9 @@ class UserTest < ActiveSupport::TestCase
     original.update_column(:content_url, "https://example.com/shared")
     duplicate.update_column(:content_url, "https://example.com/shared")
 
-    # Pin the duplicate first
     user.pin_entry!(duplicate)
     assert user.entry_pinned?(duplicate)
 
-    # Clear read state so mark_entry_as_read! proceeds
     user.user_entry_states.where(entry: original).update_all(read_at: nil)
     user.mark_entry_as_read!(original)
 

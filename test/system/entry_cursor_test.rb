@@ -1,9 +1,6 @@
 require "application_system_test_case"
 
 class EntryCursorTest < ApplicationSystemTestCase
-  # Selecting an entry while the list is still arriving used to lose the cursor:
-  # the late turbo:frame-load reset it to -1 and every later shortcut (p, k, b)
-  # went silently dead. Synthesize that trailing event to pin the behaviour down.
   test "a trailing entry_list frame load keeps the selected entry" do
     sign_in_as users(:one)
 
@@ -21,13 +18,10 @@ class EntryCursorTest < ApplicationSystemTestCase
 
     assert_selector "#entry_list .entry-item[data-active='true']"
 
-    # The cursor is still live, so pin toggling keeps working.
     find("body").send_keys("p")
     within("#entry_detail") { assert_selector ".pin-button", text: "ピン留め" }
   end
 
-  # The flip side: when the entry really is gone from the reloaded list, the
-  # cursor must drop rather than point at whatever now sits at that index.
   test "switching feeds clears the selected entry" do
     sign_in_as users(:one)
 

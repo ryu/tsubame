@@ -18,7 +18,6 @@ class MagicLinkTest < ActiveSupport::TestCase
     end
   end
 
-  # 再送のたびに生きたトークンが増えないよう、直前のリンクは有効でも捨てる。
   test "generate_for replaces the user's existing links" do
     previous = create_link(expires_at: 1.minute.from_now)
 
@@ -55,7 +54,6 @@ class MagicLinkTest < ActiveSupport::TestCase
     assert_nil MagicLink.find_by_token(SecureRandom.urlsafe_base64(32))
   end
 
-  # Range 記法は始端を排他にできないため、期限ちょうどのリンクはまだ有効になる。
   test "valid includes a link expiring exactly now" do
     freeze_time do
       assert_includes MagicLink.valid, create_link(expires_at: Time.current)

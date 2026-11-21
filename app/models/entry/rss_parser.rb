@@ -2,8 +2,6 @@ module Entry::RssParser
   extend ActiveSupport::Concern
 
   class_methods do
-    # Build an attributes Hash from an RSS/Atom/RDF item.
-    # Returns nil if the item has no usable guid.
     def attributes_from_rss_item(item)
       guid = extract_guid(item)
       return nil if guid.blank?

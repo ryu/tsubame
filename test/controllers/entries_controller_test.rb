@@ -41,7 +41,6 @@ class EntriesControllerTest < ActionDispatch::IntegrationTest
 
   test "show marks entry as read" do
     sign_in_as(@user)
-    # ruby_article_two has a UserEntryState with pinned:true but no read_at
     state = @user.user_entry_states.find_by(entry: @entry)
     assert_nil state&.read_at
 
@@ -74,8 +73,6 @@ class EntriesControllerTest < ActionDispatch::IntegrationTest
 
   test "pinned shows pinned entries" do
     sign_in_as(@user)
-    # ruby_article_two is already pinned via user_entry_states fixture
-    # Also pin ruby_article_one
     entry = entries(:ruby_article_one)
     state = @user.entry_state_for(entry)
     state.update!(pinned: true)
@@ -94,8 +91,6 @@ class EntriesControllerTest < ActionDispatch::IntegrationTest
     assert_select ".empty-message"
   end
 
-  # -- Cross-user data isolation tests --
-
   test "show returns not found for entry from unsubscribed feed" do
     sign_in_as(users(:two))
     get entry_path(@entry)
@@ -110,7 +105,6 @@ class EntriesControllerTest < ActionDispatch::IntegrationTest
 
   test "pinned entries are isolated per user" do
     sign_in_as(users(:two))
-    # user :two has no pinned entries
     get pinned_entries_path
     assert_response :success
     assert_select ".entry-item", count: 0

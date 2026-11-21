@@ -3,7 +3,6 @@ import { hatenaBookmarkUrl } from "lib/hatena_bookmark"
 import { openInBackground } from "lib/fetch_helper"
 import { scrollIntoViewIfNeeded } from "lib/scroll"
 
-// Selection and navigation of the entry list pane.
 export default class extends Controller {
   static targets = ["list"]
   static outlets = ["feed-list"]
@@ -46,8 +45,6 @@ export default class extends Controller {
     if (bookmarkUrl) openInBackground(bookmarkUrl)
   }
 
-  // Read through the entry-list outlet by pin and entry-nav
-
   get items() {
     if (!this.hasListTarget) return []
     return Array.from(this.listTarget.querySelectorAll(".entry-item"))
@@ -57,10 +54,6 @@ export default class extends Controller {
     return this.items[this.activeIndex] || null
   }
 
-  // Derived from the selected entry, never stored. A frame load swaps the list
-  // out from under a stored index, and turbo:frame-load arrives after the entries
-  // are already in the DOM — late enough for the next keypress to read a stale
-  // cursor and either move nowhere or lose the selection.
   get activeIndex() {
     return this.activeId ? this.items.findIndex(item => item.id === this.activeId) : -1
   }
@@ -68,8 +61,6 @@ export default class extends Controller {
   get hasNextUnreadFeed() {
     return this.hasFeedListOutlet && this.feedListOutlet.hasNextUnread
   }
-
-  // Private
 
   #activate(index) {
     const item = this.items[index]

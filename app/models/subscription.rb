@@ -18,7 +18,6 @@ class Subscription < ApplicationRecord
       .group("subscriptions.id")
   }
 
-  # Virtual attribute populated by with_unread_count scope
   def unread_count
     self[:unread_count] || 0
   end

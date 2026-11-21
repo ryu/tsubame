@@ -1,13 +1,9 @@
-# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
-
-# ruby_article_one: read by user one
 ruby_article_one_read:
   user: one
   entry: ruby_article_one
   read_at: <%= 1.day.ago %>
   pinned: false
 
-# ruby_article_two: unread, pinned by user one
 ruby_article_two_pinned:
   user: one
   entry: ruby_article_two

@@ -52,10 +52,6 @@ module Feed::Fetching
 
   private
 
-  # Fetch failures are expected (network errors, SSRF, bad responses), so report them
-  # as handled warnings. Routing through Rails.error lets a future subscriber (e.g.
-  # Sentry) aggregate them; there is no default logging subscriber, so keep an explicit
-  # logger line for immediate visibility.
   def report_fetch_error(error)
     Rails.error.report(
       error,
@@ -153,11 +149,9 @@ module Feed::Fetching
         body.encode("UTF-8", invalid: :replace, undef: :replace)
       end
 
-    # 宣言が実際のエンコーディングと食い違うと REXML が ArgumentError を投げるため必ず書き換える
     encoded.sub(/(<\?xml[^?]*encoding=)["'][^"']+["']/i, '\1"UTF-8"')
   end
 
-  # リモート由来の charset は未知の名前があり得るため、不明なら nil を返してフォールバックさせる
   def find_encoding(charset)
     Encoding.find(charset) if charset.present?
   rescue ArgumentError

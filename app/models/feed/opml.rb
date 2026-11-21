@@ -7,8 +7,6 @@ module Feed::Opml
   extend ActiveSupport::Concern
 
   class_methods do
-    # Import feeds from OPML XML content for a specific user
-    # Returns { added: N, skipped: N }
     def import_from_opml(xml_content, user:)
       ensure_xml!(xml_content)
 
@@ -25,8 +23,6 @@ module Feed::Opml
       raise ImportError, "OPMLファイルの形式が正しくありません。"
     end
 
-    # Export subscribed feeds to OPML 1.0 XML format for a specific user
-    # Returns XML string
     def to_opml(user:)
       doc = REXML::Document.new
       doc << REXML::XMLDecl.new("1.0", "UTF-8")
@@ -63,8 +59,6 @@ module Feed::Opml
       raise ImportError, "XMLファイルを選択してください。"
     end
 
-    # アップロードされたファイルは ASCII-8BIT、File.read は UTF-8 で渡ってくる。
-    # BOM の除去はどちらの場合も同じ結果になってほしいので UTF-8 に揃える
     def utf8(content) = content.to_s.dup.force_encoding(Encoding::UTF_8).scrub
 
     def import_outlines(element, state)

@@ -1,4 +1,3 @@
-// Fetch helper with automatic CSRF token injection
 export function fetchWithCsrf(url, options = {}) {
   const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content
   if (!csrfToken) {
@@ -15,7 +14,6 @@ export function fetchWithCsrf(url, options = {}) {
   return fetch(url, { ...options, headers })
 }
 
-// POST/DELETE that answers with a Turbo Stream, rendered on arrival
 export function submitTurboStream(url, options = {}) {
   return fetchWithCsrf(url, {
     method: "POST",
@@ -29,8 +27,6 @@ export function submitTurboStream(url, options = {}) {
     .then(html => Turbo.renderStreamMessage(html))
 }
 
-// Open a URL in a background tab (works in Chrome/Firefox; Safari requires
-// unchecking "When a new tab or window opens, make it active" in settings)
 export function openInBackground(url) {
   const w = window.open(url, "_blank")
   window.focus()

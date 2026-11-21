@@ -109,7 +109,6 @@ class User < ApplicationRecord
 
   private
 
-  # update_only で pinned に触れないことで、重複エントリーのピン状態を保持する
   def upsert_read_states(entry_ids, read_at)
     return if entry_ids.empty?
 
@@ -119,7 +118,6 @@ class User < ApplicationRecord
     UserEntryState.upsert_all(records, unique_by: [ :user_id, :entry_id ], update_only: [ :read_at, :updated_at ])
   end
 
-  # content_url が同じ別フィードの未読エントリー ID（既読の重複同期用）
   def unread_duplicate_ids_for(entry_ids)
     content_urls = Entry.where(id: entry_ids).where.not(content_url: nil).distinct.pluck(:content_url)
     return [] if content_urls.empty?

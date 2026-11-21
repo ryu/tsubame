@@ -39,10 +39,8 @@ class FeedImportsControllerTest < ActionDispatch::IntegrationTest
     sign_in_as(@user)
     opml_file = fixture_file_upload("sample.opml", "application/xml")
 
-    # First import
     post feed_imports_path, params: { opml_file: opml_file }
 
-    # Second import should skip all
     assert_no_difference "Feed.count" do
       post feed_imports_path, params: { opml_file: opml_file }
     end

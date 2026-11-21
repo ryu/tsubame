@@ -5,8 +5,6 @@ class FoldersControllerTest < ActionDispatch::IntegrationTest
     @user = users(:one)
   end
 
-  # -- Authentication tests --
-
   test "index requires authentication" do
     get folders_path
     assert_redirected_to new_session_path
@@ -40,14 +38,12 @@ class FoldersControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to new_session_path
   end
 
-  # -- index tests --
-
   test "index shows folder list when authenticated" do
     sign_in_as(@user)
     get folders_path
 
     assert_response :success
-    assert_select "h1"  # Page title should exist
+    assert_select "h1"
   end
 
   test "index displays all folders ordered by name" do
@@ -55,22 +51,16 @@ class FoldersControllerTest < ActionDispatch::IntegrationTest
     get folders_path
 
     assert_response :success
-    # Both tech and news folders should be present in fixtures
-    # Verify they are accessible (rendered)
     assert_not_nil response.body
   end
-
-  # -- new tests --
 
   test "new shows form when authenticated" do
     sign_in_as(@user)
     get new_folder_path
 
     assert_response :success
-    assert_select "input[type=text]"  # Name input
+    assert_select "input[type=text]"
   end
-
-  # -- create tests --
 
   test "create saves new folder with valid name" do
     sign_in_as(@user)
@@ -109,10 +99,8 @@ class FoldersControllerTest < ActionDispatch::IntegrationTest
     post folders_path, params: { folder: { name: "" } }
 
     assert_response :unprocessable_entity
-    assert_select "input[type=text]"  # Form should be re-rendered
+    assert_select "input[type=text]"
   end
-
-  # -- edit tests --
 
   test "edit shows folder form when authenticated" do
     sign_in_as(@user)
@@ -121,10 +109,8 @@ class FoldersControllerTest < ActionDispatch::IntegrationTest
     get edit_folder_path(folder)
 
     assert_response :success
-    assert_select "input[type=text]"  # Name input field
+    assert_select "input[type=text]"
   end
-
-  # -- update tests --
 
   test "update saves changes with valid name" do
     sign_in_as(@user)
@@ -156,7 +142,7 @@ class FoldersControllerTest < ActionDispatch::IntegrationTest
     patch folder_path(folder), params: { folder: { name: other_folder.name } }
 
     assert_response :unprocessable_entity
-    assert_equal "Tech", folder.reload.name  # Name unchanged
+    assert_equal "Tech", folder.reload.name
   end
 
   test "update re-renders form on validation error" do
@@ -166,10 +152,8 @@ class FoldersControllerTest < ActionDispatch::IntegrationTest
     patch folder_path(folder), params: { folder: { name: "" } }
 
     assert_response :unprocessable_entity
-    assert_select "input[type=text]"  # Form re-rendered
+    assert_select "input[type=text]"
   end
-
-  # -- destroy tests --
 
   test "destroy deletes folder and redirects" do
     sign_in_as(@user)
@@ -195,7 +179,6 @@ class FoldersControllerTest < ActionDispatch::IntegrationTest
 
     delete folder_path(folder)
 
-    # Verify subscription's folder_id is now nil
     assert_nil subscription.reload.folder_id
   end
 
@@ -208,13 +191,10 @@ class FoldersControllerTest < ActionDispatch::IntegrationTest
 
     delete folder_path(folder)
 
-    # All subscriptions should have folder_id = nil
     Subscription.where(id: subscription_ids).each do |subscription|
       assert_nil subscription.folder_id
     end
   end
-
-  # -- Cross-user data isolation tests --
 
   test "other user cannot access another user's folder" do
     sign_in_as(users(:two))

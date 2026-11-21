@@ -2,7 +2,6 @@ import { Controller } from "@hotwired/stimulus"
 import { submitTurboStream } from "lib/fetch_helper"
 import { scrollIntoViewIfNeeded } from "lib/scroll"
 
-// Selection and navigation of the feed pane.
 export default class extends Controller {
   static targets = ["list"]
 
@@ -45,8 +44,6 @@ export default class extends Controller {
       })
   }
 
-  // Read through the feed-list outlet by entry-list
-
   get items() {
     if (!this.hasListTarget) return []
     return Array.from(this.listTarget.querySelectorAll(".feed-item"))
@@ -60,13 +57,9 @@ export default class extends Controller {
     return this.items.slice(this.activeIndex + 1).some(item => item.querySelector(".unread-badge"))
   }
 
-  // Derived from the selected feed, never stored: a morph refresh re-renders the
-  // pane and would leave a stored index pointing at whatever moved into its slot.
   get activeIndex() {
     return this.activeId ? this.items.findIndex(item => item.dataset.feedId === this.activeId) : -1
   }
-
-  // Private
 
   #activate(index) {
     const item = this.items[index]

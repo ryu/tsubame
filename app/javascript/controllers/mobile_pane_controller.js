@@ -28,8 +28,6 @@ export default class extends Controller {
     this.element.setAttribute("data-mobile-pane", "detail")
   }
 
-  // Private
-
   _handleFrameLoad(event) {
     if (!this._isMobile()) return
 

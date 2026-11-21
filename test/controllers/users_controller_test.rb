@@ -6,8 +6,6 @@ class UsersControllerTest < ActionDispatch::IntegrationTest
     @non_admin = users(:two)
   end
 
-  # -- Authentication tests --
-
   test "index requires authentication" do
     get users_path
     assert_redirected_to new_session_path
@@ -37,8 +35,6 @@ class UsersControllerTest < ActionDispatch::IntegrationTest
     delete user_path(@non_admin)
     assert_redirected_to new_session_path
   end
-
-  # -- Admin authorization tests --
 
   test "index requires admin" do
     sign_in_as(@non_admin)
@@ -81,8 +77,6 @@ class UsersControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to root_path
   end
 
-  # -- Index --
-
   test "index shows user list" do
     sign_in_as(@admin)
     get users_path
@@ -92,8 +86,6 @@ class UsersControllerTest < ActionDispatch::IntegrationTest
     assert_select "table.manage-table"
   end
 
-  # -- New --
-
   test "new shows form" do
     sign_in_as(@admin)
     get new_user_path
@@ -101,8 +93,6 @@ class UsersControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "input[type=email]"
   end
-
-  # -- Create --
 
   test "create saves new user with valid params" do
     sign_in_as(@admin)
@@ -145,8 +135,6 @@ class UsersControllerTest < ActionDispatch::IntegrationTest
     assert_response :unprocessable_entity
   end
 
-  # -- Edit --
-
   test "edit shows user form" do
     sign_in_as(@admin)
     get edit_user_path(@non_admin)
@@ -154,8 +142,6 @@ class UsersControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "input[type=email]"
   end
-
-  # -- Update --
 
   test "update saves changes with valid params" do
     sign_in_as(@admin)
@@ -202,8 +188,6 @@ class UsersControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :unprocessable_entity
   end
-
-  # -- Destroy --
 
   test "destroy deletes user and redirects" do
     sign_in_as(@admin)

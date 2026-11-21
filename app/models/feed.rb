@@ -1,9 +1,9 @@
 class Feed < ApplicationRecord
-  include Feed::SsrfProtection  # SSRF保護・ブロックIP判定
-  include Feed::Fetching         # HTTP通信・エンコーディング・パース
-  include Feed::Autodiscovery    # HTML から feed URL を自動検出
-  include Feed::Subscribable     # URL からのフィード解決・購読（resolve / find_or_subscribe）
-  include Feed::EntryImporter    # エントリインポート・フィードタイトル更新
+  include Feed::SsrfProtection
+  include Feed::Fetching
+  include Feed::Autodiscovery
+  include Feed::Subscribable
+  include Feed::EntryImporter
   include Feed::Opml
 
   has_many :entries, dependent: :destroy
@@ -31,8 +31,6 @@ class Feed < ApplicationRecord
 
   validates :fetch_interval_minutes, inclusion: { in: FETCH_INTERVAL_OPTIONS.keys }
 
-  # record_successful_fetch! / record_fetch_error! set next_fetch_at explicitly;
-  # this callback only fires when fetch_interval_minutes is changed (e.g. from settings).
   before_save :set_next_fetch_at, if: :fetch_interval_minutes_changed?
 
   def self.subscribe(url)
@@ -84,8 +82,6 @@ class Feed < ApplicationRecord
       return
     end
 
-    # Block IP literal URLs pointing to private networks at validation time.
-    # Hostname-based SSRF (DNS rebinding etc.) is caught at fetch time by validate_url_safety!
     if url_changed? && ip_literal?(uri.host)
       ip = IPAddr.new(uri.host)
       if Feed.blocked_ip_address?(ip)

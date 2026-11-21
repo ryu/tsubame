@@ -36,7 +36,6 @@ class FeedsController < ApplicationController
     @feed = @subscription.feed
 
     Feed.transaction do
-      # fetch_interval_minutes はフィードのグローバル設定（全購読者に影響）
       if params[:feed].present?
         @feed.update!(params.expect(feed: [ :fetch_interval_minutes ]))
       end
@@ -72,7 +71,6 @@ class FeedsController < ApplicationController
     @feed = feed
 
     unless @feed.persisted? || @feed.save
-      # resolve 後に他ユーザーが同じ URL を登録した場合は、そのレコードを購読する
       if (existing = Feed.find_by(url: @feed.url))
         return subscribe(existing)
       end
@@ -84,7 +82,6 @@ class FeedsController < ApplicationController
     notice = subscription.previously_new_record? ? "フィードを追加しました。" : "既に登録済みのフィードです。"
     redirect_to feeds_path, notice: notice
   rescue ActiveRecord::RecordNotUnique
-    # 同一 URL の同時購読で挿入が競合したら、勝った側のレコードで購読し直す
     subscribe(Feed.find_by!(url: @feed.url))
   end
 

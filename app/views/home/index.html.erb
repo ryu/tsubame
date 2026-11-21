@@ -18,7 +18,6 @@
                   entry-list:moved->entry-detail#resetScroll
                   turbo:frame-load->feed-list#frameLoad
                   turbo:frame-load->entry-list#frameLoad">
-  <!-- Left pane: Feed list -->
   <aside class="feed-list-pane">
     <div class="pane-header">
       <h1>Tsubame</h1>
@@ -90,9 +89,7 @@
     </div>
   </aside>
 
-  <!-- Right pane: Entry list and detail -->
   <div class="content-pane">
-    <!-- Top: Entry list -->
     <section class="entry-list-pane" data-entry-list-target="list">
       <%= turbo_frame_tag "entry_list", refresh: :morph do %>
         <div class="empty-message">
@@ -101,7 +98,6 @@
       <% end %>
     </section>
 
-    <!-- Bottom: Entry detail -->
     <section class="entry-detail-pane" data-entry-detail-target="pane">
       <%= turbo_frame_tag "entry_detail", refresh: :morph do %>
         <div class="empty-message">

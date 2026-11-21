@@ -4,10 +4,6 @@ class CleanupEntriesJob < ApplicationJob
   RETENTION = 90.days
   BATCH_SIZE = 1000
 
-  # Delete entries older than RETENTION in batches. Batching keeps each DELETE small so
-  # it never holds a long SQLite write lock. The job is naturally restart-safe: deleted
-  # rows drop out of `deletable_entries`, so re-running after an interruption just
-  # continues with whatever old entries remain.
   def perform
     deleted = 0
 

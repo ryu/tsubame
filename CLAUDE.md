@@ -12,6 +12,7 @@ Fastladder 互換のフィードリーダー。Ruby 4.0 / Rails 8.1 / SQLite3 / 
 - **フィードパース**: Ruby 標準ライブラリ `rss` を使う。パーサ用の gem は追加しない
 - **DB バックエンド**: Solid Queue / Solid Cache / Solid Cable。Redis は使わない
 - **モデルの concern**: 50〜150行が目安。200行を超えたら責務分割を検討する
+- **コメントを書かない**: 意図は命名とテストで表し、コードから読み取れない判断は [docs/adr/](docs/adr/README.md) に ADR として書く。`bin/lint-comments` がラチェットで新規コメントを止める。残っているコメントの整理は `/delete-comment` で行う
 
 コーディングスタイルは `.claude/rules/dhh_style.md`。
 
@@ -30,6 +31,7 @@ bin/rails test test/models/feed_test.rb  # 単一ファイル実行
 
 必要になった時点で読む。
 
+- [docs/adr/](docs/adr/README.md) — 設計判断の記録（ADR）
 - [docs/architecture.md](docs/architecture.md) — システム構成・フロントエンド構成・設計上のトレードオフ
 - [docs/data_model.md](docs/data_model.md) — テーブル定義とリレーション
 - [docs/feed_crawling.md](docs/feed_crawling.md) — クロールのジョブ構成・スケジューリング

@@ -1,5 +1,3 @@
-# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
-
 ruby_article_one:
   feed: ruby_blog
   guid: https://example.com/ruby/1

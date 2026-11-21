@@ -15,10 +15,6 @@ class ContentSecurityPolicyTest < ActionDispatch::IntegrationTest
     assert_includes policy, "connect-src 'self' https://bookmark.hatenaapis.com"
   end
 
-  # A returning browser keeps the permanent login cookie but drops the session
-  # cookie, so the first request of the day carries no session. The nonce has to
-  # survive that: an empty one makes the whole source list invalid, which blocks
-  # the import map and leaves the page without Stimulus until a reload.
   test "the first request without a session cookie gets a usable nonce" do
     get new_session_path
     assert_response :success
@@ -28,8 +24,6 @@ class ContentSecurityPolicyTest < ActionDispatch::IntegrationTest
     assert_includes response.body, %(<script type="module" nonce="#{nonce_from_header}">import "application"</script>)
   end
 
-  # Turbo re-runs head scripts that differ between pages, and a re-run import map
-  # would be evaluated against the first page's nonce, so it must not change.
   test "the nonce stays stable across requests" do
     get new_session_path
     first = nonce_from_header

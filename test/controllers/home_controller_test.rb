@@ -57,8 +57,6 @@ class HomeControllerTest < ActionDispatch::IntegrationTest
     assert_select "a[href='#{feed_entries_path(feeds(:ruby_blog))}']"
   end
 
-  # -- Rate filtering tests --
-
   test "home page displays all feeds when no rate filter is applied" do
     sign_in_as(users(:one))
 
@@ -73,7 +71,6 @@ class HomeControllerTest < ActionDispatch::IntegrationTest
     get root_url(rate: 3)
     assert_response :success
 
-    # Should include rails_news (rate: 3) and ruby_blog (rate: 5)
     assert_select "a[href='#{feed_entries_path(feeds(:rails_news))}']"
     assert_select "a[href='#{feed_entries_path(feeds(:ruby_blog))}']"
   end
@@ -84,7 +81,6 @@ class HomeControllerTest < ActionDispatch::IntegrationTest
     get root_url(rate: 5)
     assert_response :success
 
-    # Should only include ruby_blog (rate: 5)
     assert_select "a[href='#{feed_entries_path(feeds(:ruby_blog))}']"
   end
 
@@ -94,7 +90,6 @@ class HomeControllerTest < ActionDispatch::IntegrationTest
     get root_url(rate: 0)
     assert_response :success
 
-    # Should include all feeds
     assert_select ".feed-item", minimum: 2
   end
 
@@ -104,7 +99,6 @@ class HomeControllerTest < ActionDispatch::IntegrationTest
     get root_url(rate: "invalid")
     assert_response :success
 
-    # Should display all feeds (fallback)
     assert_select ".feed-item", minimum: 2
   end
 
@@ -114,34 +108,21 @@ class HomeControllerTest < ActionDispatch::IntegrationTest
     get root_url(rate: -1)
     assert_response :success
 
-    # Should display all feeds (fallback)
     assert_select ".feed-item", minimum: 2
   end
 
   test "home page displays correct feed count for rate filter" do
     sign_in_as(users(:one))
 
-    # HomeController uses grouped_subscriptions_for_home, so only subscriptions with unread entries are shown
-    # Current fixtures:
-    #   user_one_ruby_blog (rate=5): has unread entry
-    #   user_one_rails_news (rate=3): has unread entry
-    #   user_one_error_feed (rate=0): no unread entries
-    #   user_one_low_rate_feed (rate=1): no unread entries
-
-    # rate=1: only subscriptions with rate >= 1 AND unread entries = rails_news, ruby_blog (2 feeds)
     get root_url(rate: 1)
     assert_select ".feed-item", { count: 2 }
 
-    # rate=3: only subscriptions with rate >= 3 AND unread entries = rails_news, ruby_blog (2 feeds)
     get root_url(rate: 3)
     assert_select ".feed-item", { count: 2 }
 
-    # rate=5: only subscriptions with rate >= 5 AND unread entries = ruby_blog (1 feed)
     get root_url(rate: 5)
     assert_select ".feed-item", { count: 1 }
   end
-
-  # -- Folder grouping tests --
 
   test "home page displays folder headers" do
     sign_in_as(users(:one))
@@ -149,7 +130,6 @@ class HomeControllerTest < ActionDispatch::IntegrationTest
     get root_url
     assert_response :success
 
-    # Should have at least one folder header (.feed-folder-header)
     assert_select ".feed-folder-header", minimum: 1
   end
 
@@ -159,7 +139,6 @@ class HomeControllerTest < ActionDispatch::IntegrationTest
     get root_url
     assert_response :success
 
-    # Should display "Tech" folder name (ruby_blog and rails_news are in tech folder)
     assert_select ".feed-folder-header", text: /Tech/
   end
 
@@ -180,7 +159,6 @@ class HomeControllerTest < ActionDispatch::IntegrationTest
     user = users(:one)
     sign_in_as(user)
 
-    # Create an unclassified feed with unread entry and subscribe
     unclassified_feed = Feed.create!(
       url: "https://example.com/unclassified",
       title: "Unclassified Feed"
@@ -195,7 +173,6 @@ class HomeControllerTest < ActionDispatch::IntegrationTest
     get root_url
     assert_response :success
 
-    # Should have unclassified section header
     assert_select ".feed-folder-header", text: /未分類/
   ensure
     unclassified_feed&.destroy
@@ -207,8 +184,6 @@ class HomeControllerTest < ActionDispatch::IntegrationTest
     get root_url
     assert_response :success
 
-    # ruby_blog and rails_news should be in tech folder
-    # They should both be present (both have unread entries and rate >= default filter)
     assert_select "a[href='#{feed_entries_path(feeds(:ruby_blog))}']"
     assert_select "a[href='#{feed_entries_path(feeds(:rails_news))}']"
   end
@@ -219,7 +194,6 @@ class HomeControllerTest < ActionDispatch::IntegrationTest
     get root_url
     assert_response :success
 
-    # Both feeds should be present
     assert_select ".feed-item", minimum: 2
   end
 
@@ -227,7 +201,6 @@ class HomeControllerTest < ActionDispatch::IntegrationTest
     user = users(:one)
     sign_in_as(user)
 
-    # Create unclassified feed and subscribe
     unclassified = Feed.create!(
       url: "https://example.com/unclass1",
       title: "ZUnclassified"
@@ -242,12 +215,10 @@ class HomeControllerTest < ActionDispatch::IntegrationTest
     get root_url
     assert_response :success
 
-    # Page body should have tech folder headers before 未分類
     body = response.body
     tech_index = body.index("Tech") || 0
     unclassified_index = body.index("未分類") || 0
 
-    # Tech should come before 未分類
     assert tech_index < unclassified_index, "Tech folder should appear before 未分類"
   ensure
     unclassified&.destroy
@@ -259,8 +230,6 @@ class HomeControllerTest < ActionDispatch::IntegrationTest
     get root_url(rate: 3)
     assert_response :success
 
-    # Should include feeds with rate >= 3 and unread entries
-    # ruby_blog (rate=5), rails_news (rate=3)
     assert_select ".feed-item", { count: 2 }
   end
 end
